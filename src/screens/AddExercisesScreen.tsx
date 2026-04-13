@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -161,6 +161,16 @@ export default function AddExercisesScreen() {
             <Text style={styles.modalTitle}>CONFIGURAR</Text>
             <Text style={styles.modalSubtitle}>{selectedExercise?.name}</Text>
             
+            {selectedExercise?.gifUrl && (
+              <View style={{alignItems: 'center', marginBottom: 16}}>
+                <Image 
+                  source={{ uri: selectedExercise.gifUrl }} 
+                  style={{ width: '100%', height: 180, borderRadius: 12, backgroundColor: '#FFF' }} 
+                  resizeMode="contain" 
+                />
+              </View>
+            )}
+
             {selectedExercise?.instructions && (
               <ScrollView style={{maxHeight: 120, marginBottom: 16}}>
                 <Text style={{color: '#A0A0A0', fontSize: 13, lineHeight: 18}}>
