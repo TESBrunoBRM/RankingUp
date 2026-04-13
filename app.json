@@ -21,10 +21,20 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.proyecto"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "La app necesita acceder a tus fotos para escanear alimentos.",
+          "cameraPermission": "La app necesita acceder a tu cámara para analizar tus comidas con Inteligencia Artificial."
+        }
+      ]
+    ]
   }
 }
