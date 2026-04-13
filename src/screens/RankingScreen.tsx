@@ -229,7 +229,13 @@ export default function RankingScreen() {
                   />
                   {/* Floating Total Rank Badge Overlaid on Bottom Right */}
                   <Animated.View style={[styles.rankOverlayBadge, { transform: [{ translateY: floatAnim }] }]}>
-                    <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 14 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+                    {currentRank.name.toUpperCase().includes('HIERRO') ? (
+                       <Image source={require('../../assets/images/hierro.png')} style={{ width: 70, height: 70, marginBottom: 4 }} resizeMode="contain" />
+                    ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
+                       <Image source={require('../../assets/images/bronce.png')} style={{ width: 70, height: 70, marginBottom: 4 }} resizeMode="contain" />
+                    ) : (
+                       <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 14, marginBottom: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+                    )}
                     <Text style={styles.xpLabel}>TOTAL</Text>
                     <Text style={{fontSize: 16, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 12, color: '#CCFF00'}}>XP</Text></Text>
                   </Animated.View>
