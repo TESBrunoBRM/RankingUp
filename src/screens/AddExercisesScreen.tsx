@@ -162,11 +162,12 @@ export default function AddExercisesScreen() {
             <Text style={styles.modalSubtitle}>{selectedExercise?.name}</Text>
             
             {selectedExercise?.gifUrl ? (
-              <View style={{alignItems: 'center', marginBottom: 16}}>
+              <View style={{alignItems: 'center', marginBottom: 16, backgroundColor: '#1A1A1A', borderRadius: 12, height: 180, justifyContent: 'center'}}>
                 <Image 
                   source={{ uri: selectedExercise.gifUrl }} 
-                  style={{ width: '100%', height: 180, borderRadius: 12, backgroundColor: '#FFF' }} 
+                  style={{ width: '100%', height: '100%' }} 
                   resizeMode="contain" 
+                  accessibilityLabel="Animación del ejercicio"
                 />
               </View>
             ) : (
