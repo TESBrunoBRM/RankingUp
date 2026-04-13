@@ -22,6 +22,7 @@ export type AppStackParamList = {
   Ranking: undefined;
   Onboarding: undefined;
   SearchFood: undefined;
+  Profile: undefined;
 };
 
 export type RootStackParamList = AuthStackParamList & AppStackParamList;
