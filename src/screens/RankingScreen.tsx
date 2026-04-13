@@ -224,8 +224,6 @@ export default function RankingScreen() {
                   <Body 
                     data={muscleData}
                     scale={1.1}
-                    frontOnly={false}
-                    backOnly={false}
                     side={isFront ? 'front' : 'back'}
                   />
                   {/* Floating Total Rank Badge Overlaid on Bottom Right */}
