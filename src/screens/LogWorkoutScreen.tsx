@@ -289,11 +289,12 @@ export default function LogWorkoutScreen() {
             <Text style={styles.modalSubtitle}>{techniqueExercise?.name}</Text>
             
             {techniqueExercise?.gifUrl ? (
-              <View style={{alignItems: 'center', marginBottom: 16}}>
+              <View style={{alignItems: 'center', marginBottom: 16, backgroundColor: '#1A1A1A', borderRadius: 12, height: 200, justifyContent: 'center'}}>
                 <Image 
                   source={{ uri: techniqueExercise.gifUrl }} 
-                  style={{ width: '100%', height: 200, borderRadius: 12, backgroundColor: '#FFF' }} 
+                  style={{ width: '100%', height: '100%' }} 
                   resizeMode="contain" 
+                  accessibilityLabel="Animación del ejercicio"
                 />
               </View>
             ) : (
