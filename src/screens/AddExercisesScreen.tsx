@@ -142,7 +142,7 @@ export default function AddExercisesScreen() {
       ) : (
         <FlatList
           data={exercises}
-          keyExtractor={(item) => item.name}
+          keyExtractor={(item, index) => `${item.name}-${index}`}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           initialNumToRender={10}
@@ -161,13 +161,18 @@ export default function AddExercisesScreen() {
             <Text style={styles.modalTitle}>CONFIGURAR</Text>
             <Text style={styles.modalSubtitle}>{selectedExercise?.name}</Text>
             
-            {selectedExercise?.gifUrl && (
+            {selectedExercise?.gifUrl ? (
               <View style={{alignItems: 'center', marginBottom: 16}}>
                 <Image 
                   source={{ uri: selectedExercise.gifUrl }} 
                   style={{ width: '100%', height: 180, borderRadius: 12, backgroundColor: '#FFF' }} 
                   resizeMode="contain" 
                 />
+              </View>
+            ) : (
+              <View style={{ width: '100%', height: 140, borderRadius: 12, backgroundColor: '#2A2A2A', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#333' }}>
+                 <Text style={{fontSize: 40}}>🏋️</Text>
+                 <Text style={{color: '#666', marginTop: 10, fontSize: 11, fontWeight: '800', letterSpacing: 1}}>SIN PREVISUALIZACIÓN VISUAL</Text>
               </View>
             )}
 
