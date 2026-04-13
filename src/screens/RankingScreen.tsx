@@ -122,9 +122,20 @@ export default function RankingScreen() {
                 muscleXpMap[slug] = (muscleXpMap[slug] || 0) + baseXP;
               }
            }
-        });
+         });
 
-        // Translate XP Map into BodyData mapped to Rank Colors
+         // --- TEST INJECTION PARA VISUALIZAR ESPALDA ---
+         // Forzamos XP en músculos de la espalda para que el usuario pueda ver los colores
+         muscleXpMap['lats'] = (muscleXpMap['lats'] || 0) + 2000; // Platino (Azul oscuro)
+         muscleXpMap['mid-back'] = (muscleXpMap['mid-back'] || 0) + 1000; // Oro
+         muscleXpMap['lower-back'] = (muscleXpMap['lower-back'] || 0) + 500; // Plata
+         muscleXpMap['trapezius'] = (muscleXpMap['trapezius'] || 0) + 200; // Bronce
+         muscleXpMap['hamstring'] = (muscleXpMap['hamstring'] || 0) + 100; // Hierro
+         muscleXpMap['gluteal'] = (muscleXpMap['gluteal'] || 0) + 300; // Bronce/Plata
+         muscleXpMap['calves'] = (muscleXpMap['calves'] || 0) + 800; // Oro
+         // ----------------------------------------------
+
+         // Translate XP Map into BodyData mapped to Rank Colors
         // Note: For body visualization, we might want lower rank scaling so it populates faster,
         // or just use the global ranks min_xp / max_xp exactly. Let's use exact ranks.
         const bodyData = Object.keys(muscleXpMap).map(slug => {
