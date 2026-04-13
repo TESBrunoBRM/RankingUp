@@ -16,7 +16,7 @@ export const fatSecretService = {
     const encodedCredentials = Buffer.from(credentials).toString('base64');
 
     try {
-      const response = await fetch('https://oauth.api.fatsecret.com/connect/token', {
+      const response = await fetch('https://oauth.fatsecret.com/connect/token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',

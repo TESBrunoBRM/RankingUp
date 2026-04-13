@@ -66,6 +66,10 @@ export default function NutritionScreen() {
   const targetCals = profile?.target_calories || 2000;
   const remaining = targetCals - totalCals;
 
+  const targetP = Math.round((targetCals * 0.3) / 4);
+  const targetC = Math.round((targetCals * 0.45) / 4);
+  const targetF = Math.round((targetCals * 0.25) / 9);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -96,16 +100,16 @@ export default function NutritionScreen() {
           {/* Macros Row */}
           <View style={styles.macrosRow}>
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{Math.round(totalC)}g</Text>
+              <Text style={styles.macroValue}>{Math.round(totalC)}/{targetC}g</Text>
               <Text style={styles.macroLabel}>CARB</Text>
             </View>
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{Math.round(totalP)}g</Text>
+              <Text style={styles.macroValue}>{Math.round(totalP)}/{targetP}g</Text>
               <Text style={styles.macroLabel}>PROT</Text>
             </View>
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{Math.round(totalF)}g</Text>
-              <Text style={styles.macroLabel}>FAT</Text>
+              <Text style={styles.macroValue}>{Math.round(totalF)}/{targetF}g</Text>
+              <Text style={styles.macroLabel}>GRASAS</Text>
             </View>
           </View>
         </View>

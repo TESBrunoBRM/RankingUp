@@ -82,18 +82,42 @@ export default function SearchFoodScreen() {
     }
   };
 
-  const handleScanImage = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permiso denegado', 'Necesitamos acceso a tu cámara para escanear');
-      return;
+  const renderImagePickerOptions = () => {
+    Alert.alert(
+      'Analizar Alimento con IA',
+      'Elige el origen de la imagen:',
+      [
+        { text: 'Tomar Foto', onPress: () => processImageCapture(true) },
+        { text: 'Galería', onPress: () => processImageCapture(false) },
+        { text: 'Cancelar', style: 'cancel' }
+      ]
+    );
+  };
+
+  const processImageCapture = async (useCamera: boolean) => {
+    if (useCamera) {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'Necesitamos acceso a tu cámara para escanear');
+        return;
+      }
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permiso denegado', 'Necesitamos acceso a tu galería fotográfica');
+        return;
+      }
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: 'images',
+    const options: ImagePicker.ImagePickerOptions = {
+      mediaTypes: ImagePicker.MediaTypeOptions.Images || 'images',
       allowsEditing: true,
       quality: 0.8,
-    });
+    };
+
+    const result = useCamera
+      ? await ImagePicker.launchCameraAsync(options)
+      : await ImagePicker.launchImageLibraryAsync(options);
 
     if (result.canceled) return;
 
@@ -155,7 +179,7 @@ export default function SearchFoodScreen() {
           onChangeText={setQuery}
           onSubmitEditing={() => handleSearch(query)}
         />
-        <TouchableOpacity style={styles.scanBtn} onPress={handleScanImage} disabled={analyzing || loading}>
+        <TouchableOpacity style={styles.scanBtn} onPress={renderImagePickerOptions} disabled={analyzing || loading}>
           {analyzing ? <ActivityIndicator color="#121212" size="small" /> : <Ionicons name="camera" size={24} color="#121212" />}
         </TouchableOpacity>
         <TouchableOpacity style={styles.searchBtn} onPress={() => handleSearch(query)} disabled={loading || analyzing}>
