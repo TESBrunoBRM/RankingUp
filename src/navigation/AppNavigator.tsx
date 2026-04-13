@@ -18,6 +18,7 @@ import LogWorkoutScreen from '../screens/LogWorkoutScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import NutritionScreen from '../screens/NutritionScreen';
 import SearchFoodScreen from '../screens/SearchFoodScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 // Types
 import type { AuthStackParamList, AppStackParamList, MainTabParamList } from '../types';
@@ -84,6 +85,7 @@ function MainNavigator() {
       <AppStack.Screen name="LogWorkout" component={LogWorkoutScreen} />
       <AppStack.Screen name="Onboarding" component={OnboardingScreen} />
       <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
+      <AppStack.Screen name="Profile" component={ProfileScreen} />
     </AppStack.Navigator>
   );
 }

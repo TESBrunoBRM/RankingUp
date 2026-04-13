@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -58,13 +59,7 @@ export default function HomeScreen() {
     }, [user])
   );
 
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error(error);
-    }
-  };
+
 
   const workoutsForSelectedDay = workouts.filter(w => w.scheduled_day === selectedDay);
 
@@ -73,8 +68,8 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.greeting}>HOLA,</Text>
         <Text style={styles.name}>{user?.email?.split('@')[0].toUpperCase()}</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>CERRAR SESIÓN</Text>
+        <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile' as any)}>
+          <Ionicons name="person-circle-outline" size={36} color="#CCFF00" />
         </TouchableOpacity>
       </View>
 
@@ -173,8 +168,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   greeting: { fontSize: 24, color: '#A0A0A0', fontWeight: '800', marginRight: 8 },
   name: { fontSize: 24, color: '#CCFF00', fontWeight: '900', flex: 1 },
-  logoutBtn: { backgroundColor: '#1A1A1A', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#333' },
-  logoutText: { color: '#FF3B30', fontSize: 10, fontWeight: '800' },
+  profileBtn: { padding: 4 },
   scrollContent: { paddingBottom: 40 },
   titleSection: { paddingHorizontal: 24, marginTop: 20, marginBottom: 20 },
   mainTitle: { fontSize: 32, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1, marginBottom: 4 },
