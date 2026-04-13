@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView, Animated, Easing, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Body from 'react-native-body-highlighter';
@@ -14,7 +14,7 @@ const getRankColor = (name: string) => {
   if (n.includes('BRONCE')) return '#CD7F32';
   if (n.includes('PLATA')) return '#E5E4E2';
   if (n.includes('ORO')) return '#FFD700';
-  if (n.includes('PLATINO')) return '#E5E4E2';
+  if (n.includes('PLATINO')) return '#1E90FF';
   if (n.includes('DIAMANTE')) return '#B9F2FF';
   return '#CCFF00';
 };
@@ -32,6 +32,7 @@ export default function RankingScreen() {
   // Body Highlighter State
   const [isFront, setIsFront] = useState(true);
   const [muscleData, setMuscleData] = useState<any[]>([]);
+  const [isRankModalVisible, setIsRankModalVisible] = useState(false);
 
   // Calculate generic base XP just like workoutLogService (fallback)
   const XP_RULES: { [key: string]: number } = {
@@ -227,17 +228,19 @@ export default function RankingScreen() {
                     side={isFront ? 'front' : 'back'}
                   />
                   {/* Floating Total Rank Badge Overlaid on Bottom Right */}
-                  <Animated.View style={[styles.rankOverlayBadge, { transform: [{ translateY: floatAnim }] }]}>
-                    {currentRank.name.toUpperCase().includes('HIERRO') ? (
-                       <Image source={require('../../assets/images/hierro.png')} style={{ width: 60, height: 60, marginBottom: 4 }} resizeMode="contain" />
-                    ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
-                       <Image source={require('../../assets/images/bronce.png')} style={{ width: 60, height: 60, marginBottom: 4 }} resizeMode="contain" />
-                    ) : (
-                       <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 12, marginBottom: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
-                    )}
-                    <Text style={styles.xpLabel}>TOTAL</Text>
-                    <Text style={{fontSize: 14, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 10, color: '#CCFF00'}}>XP</Text></Text>
-                  </Animated.View>
+                  <TouchableWithoutFeedback onPress={() => setIsRankModalVisible(true)}>
+                    <Animated.View style={[styles.rankOverlayBadge, { transform: [{ translateY: floatAnim }] }]}>
+                      {currentRank.name.toUpperCase().includes('HIERRO') ? (
+                         <Image source={require('../../assets/images/hierro.png')} style={{ width: 60, height: 60, marginBottom: 4 }} resizeMode="contain" />
+                      ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
+                         <Image source={require('../../assets/images/bronce.png')} style={{ width: 60, height: 60, marginBottom: 4 }} resizeMode="contain" />
+                      ) : (
+                         <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 12, marginBottom: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+                      )}
+                      <Text style={styles.xpLabel}>TOTAL</Text>
+                      <Text style={{fontSize: 14, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 10, color: '#CCFF00'}}>XP</Text></Text>
+                    </Animated.View>
+                  </TouchableWithoutFeedback>
                 </View>
               </View>
            </View>
@@ -297,6 +300,24 @@ export default function RankingScreen() {
 
         </ScrollView>
       )}
+
+      {/* MODAL PARA AGRANDAR RANGO */}
+      <Modal visible={isRankModalVisible} transparent animationType="fade">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setIsRankModalVisible(false)}>
+          <View style={styles.modalContent}>
+             {currentRank.name.toUpperCase().includes('HIERRO') ? (
+               <Image source={require('../../assets/images/hierro.png')} style={{ width: 280, height: 280 }} resizeMode="contain" />
+             ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
+               <Image source={require('../../assets/images/bronce.png')} style={{ width: 280, height: 280 }} resizeMode="contain" />
+             ) : (
+               <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 36, letterSpacing: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+             )}
+             <Text style={[styles.xpLabel, { fontSize: 14, marginTop: 20 }]}>EXPERIENCIA TOTAL</Text>
+             <Text style={{fontSize: 48, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 24, color: '#CCFF00'}}>XP</Text></Text>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -356,5 +377,8 @@ const styles = StyleSheet.create({
   rotateBtnIcon: { paddingVertical: 8, paddingHorizontal: 12, marginLeft: 5, borderLeftWidth: 1, borderLeftColor: '#333' },
   
   legendContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 10, paddingHorizontal: 20 },
-  rankOverlayBadge: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(20,20,20,0.95)', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#333', alignItems: 'center', zIndex: 10 }
+  rankOverlayBadge: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(20,20,20,0.95)', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#333', alignItems: 'center', zIndex: 10 },
+  
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { alignItems: 'center', justifyContent: 'center', padding: 20 }
 });
