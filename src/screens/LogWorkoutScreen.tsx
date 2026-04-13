@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Animated, Modal, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -41,6 +41,9 @@ export default function LogWorkoutScreen() {
   const scaleValue = useRef(new Animated.Value(0)).current;
   const opacityValue = useRef(new Animated.Value(0)).current;
   const floatValue = useRef(new Animated.Value(50)).current;
+
+  // Technique Modal State
+  const [techniqueExercise, setTechniqueExercise] = useState<Exercise | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -210,7 +213,13 @@ export default function LogWorkoutScreen() {
       <View style={[styles.card, isExerciseCompleted && styles.cardCompleted]}>
         <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
            <Text style={[styles.exerciseName, { flex: 1, marginRight: 10 }]} numberOfLines={2}>{item.exercise_id}</Text>
-           <TouchableOpacity onPress={() => Alert.alert('Técnica y Ejecución', item.exerciseDetails?.instructions || 'No hay descripción disponible para este ejercicio.')} style={{ padding: 4 }}>
+           <TouchableOpacity onPress={() => {
+              if (item.exerciseDetails && (item.exerciseDetails.instructions || item.exerciseDetails.gifUrl)) {
+                setTechniqueExercise(item.exerciseDetails);
+              } else {
+                Alert.alert('Info', 'Detalles no disponibles para este ejercicio.');
+              }
+           }} style={{ padding: 4 }}>
              <Text style={{color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1}}>TÉCNICA ℹ️</Text>
            </TouchableOpacity>
         </View>
@@ -266,6 +275,39 @@ export default function LogWorkoutScreen() {
           </>
         )}
       </KeyboardAvoidingView>
+
+      {/* Technique Modal */}
+      <Modal
+        visible={!!techniqueExercise}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTechniqueExercise(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>TÉCNICA</Text>
+            <Text style={styles.modalSubtitle}>{techniqueExercise?.name}</Text>
+            
+            {techniqueExercise?.gifUrl && (
+              <View style={{alignItems: 'center', marginBottom: 16}}>
+                <Image 
+                  source={{ uri: techniqueExercise.gifUrl }} 
+                  style={{ width: '100%', height: 200, borderRadius: 12, backgroundColor: '#FFF' }} 
+                  resizeMode="contain" 
+                />
+              </View>
+            )}
+
+            <ScrollView style={{maxHeight: 150, marginBottom: 16}}>
+              <Text style={{color: '#A0A0A0', fontSize: 13, lineHeight: 20}}>
+                {techniqueExercise?.instructions || 'Sin descripción detallada.'}
+              </Text>
+            </ScrollView>
+
+            <Button title="CERRAR" onPress={() => setTechniqueExercise(null)} />
+          </View>
+        </View>
+      </Modal>
 
       {/* Massive XP Animation Overlay */}
       {showXpAnim && (
@@ -350,5 +392,32 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     letterSpacing: 3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    padding: 20
+  },
+  modalContent: {
+    backgroundColor: '#1A1A1A',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#333'
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#CCFF00',
+    textTransform: 'uppercase',
+    marginBottom: 4
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginBottom: 20,
+    fontWeight: '600',
+    textTransform: 'uppercase'
   }
 });

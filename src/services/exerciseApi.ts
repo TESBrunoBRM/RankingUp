@@ -15,18 +15,18 @@ const cache: { [key: string]: any } = {};
 
 // Pre-curated list of absolute classic exercises for instant loading and better UX
 const FEATURED_EXERCISES: Exercise[] = [
-  { name: 'Press de Banca', type: 'Fuerza', muscle: 'Pecho', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Acuéstate en la banca y empuja la barra hacia arriba.' },
-  { name: 'Jalón al Pecho', type: 'Fuerza', muscle: 'Espalda (Dorsales)', equipment: 'Máquina/Polea', difficulty: 'Principiante', instructions: 'Tira de la barra hacia la parte superior de tu pecho.' },
-  { name: 'Elevaciones Laterales', type: 'Fuerza', muscle: 'Hombros', equipment: 'Mancuernas', difficulty: 'Principiante', instructions: 'Eleva las mancuernas hacia los lados hasta ponerlas paralelas al suelo.' },
-  { name: 'Remo con Barra', type: 'Fuerza', muscle: 'Espalda Media', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Inclina el torso hacia adelante y tira de la barra hacia tu abdomen.' },
-  { name: 'Sentadilla Libre (Squat)', type: 'Fuerza', muscle: 'Cuádriceps', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Baja flexionando las rodillas con la espalda recta y vuelve a subir.' },
-  { name: 'Sentadilla Hack', type: 'Fuerza', muscle: 'Cuádriceps', equipment: 'Máquina', difficulty: 'Intermedio', instructions: 'Coloca los hombros bajo las almohadillas y flexiona piernas en la máquina.' },
-  { name: 'Sentadilla en Máquina Smith', type: 'Fuerza', muscle: 'Cuádriceps', equipment: 'Máquina', difficulty: 'Principiante', instructions: 'Usa la barra guiada de la máquina Smith para bajar con seguridad.' },
-  { name: 'Press Inclinado con Mancuernas', type: 'Fuerza', muscle: 'Pecho Superior', equipment: 'Mancuernas', difficulty: 'Intermedio', instructions: 'Empuja las mancuernas hacia arriba en una banca inclinada.' },
-  { name: 'Peso Muerto Rumano', type: 'Fuerza', muscle: 'Isquiosurales', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Baja la barra manteniendo las piernas casi rectas para estirar la parte trasera del muslo.' },
-  { name: 'Press Militar (Overhead Press)', type: 'Fuerza', muscle: 'Hombros', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Empuja la barra por encima de tu cabeza desde la altura del pecho.' },
-  { name: 'Curl de Bíceps', type: 'Fuerza', muscle: 'Bíceps', equipment: 'Mancuernas', difficulty: 'Principiante', instructions: 'Flexiona los brazos acercando las mancuernas a tus hombros.' },
-  { name: 'Extensión de Tríceps en Polea', type: 'Fuerza', muscle: 'Tríceps', equipment: 'Polea', difficulty: 'Principiante', instructions: 'Empuja la cuerda hacia abajo hasta estirar completamente los brazos.' }
+  { name: 'Press de Banca', type: 'Fuerza', muscle: 'Pecho', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Acuéstate en la banca y empuja la barra hacia arriba.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif' },
+  { name: 'Jalón al Pecho', type: 'Fuerza', muscle: 'Espalda (Dorsales)', equipment: 'Máquina/Polea', difficulty: 'Principiante', instructions: 'Tira de la barra hacia la parte superior de tu pecho.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Lat-Pulldown.gif' },
+  { name: 'Elevaciones Laterales', type: 'Fuerza', muscle: 'Hombros', equipment: 'Mancuernas', difficulty: 'Principiante', instructions: 'Eleva las mancuernas hacia los lados hasta ponerlas paralelas al suelo.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lateral-Raise.gif' },
+  { name: 'Remo con Barra', type: 'Fuerza', muscle: 'Espalda Media', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Inclina el torso hacia adelante y tira de la barra hacia tu abdomen.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Row.gif' },
+  { name: 'Sentadilla Libre (Squat)', type: 'Fuerza', muscle: 'Cuádriceps', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Baja flexionando las rodillas con la espalda recta y vuelve a subir.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Squat.gif' },
+  { name: 'Sentadilla Hack', type: 'Fuerza', muscle: 'Cuádriceps', equipment: 'Máquina', difficulty: 'Intermedio', instructions: 'Coloca los hombros bajo las almohadillas y flexiona piernas en la máquina.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Hack-Squat.gif' },
+  { name: 'Sentadilla en Máquina Smith', type: 'Fuerza', muscle: 'Cuádriceps', equipment: 'Máquina', difficulty: 'Principiante', instructions: 'Usa la barra guiada de la máquina Smith para bajar con seguridad.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Smith-Machine-Squat.gif' },
+  { name: 'Press Inclinado con Mancuernas', type: 'Fuerza', muscle: 'Pecho Superior', equipment: 'Mancuernas', difficulty: 'Intermedio', instructions: 'Empuja las mancuernas hacia arriba en una banca inclinada.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Incline-Dumbbell-Press.gif' },
+  { name: 'Peso Muerto Rumano', type: 'Fuerza', muscle: 'Isquiosurales', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Baja la barra manteniendo las piernas casi rectas para estirar la parte trasera del muslo.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Romanian-Deadlift.gif' },
+  { name: 'Press Militar (Overhead Press)', type: 'Fuerza', muscle: 'Hombros', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Empuja la barra por encima de tu cabeza desde la altura del pecho.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Overhead-Press.gif' },
+  { name: 'Curl de Bíceps', type: 'Fuerza', muscle: 'Bíceps', equipment: 'Mancuernas', difficulty: 'Principiante', instructions: 'Flexiona los brazos acercando las mancuernas a tus hombros.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Curl.gif' },
+  { name: 'Extensión de Tríceps en Polea', type: 'Fuerza', muscle: 'Tríceps', equipment: 'Polea', difficulty: 'Principiante', instructions: 'Empuja la cuerda hacia abajo hasta estirar completamente los brazos.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Pushdown.gif' }
 ];
 
 export const exerciseApi = {
@@ -57,6 +57,9 @@ export const exerciseApi = {
   },
 
   async getExerciseByName(name: string): Promise<Exercise | undefined> {
+    const featured = FEATURED_EXERCISES.find(e => e.name.toLowerCase() === name.toLowerCase());
+    if (featured) return featured;
+
     const cacheKey = `ninjas_name_${name}`;
     if (cache[cacheKey]) {
       return cache[cacheKey];
