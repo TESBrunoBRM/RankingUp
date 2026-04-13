@@ -208,8 +208,11 @@ export default function LogWorkoutScreen() {
 
     return (
       <View style={[styles.card, isExerciseCompleted && styles.cardCompleted]}>
-        <View style={styles.cardHeader}>
-           <Text style={styles.exerciseName}>{item.exercise_id}</Text>
+        <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+           <Text style={[styles.exerciseName, { flex: 1, marginRight: 10 }]} numberOfLines={2}>{item.exercise_id}</Text>
+           <TouchableOpacity onPress={() => Alert.alert('Técnica y Ejecución', item.exerciseDetails?.instructions || 'No hay descripción disponible para este ejercicio.')} style={{ padding: 4 }}>
+             <Text style={{color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1}}>TÉCNICA ℹ️</Text>
+           </TouchableOpacity>
         </View>
         
         <View style={styles.setHeaderRow}>

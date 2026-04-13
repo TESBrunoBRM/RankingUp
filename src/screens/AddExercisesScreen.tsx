@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -161,6 +161,14 @@ export default function AddExercisesScreen() {
             <Text style={styles.modalTitle}>CONFIGURAR</Text>
             <Text style={styles.modalSubtitle}>{selectedExercise?.name}</Text>
             
+            {selectedExercise?.instructions && (
+              <ScrollView style={{maxHeight: 120, marginBottom: 16}}>
+                <Text style={{color: '#A0A0A0', fontSize: 13, lineHeight: 18}}>
+                  {selectedExercise.instructions}
+                </Text>
+              </ScrollView>
+            )}
+
             <View style={styles.inputRow}>
               <View style={styles.inputWrapper}>
                 <Input
