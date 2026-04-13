@@ -147,5 +147,36 @@ export const workoutLogService = {
        return [];
     }
     return data;
+  },
+
+  async getUserExerciseHistory(userId: string): Promise<any[]> {
+    // We get all exercise_logs joined with workout_logs for this specific user.
+    const { data, error } = await supabase
+      .from('workout_logs')
+      .select(`
+        id,
+        exercise_logs (
+          exercise_id,
+          weight,
+          reps
+        )
+      `)
+      .eq('user_id', userId);
+      
+    if (error) {
+       console.log("Error al cargar historial de ejercicios:", error.message);
+       return [];
+    }
+    
+    // Flatten the exercise_logs array
+    let allExercises: any[] = [];
+    if (data) {
+      data.forEach(workout => {
+         if (workout.exercise_logs && Array.isArray(workout.exercise_logs)) {
+            allExercises = [...allExercises, ...workout.exercise_logs];
+         }
+      });
+    }
+    return allExercises;
   }
 };
