@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList, Workout } from '../types';
 import { workoutService } from '../services/workoutService';
 import { useAuthStore } from '../store/authStore';
+import { useUIStore } from '../store/uiStore';
 import { Button } from '../components/Button';
 
 type WorkoutsScreenNavigationProp = NativeStackNavigationProp<AppStackParamList, 'Workouts'>;
@@ -13,6 +14,7 @@ type WorkoutsScreenNavigationProp = NativeStackNavigationProp<AppStackParamList,
 export default function WorkoutsScreen() {
   const navigation = useNavigation<WorkoutsScreenNavigationProp>();
   const { user } = useAuthStore();
+  const setPlanningMenuOpen = useUIStore(s => s.setPlanningMenuOpen);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,7 +91,7 @@ export default function WorkoutsScreen() {
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.createButton}
-          onPress={() => navigation.navigate('CreateTab' as any)}
+          onPress={() => setPlanningMenuOpen(true)}
         >
           <Text style={styles.createButtonText}>+ NUEVA</Text>
         </TouchableOpacity>
@@ -110,7 +112,7 @@ export default function WorkoutsScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>SIN RUTINAS ACTIVAS</Text>
-              <Button title="CREAR PRIMERA RUTINA" onPress={() => navigation.navigate('CreateTab' as any)} style={{marginTop: 20}} />
+              <Button title="CREAR PRIMERA RUTINA" onPress={() => setPlanningMenuOpen(true)} style={{marginTop: 20}} />
             </View>
           }
         />
