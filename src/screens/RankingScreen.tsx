@@ -198,31 +198,32 @@ export default function RankingScreen() {
            <View style={styles.topSection}>
               <View style={{flex: 1, alignItems: 'center'}}>
                 
-                <View style={styles.viewToggleContainer}>
-                   <Text style={[styles.viewToggleText, isFront && styles.viewToggleTextActive]}>FRENTE</Text>
-                   <TouchableOpacity 
-                     style={styles.toggleBtn} 
-                     onPress={() => setIsFront(!isFront)}
-                   >
-                     <Text style={{color: '#CCFF00', fontWeight: '900', fontSize: 12}}>GIRAR ↻</Text>
+                <View style={styles.segmentControl}>
+                   <TouchableOpacity style={[styles.segmentBtn, isFront && styles.segmentBtnActive]} onPress={() => setIsFront(true)}>
+                     <Text style={[styles.segmentText, isFront && styles.segmentTextActive]}>FRENTE</Text>
                    </TouchableOpacity>
-                   <Text style={[styles.viewToggleText, !isFront && styles.viewToggleTextActive]}>ESPALDA</Text>
+                   <TouchableOpacity style={[styles.segmentBtn, !isFront && styles.segmentBtnActive]} onPress={() => setIsFront(false)}>
+                     <Text style={[styles.segmentText, !isFront && styles.segmentTextActive]}>ESPALDA</Text>
+                   </TouchableOpacity>
+                   <TouchableOpacity style={styles.rotateBtnIcon} onPress={() => setIsFront(!isFront)}>
+                     <Text style={{color: '#CCFF00', fontSize: 16}}>↻</Text>
+                   </TouchableOpacity>
                 </View>
 
                 {/* LEGEND ROW */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.legendScroll}>
+                <View style={styles.legendContainer}>
                   {ranks.slice(0).reverse().map((r) => (
-                    <View key={r.id} style={{flexDirection: 'row', alignItems: 'center', marginRight: 12}}>
-                      <View style={{width: 12, height: 12, borderRadius: 6, backgroundColor: getRankColor(r.name), marginRight: 4}} />
-                      <Text style={{color: '#A0A0A0', fontSize: 10, fontWeight: '800'}}>{r.name}</Text>
+                    <View key={r.id} style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <View style={{width: 14, height: 14, borderRadius: 7, backgroundColor: getRankColor(r.name), marginRight: 6}} />
+                      <Text style={{color: '#A0A0A0', fontSize: 11, fontWeight: '800'}}>{r.name}</Text>
                     </View>
                   ))}
-                </ScrollView>
+                </View>
 
-                <View style={{height: 380, width: '100%', alignItems: 'center', justifyContent: 'center'}}>
+                <View style={{height: 460, width: '100%', alignItems: 'center', justifyContent: 'center', paddingBottom: 10}}>
                   <Body 
                     data={muscleData}
-                    scale={1.3}
+                    scale={1.1}
                     frontOnly={false}
                     backOnly={false}
                     side={isFront ? 'front' : 'back'}
@@ -230,14 +231,14 @@ export default function RankingScreen() {
                   {/* Floating Total Rank Badge Overlaid on Bottom Right */}
                   <Animated.View style={[styles.rankOverlayBadge, { transform: [{ translateY: floatAnim }] }]}>
                     {currentRank.name.toUpperCase().includes('HIERRO') ? (
-                       <Image source={require('../../assets/images/hierro.png')} style={{ width: 70, height: 70, marginBottom: 4 }} resizeMode="contain" />
+                       <Image source={require('../../assets/images/hierro.png')} style={{ width: 60, height: 60, marginBottom: 4 }} resizeMode="contain" />
                     ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
-                       <Image source={require('../../assets/images/bronce.png')} style={{ width: 70, height: 70, marginBottom: 4 }} resizeMode="contain" />
+                       <Image source={require('../../assets/images/bronce.png')} style={{ width: 60, height: 60, marginBottom: 4 }} resizeMode="contain" />
                     ) : (
-                       <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 14, marginBottom: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+                       <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 12, marginBottom: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
                     )}
                     <Text style={styles.xpLabel}>TOTAL</Text>
-                    <Text style={{fontSize: 16, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 12, color: '#CCFF00'}}>XP</Text></Text>
+                    <Text style={{fontSize: 14, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 10, color: '#CCFF00'}}>XP</Text></Text>
                   </Animated.View>
                 </View>
               </View>
@@ -349,10 +350,13 @@ const styles = StyleSheet.create({
   lbXp: { fontSize: 14, color: '#CCFF00', fontWeight: '900' },
   lbXpMe: { color: '#FFFFFF' },
   
-  viewToggleContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 15, gap: 15 },
-  viewToggleText: { fontSize: 12, color: '#666', fontWeight: '900', letterSpacing: 1 },
-  viewToggleTextActive: { color: '#FFF' },
-  toggleBtn: { backgroundColor: 'rgba(204,255,0,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#CCFF00' },
-  legendScroll: { paddingHorizontal: 10, paddingBottom: 20 },
-  rankOverlayBadge: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(20,20,20,0.9)', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#333', alignItems: 'center' }
+  segmentControl: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 24, padding: 4, marginBottom: 20, borderWidth: 1, borderColor: '#333' },
+  segmentBtn: { paddingVertical: 8, paddingHorizontal: 24, borderRadius: 20 },
+  segmentBtnActive: { backgroundColor: '#CCFF00' },
+  segmentText: { color: '#888', fontWeight: '900', fontSize: 12, letterSpacing: 1 },
+  segmentTextActive: { color: '#000' },
+  rotateBtnIcon: { paddingVertical: 8, paddingHorizontal: 12, marginLeft: 5, borderLeftWidth: 1, borderLeftColor: '#333' },
+  
+  legendContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 10, paddingHorizontal: 20 },
+  rankOverlayBadge: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(20,20,20,0.95)', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#333', alignItems: 'center', zIndex: 10 }
 });
