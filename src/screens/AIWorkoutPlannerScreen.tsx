@@ -106,9 +106,9 @@ Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye lo
       }
 
       setLoadingText('¡Listo! 🚀');
-      setTimeout(() => {
+         setTimeout(() => {
          setLoading(false);
-         navigation.navigate('MainTabs', { screen: 'RoutineTab' } as any);
+         (navigation as any).navigate('MainTabs', { screen: 'RoutineTab' });
       }, 1000);
 
     } catch (e: any) {
@@ -242,12 +242,13 @@ Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye lo
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button 
-          title={step === 4 ? "GENERAR CON IA ✨" : "SIGUIENTE"} 
-          onPress={nextStep} 
-          style={step === 4 ? { backgroundColor: '#1E90FF', borderColor: '#1E90FF' } : undefined}
-          textStyle={step === 4 ? { color: '#FFF' } : undefined}
-        />
+        {step === 4 ? (
+          <TouchableOpacity style={styles.generateBtn} onPress={nextStep}>
+            <Text style={styles.generateText}>GENERAR CON IA ✨</Text>
+          </TouchableOpacity>
+        ) : (
+          <Button title="SIGUIENTE" onPress={nextStep} />
+        )}
       </View>
 
     </SafeAreaView>
@@ -257,6 +258,7 @@ Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye lo
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 },
+  backButton: { padding: 8 },
   backButtonText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
   stepText: { color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   content: { padding: 24, paddingBottom: 100 },
@@ -274,6 +276,8 @@ const styles = StyleSheet.create({
   gridText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800' },
   gridTextActive: { color: '#CCFF00' },
   footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingBottom: 40, paddingTop: 20, backgroundColor: '#121212' },
+  generateBtn: { backgroundColor: '#1E90FF', borderRadius: 12, height: 56, justifyContent: 'center', alignItems: 'center', marginVertical: 8 },
+  generateText: { color: '#FFF', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.5, textTransform: 'uppercase' },
   loadingTitle: { fontSize: 24, fontWeight: '900', color: '#FFF', marginTop: 20, marginBottom: 8, letterSpacing: 1 },
   loadingText: { fontSize: 14, color: '#A0A0A0', fontWeight: '500' }
 });
