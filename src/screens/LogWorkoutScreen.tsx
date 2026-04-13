@@ -288,13 +288,18 @@ export default function LogWorkoutScreen() {
             <Text style={styles.modalTitle}>TÉCNICA</Text>
             <Text style={styles.modalSubtitle}>{techniqueExercise?.name}</Text>
             
-            {techniqueExercise?.gifUrl && (
+            {techniqueExercise?.gifUrl ? (
               <View style={{alignItems: 'center', marginBottom: 16}}>
                 <Image 
                   source={{ uri: techniqueExercise.gifUrl }} 
                   style={{ width: '100%', height: 200, borderRadius: 12, backgroundColor: '#FFF' }} 
                   resizeMode="contain" 
                 />
+              </View>
+            ) : (
+              <View style={{ width: '100%', height: 160, borderRadius: 12, backgroundColor: '#2A2A2A', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#333' }}>
+                 <Text style={{fontSize: 50}}>🏋️</Text>
+                 <Text style={{color: '#666', marginTop: 12, fontSize: 12, fontWeight: '800', letterSpacing: 1}}>SIN PREVISUALIZACIÓN VISUAL</Text>
               </View>
             )}
 
