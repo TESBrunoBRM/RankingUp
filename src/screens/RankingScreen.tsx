@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
@@ -26,6 +26,27 @@ export default function RankingScreen() {
   const [ranks, setRanks] = useState<RankInfo[]>([]);
   const [leaderboard, setLeaderboard] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const floatAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -15,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        })
+      ])
+    ).start();
+  }, [floatAnim]);
 
   useEffect(() => {
     const fetchProfileAndRanks = async () => {
@@ -104,16 +125,16 @@ export default function RankingScreen() {
              <View style={{flex: 1}}>
                {currentRank.name.toUpperCase().includes('HIERRO') ? (
                  <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                   <Image source={require('../../assets/images/hierro.png')} style={{ width: 140, height: 140 }} resizeMode="contain" />
+                   <Animated.Image source={require('../../assets/images/hierro.png')} style={{ width: 140, height: 140, transform: [{ translateY: floatAnim }] }} resizeMode="contain" />
                  </View>
                ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
                  <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                   <Image source={require('../../assets/images/bronce.png')} style={{ width: 140, height: 140 }} resizeMode="contain" />
+                   <Animated.Image source={require('../../assets/images/bronce.png')} style={{ width: 140, height: 140, transform: [{ translateY: floatAnim }] }} resizeMode="contain" />
                  </View>
                ) : (
-                 <View style={styles.rankBadge}>
+                 <Animated.View style={[styles.rankBadge, { transform: [{ translateY: floatAnim }] }]}>
                    <Text style={[styles.rankBadgeText, { color: rankColor }]}>❖ {currentRank.name.toUpperCase()}</Text>
-                 </View>   
+                 </Animated.View>   
                )}
                <View style={{alignItems: 'center'}}>
                  <Text style={styles.xpLabel}>EXPERIENCIA TOTAL</Text>
