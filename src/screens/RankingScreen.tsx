@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import Body from 'react-native-body-highlighter';
 import { useAuthStore } from '../store/authStore';
 import { workoutLogService } from '../services/workoutLogService';
+import { exerciseApi } from '../services/exerciseApi';
 import { RankInfo, Profile } from '../types';
 
 const getRankColor = (name: string) => {
@@ -26,6 +28,39 @@ export default function RankingScreen() {
   const [ranks, setRanks] = useState<RankInfo[]>([]);
   const [leaderboard, setLeaderboard] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Body Highlighter State
+  const [isFront, setIsFront] = useState(true);
+  const [muscleData, setMuscleData] = useState<any[]>([]);
+
+  // Calculate generic base XP just like workoutLogService (fallback)
+  const XP_RULES: { [key: string]: number } = {
+    'pecho': 15, 'pecho superior': 15, 'espalda (dorsales)': 15, 'espalda media': 15,
+    'cuádriceps': 15, 'isquiosurales': 15, 'glúteos': 15,
+    'bíceps': 10, 'tríceps': 10, 'hombros': 10, 'pantorrillas': 10, 'abdominales': 10,
+    'chest': 15, 'lats': 15, 'middle back': 15, 'lower back': 15,
+    'quadriceps': 15, 'hamstrings': 15, 'glutes': 15,
+    'biceps': 10, 'triceps': 10, 'shoulders': 10, 'traps': 10, 'calves': 10, 'abdominals': 10,
+    'default': 5
+  };
+
+  const mapMuscleToSlug = (muscle: string): string => {
+    const m = muscle.toLowerCase();
+    if (m.includes('pecho') || m === 'chest') return 'chest';
+    if (m.includes('hombro') || m === 'shoulders') return 'shoulders';
+    if (m.includes('bíc') || m === 'biceps') return 'biceps';
+    if (m.includes('tríc') || m === 'triceps') return 'triceps';
+    if (m.includes('espalda (dor') || m === 'lats') return 'lats';
+    if (m.includes('espalda m') || m === 'middle back') return 'mid-back';
+    if (m.includes('espalda b') || m === 'lower back') return 'lower-back';
+    if (m.includes('cuádriceps') || m === 'quadriceps') return 'quadriceps';
+    if (m.includes('isquio') || m === 'hamstrings') return 'hamstring';
+    if (m.includes('glúteo') || m === 'glutes') return 'gluteal';
+    if (m.includes('pantorrilla') || m === 'calves') return 'calves';
+    if (m.includes('abdomen') || m === 'abdominals') return 'abs';
+    if (m.includes('trape') || m === 'traps') return 'trapezius';
+    return ''; // empty means ignore/unknown
+  };
 
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -65,6 +100,45 @@ export default function RankingScreen() {
         }
         if (dbRanks && dbRanks.length > 0) setRanks(dbRanks);
         if (lbs) setLeaderboard(lbs);
+
+        // Calculate Anatomical Muscle XP
+        const history = await workoutLogService.getUserExerciseHistory(user.id);
+        const uniqueNames = [...new Set(history.map((l: any) => l.exercise_id))];
+        const muscleCache: {[name: string]: string} = {};
+        
+        await Promise.all(uniqueNames.map(async (name: any) => {
+           const ex = await exerciseApi.getExerciseByName(name);
+           if (ex) muscleCache[name] = ex.muscle;
+        }));
+
+        const muscleXpMap: {[slug: string]: number} = {};
+        history.forEach((log: any) => {
+           const muscle = muscleCache[log.exercise_id];
+           if (muscle) {
+              const baseXP = XP_RULES[muscle.toLowerCase()] || XP_RULES['default'];
+              const slug = mapMuscleToSlug(muscle);
+              if (slug) {
+                muscleXpMap[slug] = (muscleXpMap[slug] || 0) + baseXP;
+              }
+           }
+        });
+
+        // Translate XP Map into BodyData mapped to Rank Colors
+        // Note: For body visualization, we might want lower rank scaling so it populates faster,
+        // or just use the global ranks min_xp / max_xp exactly. Let's use exact ranks.
+        const bodyData = Object.keys(muscleXpMap).map(slug => {
+           const bodyXp = muscleXpMap[slug];
+           const rnk = dbRanks.find(r => 
+               bodyXp >= r.min_xp && (r.max_xp === null || bodyXp <= r.max_xp)
+           ) || dbRanks[0];
+
+           return {
+              slug: slug,
+              intensity: 1, // Doesn't matter because color overrides
+              color: getRankColor(rnk.name)
+           };
+        });
+        setMuscleData(bodyData);
       } catch (e) {
         console.error(e);
       } finally {
@@ -122,25 +196,45 @@ export default function RankingScreen() {
         <ScrollView contentContainerStyle={styles.content}>
            
            <View style={styles.topSection}>
-             <View style={{flex: 1}}>
-               {currentRank.name.toUpperCase().includes('HIERRO') ? (
-                 <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                   <Animated.Image source={require('../../assets/images/hierro.png')} style={{ width: 140, height: 140, transform: [{ translateY: floatAnim }] }} resizeMode="contain" />
-                 </View>
-               ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
-                 <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                   <Animated.Image source={require('../../assets/images/bronce.png')} style={{ width: 140, height: 140, transform: [{ translateY: floatAnim }] }} resizeMode="contain" />
-                 </View>
-               ) : (
-                 <Animated.View style={[styles.rankBadge, { transform: [{ translateY: floatAnim }] }]}>
-                   <Text style={[styles.rankBadgeText, { color: rankColor }]}>❖ {currentRank.name.toUpperCase()}</Text>
-                 </Animated.View>   
-               )}
-               <View style={{alignItems: 'center'}}>
-                 <Text style={styles.xpLabel}>EXPERIENCIA TOTAL</Text>
-                 <Text style={styles.xpValue}>{xp.toLocaleString()} <Text style={styles.xpUnit}>XP</Text></Text>
-               </View>
-             </View>
+              <View style={{flex: 1, alignItems: 'center'}}>
+                
+                <View style={styles.viewToggleContainer}>
+                   <Text style={[styles.viewToggleText, isFront && styles.viewToggleTextActive]}>FRENTE</Text>
+                   <TouchableOpacity 
+                     style={styles.toggleBtn} 
+                     onPress={() => setIsFront(!isFront)}
+                   >
+                     <Text style={{color: '#CCFF00', fontWeight: '900', fontSize: 12}}>GIRAR ↻</Text>
+                   </TouchableOpacity>
+                   <Text style={[styles.viewToggleText, !isFront && styles.viewToggleTextActive]}>ESPALDA</Text>
+                </View>
+
+                {/* LEGEND ROW */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.legendScroll}>
+                  {ranks.slice(0).reverse().map((r) => (
+                    <View key={r.id} style={{flexDirection: 'row', alignItems: 'center', marginRight: 12}}>
+                      <View style={{width: 12, height: 12, borderRadius: 6, backgroundColor: getRankColor(r.name), marginRight: 4}} />
+                      <Text style={{color: '#A0A0A0', fontSize: 10, fontWeight: '800'}}>{r.name}</Text>
+                    </View>
+                  ))}
+                </ScrollView>
+
+                <View style={{height: 380, width: '100%', alignItems: 'center', justifyContent: 'center'}}>
+                  <Body 
+                    data={muscleData}
+                    scale={1.3}
+                    frontOnly={false}
+                    backOnly={false}
+                    side={isFront ? 'front' : 'back'}
+                  />
+                  {/* Floating Total Rank Badge Overlaid on Bottom Right */}
+                  <Animated.View style={[styles.rankOverlayBadge, { transform: [{ translateY: floatAnim }] }]}>
+                    <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 14 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+                    <Text style={styles.xpLabel}>TOTAL</Text>
+                    <Text style={{fontSize: 16, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 12, color: '#CCFF00'}}>XP</Text></Text>
+                  </Animated.View>
+                </View>
+              </View>
            </View>
 
            <View style={styles.progressSection}>
@@ -248,4 +342,11 @@ const styles = StyleSheet.create({
   lbNameMe: { color: '#CCFF00', fontWeight: '900' },
   lbXp: { fontSize: 14, color: '#CCFF00', fontWeight: '900' },
   lbXpMe: { color: '#FFFFFF' },
+  
+  viewToggleContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 15, gap: 15 },
+  viewToggleText: { fontSize: 12, color: '#666', fontWeight: '900', letterSpacing: 1 },
+  viewToggleTextActive: { color: '#FFF' },
+  toggleBtn: { backgroundColor: 'rgba(204,255,0,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#CCFF00' },
+  legendScroll: { paddingHorizontal: 10, paddingBottom: 20 },
+  rankOverlayBadge: { position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(20,20,20,0.9)', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#333', alignItems: 'center' }
 });
