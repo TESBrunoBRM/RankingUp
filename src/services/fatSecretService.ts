@@ -3,13 +3,14 @@ import { Buffer } from 'buffer'; // To encode Base64 in RN if no buffer, btoa is
 const CLIENT_ID = 'c6e7da33271546a598e46d0b34a9a92a';
 const CLIENT_SECRET = 'b7d02d238e694c1cb446ec8a01c08b3c';
 
-let accessToken = '';
-let tokenExpiration = 0;
+// Force reset cache for the new scope via hot reload
+let _fatSecretAccessToken = '';
+let _fatSecretTokenExp = 0;
 
 export const fatSecretService = {
   async getAccessToken(): Promise<string> {
-    if (accessToken && Date.now() < tokenExpiration) {
-      return accessToken;
+    if (_fatSecretAccessToken && Date.now() < _fatSecretTokenExp) {
+      return _fatSecretAccessToken;
     }
 
     const credentials = `${CLIENT_ID}:${CLIENT_SECRET}`;
@@ -30,10 +31,10 @@ export const fatSecretService = {
         throw new Error(data.error_description || 'Failed to authenticate with FatSecret');
       }
 
-      accessToken = data.access_token;
+      _fatSecretAccessToken = data.access_token;
       // expire 1 minute before real expiration
-      tokenExpiration = Date.now() + (data.expires_in - 60) * 1000;
-      return accessToken;
+      _fatSecretTokenExp = Date.now() + (data.expires_in - 60) * 1000;
+      return _fatSecretAccessToken;
     } catch (error) {
       console.error('Error fetching FatSecret Oauth Token:', error);
       throw error;
@@ -44,7 +45,7 @@ export const fatSecretService = {
     const token = await this.getAccessToken();
 
     const searchUrl = new URL('https://platform.fatsecret.com/rest/server.api');
-    searchUrl.searchParams.append('method', 'foods.search.v3');
+    searchUrl.searchParams.append('method', 'foods.search');
     searchUrl.searchParams.append('search_expression', query);
     searchUrl.searchParams.append('format', 'json');
     searchUrl.searchParams.append('max_results', '20');

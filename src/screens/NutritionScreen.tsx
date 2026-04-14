@@ -66,9 +66,16 @@ export default function NutritionScreen() {
   const targetCals = profile?.target_calories || 2000;
   const remaining = targetCals - totalCals;
 
-  const targetP = Math.round((targetCals * 0.3) / 4);
-  const targetC = Math.round((targetCals * 0.45) / 4);
-  const targetF = Math.round((targetCals * 0.25) / 9);
+  let targetP = Math.round((targetCals * 0.3) / 4);
+  let targetC = Math.round((targetCals * 0.45) / 4);
+  let targetF = Math.round((targetCals * 0.25) / 9);
+
+  if (profile?.goal === 'subir' && profile?.weight) {
+    targetP = Math.round(profile.weight * 2.2);
+    targetF = Math.round((targetCals * 0.25) / 9);
+    const remainingCalsForCarbs = targetCals - (targetP * 4) - (targetF * 9);
+    targetC = Math.round(Math.max(0, remainingCalsForCarbs) / 4);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
