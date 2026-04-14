@@ -71,11 +71,23 @@ Normas estrictas:
 Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye los días lógicamente.
 `.trim();
 
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      
-      setLoadingText('Generando periodización y series...');
-      const result = await model.generateContent(prompt);
-      const responseText = result.response.text().trim().replace(/^```json/i, '').replace(/```$/i, '').trim();
+      let responseText = '';
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        setLoadingText('Generando periodización y series (gemini-2.5-flash)...');
+        const result = await model.generateContent(prompt);
+        responseText = result.response.text().trim().replace(/^```json/i, '').replace(/```$/i, '').trim();
+      } catch (err: any) {
+        if (err?.message?.includes('503') || err?.status === 503) {
+          console.warn('Gemini 2.5 flash overloaded, falling back to 1.5 flash');
+          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+          setLoadingText('Reintentando con modelo de respaldo (gemini-1.5-flash)...');
+          const result = await fallbackModel.generateContent(prompt);
+          responseText = result.response.text().trim().replace(/^```json/i, '').replace(/```$/i, '').trim();
+        } else {
+          throw err;
+        }
+      }
       
       setLoadingText('Construyendo tu plan en la base de datos...');
       const planData = JSON.parse(responseText);

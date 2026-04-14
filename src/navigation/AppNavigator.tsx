@@ -65,45 +65,45 @@ function MainTabs() {
           else if (route.name === 'CreateTab') iconName = 'add-circle';
           else if (route.name === 'NutritionTab') iconName = 'restaurant';
           else if (route.name === 'RankTab') iconName = 'stats-chart';
-          
+
           return <Ionicons name={iconName} size={28} color={color} />;
         },
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: 'HOME' }} />
       <Tab.Screen name="RoutineTab" component={WorkoutsScreen} options={{ tabBarLabel: 'ROUTINE' }} />
-      <Tab.Screen 
-        name="CreateTab" 
-        component={CreateWorkoutScreen} 
-        options={{ 
+      <Tab.Screen
+        name="CreateTab"
+        component={CreateWorkoutScreen}
+        options={{
           tabBarLabel: '',
           tabBarIcon: () => null,
           tabBarButton: () => {
-             const setPlanningMenuOpen = useUIStore(s => s.setPlanningMenuOpen);
-             return (
-               <TouchableOpacity 
-                 style={{
-                   top: -20,
-                   justifyContent: 'center',
-                   alignItems: 'center',
-                   width: 56,
-                   height: 56,
-                   borderRadius: 28,
-                   backgroundColor: '#CCFF00',
-                   shadowColor: '#CCFF00',
-                   shadowOffset: { width: 0, height: 4 },
-                   shadowOpacity: 0.3,
-                   shadowRadius: 8,
-                   elevation: 5
-                 }}
-                 onPress={() => setPlanningMenuOpen(true)}
-                 activeOpacity={0.8}
-               >
-                 <Ionicons name="add" size={32} color="#000" />
-               </TouchableOpacity>
-             );
+            const setPlanningMenuOpen = useUIStore(s => s.setPlanningMenuOpen);
+            return (
+              <TouchableOpacity
+                style={{
+                  top: -20,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: '#CCFF00',
+                  shadowColor: '#CCFF00',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 5
+                }}
+                onPress={() => setPlanningMenuOpen(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add" size={32} color="#000" />
+              </TouchableOpacity>
+            );
           }
-        }} 
+        }}
       />
       <Tab.Screen name="NutritionTab" component={NutritionScreen} options={{ tabBarLabel: 'FOOD' }} />
       <Tab.Screen name="RankTab" component={RankingScreen} options={{ tabBarLabel: 'RANK' }} />
@@ -114,17 +114,17 @@ function MainTabs() {
 function MainNavigator() {
   return (
     <>
-    <AppStack.Navigator screenOptions={{ headerShown: false }}>
-      <AppStack.Screen name="MainTabs" component={MainTabs} />
-      <AppStack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
-      <AppStack.Screen name="AddExercises" component={AddExercisesScreen} />
-      <AppStack.Screen name="LogWorkout" component={LogWorkoutScreen} />
-      <AppStack.Screen name="Onboarding" component={OnboardingScreen} />
-      <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
-      <AppStack.Screen name="Profile" component={ProfileScreen} />
-      <AppStack.Screen name="AIPlanning" component={AIWorkoutPlannerScreen} />
-    </AppStack.Navigator>
-    <PlanningMenuModal />
+      <AppStack.Navigator screenOptions={{ headerShown: false }}>
+        <AppStack.Screen name="MainTabs" component={MainTabs} />
+        <AppStack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
+        <AppStack.Screen name="AddExercises" component={AddExercisesScreen} />
+        <AppStack.Screen name="LogWorkout" component={LogWorkoutScreen} />
+        <AppStack.Screen name="Onboarding" component={OnboardingScreen} />
+        <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
+        <AppStack.Screen name="Profile" component={ProfileScreen} />
+        <AppStack.Screen name="AIPlanning" component={AIWorkoutPlannerScreen} />
+      </AppStack.Navigator>
+      <PlanningMenuModal />
     </>
   );
 }

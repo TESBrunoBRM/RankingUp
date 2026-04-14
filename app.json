@@ -12,7 +12,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.brunobrm.rankingup",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +26,10 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.proyecto"
+      "package": "com.anonymous.proyecto",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -35,6 +42,11 @@
           "cameraPermission": "La app necesita acceder a tu cámara para analizar tus comidas con Inteligencia Artificial."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1a69a9ed-add2-4398-ba3f-647c3fde5cac"
+      }
+    }
   }
 }
