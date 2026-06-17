@@ -20,7 +20,7 @@
       display: flex; justify-content: center; align-items: center;
     }
     video {
-      display: none; /* Hidden, we render to canvas instead */
+      display: none;
     }
     canvas {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -31,7 +31,7 @@
       position: absolute; z-index: 10;
       color: #CCFF00; font-size: 14px; font-weight: bold;
       text-align: center;
-      background: rgba(12, 12, 18, 0.9);
+      background: rgba(12, 12, 18, 0.95);
       top: 0; left: 0; width: 100%; height: 100%;
       display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
@@ -44,6 +44,24 @@
       margin-bottom: 20px;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    #countdown-overlay {
+      position: absolute; z-index: 8;
+      background: rgba(12, 12, 18, 0.8);
+      top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      color: #FFF;
+      pointer-events: none;
+    }
+    #countdown-number {
+      font-size: 80px; font-weight: 900; color: #CCFF00;
+      text-shadow: 0 0 20px rgba(204,255,0,0.6);
+      margin-top: 15px;
+    }
+    #countdown-instruction {
+      font-size: 14px; color: #aaa; text-align: center;
+      padding: 0 30px; line-height: 20px;
+    }
 
     #hud {
       position: absolute; top: 15px; left: 15px; right: 15px;
@@ -85,13 +103,18 @@
     <div id="loading-text">Cargando MediaPipe AI...</div>
   </div>
 
+  <div id="countdown-overlay" style="display: none;">
+    <div id="countdown-instruction">Acomoda la cámara apuntando a tu perfil o frente.</div>
+    <div id="countdown-number">5</div>
+  </div>
+
   <div id="container">
     <video id="webcam" playsinline muted></video>
     <canvas id="canvas"></canvas>
     
     <div id="hud">
       <div class="hud-box" id="info-box">Buscando cuerpo...</div>
-      <div class="hud-box" id="status-box">Listo</div>
+      <div class="hud-box" id="status-box">Calibrando</div>
     </div>
 
     <div id="depth-bar-container">
@@ -105,12 +128,19 @@
     const ctx = canvas.getContext('2d');
     const loadingDiv = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
+    const countdownOverlay = document.getElementById('countdown-overlay');
+    const countdownNumber = document.getElementById('countdown-number');
     const infoBox = document.getElementById('info-box');
     const statusBox = document.getElementById('status-box');
     const depthFill = document.getElementById('depth-bar-fill');
 
     let state = 'UP';
     let lastPushupTime = 0;
+    
+    // Autocalibration histories
+    let yHistory = [];
+    let isCalibrated = false;
+    let countdownVal = 5;
 
     function sendToApp(data) {
       if (window.ReactNativeWebView) {
@@ -132,7 +162,6 @@
 
     pose.onResults(onResults);
 
-    // Camera setup
     const camera = new Camera(video, {
       onFrame: async () => {
         await pose.send({ image: video });
@@ -146,11 +175,29 @@
     camera.start()
       .then(() => {
         loadingDiv.style.display = 'none';
+        startCountdown();
       })
       .catch(err => {
-        loadingText.innerText = "Error: Permiso de cámara denegado o no disponible.";
+        loadingText.innerText = "Error: Permiso de cámara denegado.";
         sendToApp({ type: 'error', message: err.message });
       });
+
+    function startCountdown() {
+      countdownOverlay.style.display = 'flex';
+      const interval = setInterval(() => {
+        countdownVal--;
+        if (countdownVal > 0) {
+          countdownNumber.innerText = countdownVal;
+        } else if (countdownVal === 0) {
+          countdownNumber.innerText = "¡EMPIEZA!";
+        } else {
+          clearInterval(interval);
+          countdownOverlay.style.display = 'none';
+          isCalibrated = true;
+          statusBox.innerText = "UP";
+        }
+      }, 1000);
+    }
 
     function onResults(results) {
       if (canvas.width !== results.image.width) {
@@ -161,7 +208,7 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-      // Draw grid
+      // Draw HUD grid
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
       for (let i = 0; i < canvas.width; i += 40) {
@@ -172,18 +219,16 @@
       }
 
       if (results.poseLandmarks) {
-        infoBox.innerText = "Cuerpo Detectado";
-        infoBox.style.borderColor = "#CCFF00";
-        infoBox.style.color = "#CCFF00";
+        infoBox.innerText = isCalibrated ? "LISTO PARA FLEXIONES" : "Acomodando cámara...";
+        infoBox.style.borderColor = isCalibrated ? "#CCFF00" : "#FF9500";
+        infoBox.style.color = isCalibrated ? "#CCFF00" : "#FF9500";
 
         const landmarks = results.poseLandmarks;
         const nose = landmarks[0];
         const lShoulder = landmarks[11];
         const rShoulder = landmarks[12];
-        const lWrist = landmarks[15];
-        const rWrist = landmarks[16];
 
-        // Draw neon blue skeleton
+        // Draw neon blue skeleton shoulder
         ctx.strokeStyle = '#00F0FF';
         ctx.lineWidth = 4;
         ctx.beginPath();
@@ -192,49 +237,62 @@
         ctx.stroke();
 
         ctx.fillStyle = '#CCFF00';
-        [nose, lShoulder, rShoulder, lWrist, rWrist].forEach(pt => {
+        [nose, lShoulder, rShoulder].forEach(pt => {
           ctx.beginPath();
           ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 6, 0, 2 * Math.PI);
           ctx.fill();
         });
 
-        // PUSHUP LOGIC
-        const shoulderY = (lShoulder.y + rShoulder.y) / 2;
-        const dist = shoulderY - nose.y;
+        // AUTOCALIBRATING Y-DISPLACEMENT DETECTION
+        const yShoulder = (lShoulder.y + rShoulder.y) / 2;
 
-        const shoulderDist = Math.sqrt(
-          Math.pow(lShoulder.x - rShoulder.x, 2) + Math.pow(lShoulder.y - rShoulder.y, 2)
-        );
+        if (isCalibrated) {
+          yHistory.push(yShoulder);
+          // Keep last 4 seconds (120 frames at ~30fps)
+          if (yHistory.length > 120) yHistory.shift();
 
-        const normalizedVal = dist / shoulderDist;
+          const maxY = Math.max(...yHistory);
+          const minY = Math.min(...yHistory);
+          const range = maxY - minY;
 
-        // Pushup detection limits:
-        const minVal = 0.28;
-        const maxVal = 0.58;
-        const percent = Math.min(100, Math.max(0, ((normalizedVal - minVal) / (maxVal - minVal)) * 100));
-        const invertedPercent = 100 - percent;
-        
-        depthFill.style.height = `${invertedPercent}%`;
+          // Only detect if user is moving significantly (range > 0.08 of screen height)
+          if (range > 0.08) {
+            // Percent represents position: 0 is top (arms extended), 1 is bottom (down)
+            const percent = (yShoulder - minY) / range;
+            depthFill.style.height = `${percent * 100}%`;
 
-        const now = Date.now();
-        if (state === 'UP') {
-          if (invertedPercent > 70) {
-            state = 'DOWN';
-            statusBox.innerText = 'ABAJO';
-            statusBox.style.borderColor = '#CCFF00';
-            statusBox.style.color = '#CCFF00';
-            sendToApp({ type: 'state', value: 'DOWN' });
+            const now = Date.now();
+            if (state === 'UP') {
+              // Went down (depth > 75% of range)
+              if (percent > 0.75) {
+                state = 'DOWN';
+                statusBox.innerText = 'ABAJO';
+                statusBox.style.borderColor = '#CCFF00';
+                statusBox.style.color = '#CCFF00';
+                sendToApp({ type: 'state', value: 'DOWN' });
+              }
+            } else if (state === 'DOWN') {
+              // Pushed back up (depth < 25% of range)
+              if (percent < 0.25 && (now - lastPushupTime > 800)) {
+                state = 'UP';
+                lastPushupTime = now;
+                statusBox.innerText = 'ARRIBA';
+                statusBox.style.borderColor = '#FF007F';
+                statusBox.style.color = '#FF007F';
+                sendToApp({ type: 'state', value: 'UP' });
+                sendToApp({ type: 'pushup' });
+              }
+            }
+          } else {
+            // Calm state
+            depthFill.style.height = `0%`;
           }
-        } else if (state === 'DOWN') {
-          if (invertedPercent < 35 && (now - lastPushupTime > 800)) {
-            state = 'UP';
-            lastPushupTime = now;
-            statusBox.innerText = 'ARRIBA';
-            statusBox.style.borderColor = '#FF007F';
-            statusBox.style.color = '#FF007F';
-            sendToApp({ type: 'state', value: 'UP' });
-            sendToApp({ type: 'pushup' });
-          }
+        } else {
+          // Clear history during countdown calibration
+          yHistory = [];
+          statusBox.innerText = "Calibrando";
+          statusBox.style.borderColor = "#FF9500";
+          statusBox.style.color = "#FF9500";
         }
       } else {
         infoBox.innerText = "Buscando cuerpo...";
