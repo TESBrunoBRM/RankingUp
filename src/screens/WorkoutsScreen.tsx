@@ -8,6 +8,7 @@ import { workoutService } from '../services/workoutService';
 import { useAuthStore } from '../store/authStore';
 import { useUIStore } from '../store/uiStore';
 import { Button } from '../components/Button';
+import { getErrorMessage } from '../utils/errors';
 
 type WorkoutsScreenNavigationProp = NativeStackNavigationProp<AppStackParamList, 'Workouts'>;
 
@@ -24,8 +25,8 @@ export default function WorkoutsScreen() {
       setLoading(true);
       const data = await workoutService.getWorkouts(user.id);
       setWorkouts(data);
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudieron cargar las rutinas');
+    } catch (error: unknown) {
+      Alert.alert('Error', getErrorMessage(error, 'No se pudieron cargar las rutinas.'));
     } finally {
       setLoading(false);
     }
@@ -51,8 +52,8 @@ export default function WorkoutsScreen() {
               setLoading(true);
               await workoutService.deleteWorkout(id);
               await fetchWorkouts();
-            } catch (error: any) {
-              Alert.alert('Error', error.message);
+            } catch (error: unknown) {
+              Alert.alert('Error', getErrorMessage(error, 'No se pudo eliminar la rutina.'));
               setLoading(false);
             }
           }

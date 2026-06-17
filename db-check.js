@@ -1,8 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://mpshqfizadislsqjispd.supabase.co';
-const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ANON_KEY_PURGADA.RViQWqmav1OSLA1xT6iVmjBNspkzTcgFiC1spvsFb-4';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Faltan EXPO_PUBLIC_SUPABASE_URL y/o EXPO_PUBLIC_SUPABASE_ANON_KEY en .env');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkDb() {

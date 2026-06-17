@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList, Exercise } from '../types';
@@ -8,6 +9,7 @@ import { exerciseApi } from '../services/exerciseApi';
 import { workoutExerciseService } from '../services/workoutExerciseService';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import { getErrorDetail, getErrorMessage } from '../utils/errors';
 
 type AddExercisesRouteProp = RouteProp<AppStackParamList, 'AddExercises'>;
 type AddExercisesNavigationProp = NativeStackNavigationProp<AppStackParamList, 'AddExercises'>;
@@ -42,7 +44,7 @@ export default function AddExercisesScreen() {
         const data = await exerciseApi.getExercises('name', query.toLowerCase());
         setExercises(data);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       Alert.alert('Error', 'No se pudieron cargar los ejercicios.');
     } finally {
       setLoading(false);
@@ -60,7 +62,7 @@ export default function AddExercisesScreen() {
     const repsNum = parseInt(reps, 10);
     
     if (isNaN(setsNum) || isNaN(repsNum) || setsNum <= 0 || repsNum <= 0) {
-      Alert.alert('Invalido', 'Sets y Reps deben ser números mayores a 0');
+      Alert.alert('Inválido', 'Sets y reps deben ser números mayores a 0.');
       return;
     }
 
@@ -68,17 +70,19 @@ export default function AddExercisesScreen() {
       setAdding(true);
       await workoutExerciseService.addExerciseToWorkout({
         workout_id: workoutId,
-        exercise_id: selectedExercise.name, // Using Name as the unique ID for API Ninjas
+        exercise_id: selectedExercise.name,
         sets: setsNum,
         reps: repsNum,
         order: 0, 
       });
       setSelectedExercise(null);
-    } catch (error: any) {
-      const msg = error.message || JSON.stringify(error);
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, 'No se pudo añadir el ejercicio.');
+      const details = getErrorDetail(error, 'details');
+      const hint = getErrorDetail(error, 'hint');
       Alert.alert(
-        'Diagnóstico de Error', 
-        `Mensaje: ${msg}\n\nDetalles: ${error.details || 'Ninguno'}\n\nHint: ${error.hint || 'Ninguno'}\n\nPor favor envíame captura de esto.`
+        'Error al añadir',
+        [message, details && `Detalle: ${details}`, hint && `Hint: ${hint}`].filter(Boolean).join('\n\n')
       );
     } finally {
       setAdding(false);
@@ -118,7 +122,7 @@ export default function AddExercisesScreen() {
       <View style={styles.searchContainer}>
         <TextInput 
            style={styles.searchInput}
-           placeholder="Buscar ejercicio (ej: curl, squad...)"
+           placeholder="Buscar ejercicio (ej: curl, sentadilla...)"
            placeholderTextColor="#666"
            value={searchQuery}
            onChangeText={setSearchQuery}
@@ -127,12 +131,12 @@ export default function AddExercisesScreen() {
            autoCapitalize="none"
         />
         <TouchableOpacity style={styles.searchBtn} onPress={handleSearchSubmit}>
-          <Text style={styles.searchBtnText}>🔍</Text>
+          <Ionicons name="search" size={20} color="#121212" />
         </TouchableOpacity>
       </View>
 
       <Text style={styles.subtitle}>
-         {searchQuery ? 'RESULTADOS DE BÚSQUEDA' : 'KINÉTIC CLASSICS / API NINJAS'}
+         {searchQuery ? 'RESULTADOS DE BÚSQUEDA' : 'BIBLIOTECA LOCAL RANKINGUP'}
       </Text>
 
       {loading ? (
@@ -146,6 +150,12 @@ export default function AddExercisesScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           initialNumToRender={10}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>SIN RESULTADOS</Text>
+              <Text style={styles.emptySubtext}>Prueba con pecho, espalda, sentadilla o curl.</Text>
+            </View>
+          }
         />
       )}
 
@@ -172,7 +182,7 @@ export default function AddExercisesScreen() {
               </View>
             ) : (
               <View style={{ width: '100%', height: 140, borderRadius: 12, backgroundColor: '#2A2A2A', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#333' }}>
-                 <Text style={{fontSize: 40}}>🏋️</Text>
+                 <Ionicons name="barbell-outline" size={44} color="#666" />
                  <Text style={{color: '#666', marginTop: 10, fontSize: 11, fontWeight: '800', letterSpacing: 1}}>SIN PREVISUALIZACIÓN VISUAL</Text>
               </View>
             )}
@@ -284,9 +294,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  searchBtnText: {
-    fontSize: 20,
-  },
   subtitle: {
     fontSize: 12,
     color: '#666666',
@@ -364,6 +371,24 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: 56,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: '#A0A0A0',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   modalOverlay: {
     flex: 1,

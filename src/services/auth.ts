@@ -15,7 +15,6 @@ export const authService = {
       email,
       password,
     });
-    console.log("=== SUPABASE RESPONSE ===", data, error);
     if (error) throw error;
     
     // Fallback: If the database trigger fails to create the profile, we attempt to insert it manually.
@@ -29,7 +28,7 @@ export const authService = {
           console.warn('Profile fallback insertion warning:', profileError.message);
         }
       } catch (e) {
-        console.log('Profile fallback error:', e);
+        console.warn('Profile fallback error:', e);
       }
     }
 

@@ -5,15 +5,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-import { useAuthStore } from '../store/authStore';
-import { workoutLogService } from '../services/workoutLogService';
-
-type GoalType = 'bajar' | 'mantener' | 'subir';
-type GenderType = 'hombre' | 'mujer';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import { AppStackParamList, GenderType, GoalType } from '../types';
 
 export default function OnboardingScreen() {
-  const navigation = useNavigation<any>();
-  const { user } = useAuthStore();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList, 'Onboarding'>>();
   
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
@@ -21,21 +17,6 @@ export default function OnboardingScreen() {
   const [gender, setGender] = useState<GenderType>('hombre');
   const [goal, setGoal] = useState<GoalType>('mantener');
   const [loading, setLoading] = useState(false);
-
-  const calculateTargetCalories = (w: number, h: number, a: number, g: GenderType, goalType: GoalType) => {
-    // Mifflin-St Jeor Equation
-    let bmr = (10 * w) + (6.25 * h) - (5 * a);
-    bmr = g === 'hombre' ? bmr + 5 : bmr - 161;
-
-    // Active multiplier (Moderatly active)
-    let tdee = bmr * 1.55;
-
-    // Apply goal
-    if (goalType === 'bajar') tdee -= 500;
-    if (goalType === 'subir') tdee += 500;
-
-    return Math.round(tdee);
-  };
 
   const handleSave = async () => {
     const w = parseFloat(weight);
@@ -49,17 +30,20 @@ export default function OnboardingScreen() {
 
     setLoading(true);
     try {
-      const targetCalories = calculateTargetCalories(w, h, a, gender, goal);
-      
-      if (user) {
-        await workoutLogService.updateProfileMetrics(user.id, w, h, goal, targetCalories);
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'MainTabs' }],
-        });
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudieron guardar tus datos.');
+      await rankingUpApiClient.completeOnboarding({
+        weight: w,
+        height: h,
+        age: a,
+        gender,
+        goal,
+      });
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudieron guardar tus datos.';
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }

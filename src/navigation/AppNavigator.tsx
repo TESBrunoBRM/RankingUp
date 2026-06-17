@@ -22,13 +22,31 @@ import NutritionScreen from '../screens/NutritionScreen';
 import SearchFoodScreen from '../screens/SearchFoodScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AIWorkoutPlannerScreen from '../screens/AIWorkoutPlannerScreen';
+import CameraScannerScreen from '../screens/CameraScannerScreen';
+import MinigamesScreen from '../screens/MinigamesScreen';
+import PushUpsGameScreen from '../screens/PushUpsGameScreen';
 
 // Types
 import type { AuthStackParamList, AppStackParamList, MainTabParamList } from '../types';
 
+
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
+function CreateTabButton() {
+  const setPlanningMenuOpen = useUIStore(s => s.setPlanningMenuOpen);
+
+  return (
+    <TouchableOpacity
+      style={styles.createTabButton}
+      onPress={() => setPlanningMenuOpen(true)}
+      activeOpacity={0.8}
+    >
+      <Ionicons name="add" size={32} color="#000" />
+    </TouchableOpacity>
+  );
+}
 
 function AuthNavigator() {
   return (
@@ -70,46 +88,39 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: 'HOME' }} />
-      <Tab.Screen name="RoutineTab" component={WorkoutsScreen} options={{ tabBarLabel: 'ROUTINE' }} />
+      <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: 'INICIO' }} />
+      <Tab.Screen name="RoutineTab" component={WorkoutsScreen} options={{ tabBarLabel: 'RUTINAS' }} />
       <Tab.Screen
         name="CreateTab"
         component={CreateWorkoutScreen}
         options={{
           tabBarLabel: '',
           tabBarIcon: () => null,
-          tabBarButton: () => {
-            const setPlanningMenuOpen = useUIStore(s => s.setPlanningMenuOpen);
-            return (
-              <TouchableOpacity
-                style={{
-                  top: -20,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: '#CCFF00',
-                  shadowColor: '#CCFF00',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 5
-                }}
-                onPress={() => setPlanningMenuOpen(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="add" size={32} color="#000" />
-              </TouchableOpacity>
-            );
-          }
+          tabBarButton: CreateTabButton
         }}
       />
-      <Tab.Screen name="NutritionTab" component={NutritionScreen} options={{ tabBarLabel: 'FOOD' }} />
-      <Tab.Screen name="RankTab" component={RankingScreen} options={{ tabBarLabel: 'RANK' }} />
+      <Tab.Screen name="NutritionTab" component={NutritionScreen} options={{ tabBarLabel: 'NUTRICION' }} />
+      <Tab.Screen name="RankTab" component={RankingScreen} options={{ tabBarLabel: 'RANGO' }} />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  createTabButton: {
+    top: -20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#CCFF00',
+    shadowColor: '#CCFF00',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+});
 
 function MainNavigator() {
   return (
@@ -123,6 +134,9 @@ function MainNavigator() {
         <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
         <AppStack.Screen name="Profile" component={ProfileScreen} />
         <AppStack.Screen name="AIPlanning" component={AIWorkoutPlannerScreen} />
+        <AppStack.Screen name="CameraScanner" component={CameraScannerScreen} />
+        <AppStack.Screen name="Minigames" component={MinigamesScreen} />
+        <AppStack.Screen name="PushUpsGame" component={PushUpsGameScreen} />
       </AppStack.Navigator>
       <PlanningMenuModal />
     </>

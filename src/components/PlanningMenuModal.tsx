@@ -41,7 +41,7 @@ export function PlanningMenuModal() {
 
                <TouchableOpacity 
                  style={styles.btn} 
-                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('AIPlanning' as any); }}
+                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('AIPlanning'); }}
                >
                  <View style={[styles.btnIcon, { backgroundColor: 'rgba(204,255,0,0.1)' }]}>
                     <Ionicons name="sparkles" size={20} color="#CCFF00" />
@@ -55,7 +55,7 @@ export function PlanningMenuModal() {
 
                <TouchableOpacity 
                  style={styles.btn} 
-                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('MainTabs', { screen: 'CreateTab' } as any); }}
+                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('MainTabs', { screen: 'CreateTab' }); }}
                >
                  <View style={[styles.btnIcon, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
                     <Ionicons name="build" size={20} color="#FFF" />
@@ -69,7 +69,7 @@ export function PlanningMenuModal() {
 
                <TouchableOpacity 
                  style={styles.btn} 
-                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('MainTabs', { screen: 'RoutineTab' } as any); }}
+                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('MainTabs', { screen: 'RoutineTab' }); }}
                >
                  <View style={[styles.btnIcon, { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
                     <Ionicons name="play" size={20} color="#A0A0A0" />
@@ -77,6 +77,20 @@ export function PlanningMenuModal() {
                  <View style={styles.btnContent}>
                    <Text style={styles.btnTitle}>Registrar Entrenamiento</Text>
                    <Text style={styles.btnSub}>Inicia un log de una rutina existente</Text>
+                 </View>
+                 <Ionicons name="chevron-forward" size={20} color="#666" />
+               </TouchableOpacity>
+
+               <TouchableOpacity 
+                 style={styles.btn} 
+                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('Minigames'); }}
+               >
+                 <View style={[styles.btnIcon, { backgroundColor: 'rgba(255,45,85,0.1)' }]}>
+                    <Ionicons name="game-controller" size={20} color="#FF2D55" />
+                 </View>
+                 <View style={styles.btnContent}>
+                   <Text style={styles.btnTitle}>Minijuegos</Text>
+                   <Text style={styles.btnSub}>Desafíos interactivos de fitness</Text>
                  </View>
                  <Ionicons name="chevron-forward" size={20} color="#666" />
                </TouchableOpacity>

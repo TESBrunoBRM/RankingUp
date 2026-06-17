@@ -5,13 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Profile } from '../types';
+import { AppStackParamList, GoalType, Profile } from '../types';
 import { workoutLogService } from '../services/workoutLogService';
 import { authService } from '../services/auth';
+import { getErrorMessage } from '../utils/errors';
 
 export default function ProfileScreen() {
   const { user } = useAuthStore();
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList, 'Profile'>>();
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +22,7 @@ export default function ProfileScreen() {
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
   const [targetCals, setTargetCals] = useState('');
-  const [goal, setGoal] = useState<'bajar' | 'mantener' | 'subir'>('mantener');
+  const [goal, setGoal] = useState<GoalType>('mantener');
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -35,8 +36,8 @@ export default function ProfileScreen() {
         setTargetCals(pData.target_calories?.toString() || '');
         if (pData.goal) setGoal(pData.goal);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error: unknown) {
+      console.warn('ProfileScreen:', getErrorMessage(error, 'No se pudo cargar el perfil.'));
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,9 @@ export default function ProfileScreen() {
       await workoutLogService.updateProfileMetrics(user.id, w, h, goal, c);
       Alert.alert('Actualizado', 'Tu perfil ha sido actualizado con éxito.');
       fetchProfile();
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo guardar');
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, 'No se pudo guardar.');
+      Alert.alert('Error', message);
     } finally {
       setSaving(false);
     }
@@ -75,8 +77,8 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     try {
       await authService.logout();
-    } catch (error) {
-      console.error(error);
+    } catch (error: unknown) {
+      Alert.alert('Error', getErrorMessage(error, 'No se pudo cerrar sesión.'));
     }
   };
 

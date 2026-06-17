@@ -8,6 +8,7 @@ import { workoutService } from '../services/workoutService';
 import { workoutExerciseService } from '../services/workoutExerciseService';
 import { exerciseApi } from '../services/exerciseApi';
 import { Button } from '../components/Button';
+import { getErrorMessage } from '../utils/errors';
 
 type WorkoutDetailRouteProp = RouteProp<AppStackParamList, 'WorkoutDetail'>;
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<AppStackParamList, 'WorkoutDetail'>;
@@ -38,13 +39,13 @@ export default function WorkoutDetailScreen() {
           try {
             const details = await exerciseApi.getExerciseByName(we.exercise_id);
             return { ...we, exerciseDetails: details };
-          } catch (error) {
+          } catch {
             return we; 
           }
         })
       );
       setExercises(enriched);
-    } catch (error: any) {
+    } catch {
       Alert.alert('Error', 'No se pudo cargar la rutina.');
     } finally {
       setLoading(false);
@@ -71,8 +72,8 @@ export default function WorkoutDetailScreen() {
                setLoading(true);
                await workoutExerciseService.removeExerciseFromWorkout(id);
                await fetchData(); 
-             } catch (error: any) {
-               Alert.alert('Error', error.message);
+             } catch (error: unknown) {
+               Alert.alert('Error', getErrorMessage(error, 'No se pudo quitar el ejercicio.'));
                setLoading(false);
              }
           }

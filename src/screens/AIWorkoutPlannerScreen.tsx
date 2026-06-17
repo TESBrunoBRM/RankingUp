@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { useAuthStore } from '../store/authStore';
-import { workoutService } from '../services/workoutService';
-import { workoutExerciseService } from '../services/workoutExerciseService';
 import { Button } from '../components/Button';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import type { AppStackParamList } from '../types';
 
-const genAI = new GoogleGenerativeAI(process.env.EXPO_PUBLIC_GEMINI_API_KEY || '');
+type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'AIPlanning'>;
 
 const EQUIPMENT_OPTIONS = ['Casa (Sin equipo)', 'Casa (Mancuernas/Bandas)', 'Calistenia (Parque)', 'Gimnasio Pequeño', 'Gimnasio Comercial'];
 const MUSCLE_OPTIONS = ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Cuádriceps', 'Isquiosurales', 'Glúteos', 'Pantorrillas', 'Abdomen'];
@@ -17,7 +17,7 @@ const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 const DAYS_OPTIONS = [2, 3, 4, 5, 6];
 
 export default function AIWorkoutPlannerScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   
   const [step, setStep] = useState(1);
@@ -40,92 +40,24 @@ export default function AIWorkoutPlannerScreen() {
     if (!user) return;
     try {
       setLoading(true);
-      setLoadingText('Buscando al entrenador de bolsillo GEMINI...');
-      
-      const prompt = `
-Actúa como un entrenador personal experto de élite. Diseña un programa de entrenamiento semanal enfocado en hipertrofia y fuerza.
-Perfil:
-- Equipo disponible: ${equipment}
-- Enfoque principal: ${primaryMuscles.join(', ')}
-- Enfoque secundario: ${secondaryMuscles.join(', ')}
-- Duración por sesión: ${duration} minutos
-- Días a la semana: ${days} días
+      setLoadingText('Generando y guardando tu plan en backend...');
 
-Normas estrictas:
-1. Responde ÚNICAMENTE con JSON válido, sin bloques de código markdown, sin \`\`\`json. Solo texto puro JSON.
-2. Los nombres de los ejercicios deben ser nombres estandarizados en español (ej. "Press de Banca", "Sentadilla Libre", "Jalón al Pecho", "Remo con Barra").
-3. El formato JSON exacto debe ser:
-{
-  "routineName": "Plan IA: [Nombre Épico]",
-  "description": "Breve descripción",
-  "workouts": [
-    {
-      "name": "Día 1: [Músculos]",
-      "scheduled_day": "MON", 
-      "exercises": [
-        { "name": "Nombre Ejercicio", "sets": 4, "reps": 10 }
-      ]
-    }
-  ]
-}
-Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye los días lógicamente.
-`.trim();
+      await rankingUpApiClient.generateWorkoutPlan({
+        equipment,
+        primaryMuscles,
+        secondaryMuscles,
+        duration: duration ?? 45,
+        days: days ?? 3,
+      });
 
-      let responseText = '';
-      try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        setLoadingText('Generando periodización y series (gemini-2.5-flash)...');
-        const result = await model.generateContent(prompt);
-        responseText = result.response.text().trim().replace(/^```json/i, '').replace(/```$/i, '').trim();
-      } catch (err: any) {
-        if (err?.message?.includes('503') || err?.status === 503) {
-          console.warn('Gemini 2.5 flash overloaded, falling back to 1.5 flash');
-          const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-          setLoadingText('Reintentando con modelo de respaldo (gemini-1.5-flash)...');
-          const result = await fallbackModel.generateContent(prompt);
-          responseText = result.response.text().trim().replace(/^```json/i, '').replace(/```$/i, '').trim();
-        } else {
-          throw err;
-        }
-      }
-      
-      setLoadingText('Construyendo tu plan en la base de datos...');
-      const planData = JSON.parse(responseText);
-      
-      if (!planData.workouts || !Array.isArray(planData.workouts)) throw new Error('Respuesta AI inválida');
-
-      // Guardar en Supabase
-      for (const wo of planData.workouts) {
-         const newWorkout = await workoutService.createWorkout({
-           user_id: user.id,
-           name: wo.name || 'Rutina Generada AI',
-           description: planData.routineName + ' - ' + (planData.description || ''),
-           scheduled_day: wo.scheduled_day || null
-         });
-
-         if (wo.exercises && Array.isArray(wo.exercises)) {
-           let order = 0;
-           for (const ex of wo.exercises) {
-             await workoutExerciseService.addExerciseToWorkout({
-               workout_id: newWorkout.id,
-               exercise_id: ex.name, // Nombre de texto temporal, si usamos API Ninjas después se marchará por cadena
-               sets: typeof ex.sets === 'number' ? ex.sets : 3,
-               reps: typeof ex.reps === 'number' ? ex.reps : 10,
-               order: order++
-             });
-           }
-         }
-      }
-
-      setLoadingText('¡Listo! 🚀');
+      setLoadingText('Listo. Tu plan quedó guardado.');
          setTimeout(() => {
          setLoading(false);
-         (navigation as any).navigate('MainTabs', { screen: 'RoutineTab' });
+         navigation.navigate('MainTabs', { screen: 'RoutineTab' });
       }, 1000);
 
-    } catch (e: any) {
-      console.error(e);
-      Alert.alert('Error IA', 'Hubo un error procesando el plan. Intenta reducir los parámetros.');
+    } catch {
+      Alert.alert('Error', 'Hubo un error guardando el plan. Revisa tu conexión e intenta nuevamente.');
       setLoading(false);
     }
   };
@@ -148,7 +80,7 @@ Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye lo
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
          <Ionicons name="sparkles" size={60} color="#CCFF00" style={{ marginBottom: 20 }} />
          <ActivityIndicator size="large" color="#CCFF00" />
-         <Text style={styles.loadingTitle}>IA TRABAJANDO</Text>
+         <Text style={styles.loadingTitle}>PLANIFICANDO</Text>
          <Text style={styles.loadingText}>{loadingText}</Text>
       </View>
     );
@@ -168,7 +100,7 @@ Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye lo
         {step === 1 && (
           <View style={styles.stepContainer}>
             <Text style={styles.title}>¿DÓNDE ENTRENARÁS?</Text>
-            <Text style={styles.subtitle}>Esto define los ejercicios que se incluirán en tu rutina.</Text>
+            <Text style={styles.subtitle}>Esto define los ejercicios incluidos en tu rutina.</Text>
             {EQUIPMENT_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt}
@@ -256,7 +188,7 @@ Nota: "scheduled_day" debe ser MON, TUE, WED, THU, FRI, SAT o SUN. Distribuye lo
       <View style={styles.footer}>
         {step === 4 ? (
           <TouchableOpacity style={styles.generateBtn} onPress={nextStep}>
-            <Text style={styles.generateText}>GENERAR CON IA ✨</Text>
+            <Text style={styles.generateText}>GENERAR PLAN</Text>
           </TouchableOpacity>
         ) : (
           <Button title="SIGUIENTE" onPress={nextStep} />

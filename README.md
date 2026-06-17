@@ -20,11 +20,11 @@
 
 - 🎮 **Entrenamiento Gamificado:** Gana experiencia (XP) por completar entrenamientos. Visualiza tu fuerza relativa y obtén un rango (*Hierro, Bronce, Plata, Oro*, etc.) en la tabla de clasificación global.
 - 🏋️ **Gestión de Rutinas (CRUD):** Crea entrenamientos personalizados, añade ejercicios de una base de datos central y registra tus series, repeticiones y peso.
-- 🤖 **Planificador de Entrenamiento con IA:** Asistente inteligente (Gemini) que genera rutinas a medida basándose en el equipo disponible, grupo muscular, experiencia y tiempo.
+- 🤖 **Planificador de Entrenamiento Demo:** Genera rutinas a medida basándose en equipo, grupo muscular, duración y frecuencia sin exponer claves externas en el APK.
 - 🥘 **Seguimiento de Nutrición Inteligente:**
   - Calcula automáticamente tus objetivos calóricos diarios y distribución de macronutrientes.
-  - Base de datos exhaustiva gracias a la integración con **FatSecret**.
-  - 📸 **Escáner de Alimentos con IA:** Identifica comida y extrae sus calorías con solo tomar una fotografía.
+  - Catálogo de alimentos servido desde backend y soporte opcional de proxy externo.
+  - 📸 **Escáner de Alimentos:** Flujo de cámara preparado para demo con fallback seguro hacia búsqueda backend.
 - 🔒 **Seguridad y Sincronización:** Autenticación fluida y sincronización en tiempo real potenciada por **Supabase** y políticas RLS.
 
 ---
@@ -34,8 +34,10 @@
 - **Frontend:** React Native, Expo, TypeScript.
 - **Gestión de Estados:** Zustand.
 - **Navegación:** React Navigation (Native Stack, Bottom Tabs).
-- **Backend y Autenticación:** Supabase (Auth, PostgreSQL, Realtime, Storage).
-- **APIs:** FatSecret REST API (Nutrición), Google Gemini Flash (IA Fotográfica y Creador de Rutinas).
+- **Backend API:** NestJS en `apps/api` para lógica crítica de XP, ranking, nutrición y generación de rutinas.
+- **Endpoints principales:** `/health`, `/v1/profile/onboarding`, `/v1/profile/metrics`, `/v1/workouts/log-session`, `/v1/workouts/generate-plan`, `/v1/nutrition/logs`, `/v1/ranking` y `/v1/dashboard`.
+- **Autenticación y datos:** Supabase Auth + PostgreSQL. El backend usa service role solo del lado servidor.
+- **APIs externas:** Opcionales mediante proxy/backend propio. El APK no incluye secretos de FatSecret, Gemini ni API Ninjas.
 
 ---
 
@@ -44,12 +46,13 @@
 ```text
 📦 RankingUp
  ┣ 📂 assets/              # Imágenes, iconos y medallas de rangos
+ ┣ 📂 apps/api/            # API NestJS con lógica crítica y unit tests
  ┣ 📂 src/
  ┃ ┣ 📂 components/        # Componentes UI reutilizables (Botones, Tarjetas, Inputs)
  ┃ ┣ 📂 lib/               # Configuración de clientes (Supabase, variables de entorno)
  ┃ ┣ 📂 navigation/        # Enrutadores y coordinadores de navegación
  ┃ ┣ 📂 screens/           # Pantallas de la aplicación (Registro, Nutrición, Home)
- ┃ ┣ 📂 services/          # Conexión a APIs externas (FatSecret, IA, Supabase DB)
+ ┃ ┣ 📂 services/          # Clientes API/Auth y CRUD simple de Supabase
  ┃ ┣ 📂 store/             # Gestión de estado global de usuario y UI (Zustand)
  ┃ ┗ 📂 types/             # Definiciones de TypeScript e interfaces
  ┣ 📜 App.tsx              # Punto de entrada principal
@@ -67,7 +70,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
 1. [Node.js](https://nodejs.org/es/) (Versión LTS más reciente recomendada).
 2. [Expo Go](https://expo.dev/client) instalado en tu dispositivo móvil iOS o Android.
 3. Cuenta en [Supabase](https://supabase.com/) con un proyecto activo.
-4. Credenciales de la API de **FatSecret** y **Google Generative AI** (opcional pero recomendado para probar todas las funciones).
+4. Variables de Supabase configuradas en `.env` o EAS Secrets.
 
 ### 🛠️ Pasos de Instalación
 
@@ -79,7 +82,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
 
 2. **Instalar dependencias:**
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. **Configurar las Variables de Entorno (`.env`):**
@@ -87,24 +90,48 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    ```env
    EXPO_PUBLIC_SUPABASE_URL=tu_url_de_proyecto_supabase
    EXPO_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anonima_publica
-   EXPO_PUBLIC_FATSECRET_CLIENT_ID=credencial_fatsecret
-   EXPO_PUBLIC_FATSECRET_CLIENT_SECRET=credencial_fatsecret
+   EXPO_PUBLIC_ENABLE_DEMO_FALLBACKS=true
+   EXPO_PUBLIC_RANKINGUP_API_URL=https://tu-api-rankingup.example.com
+
+   SUPABASE_URL=tu_url_de_proyecto_supabase
+   SUPABASE_ANON_KEY=tu_clave_anonima_publica
+   SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_solo_backend
+   PORT=3001
+   CORS_ORIGIN=*
    ```
 
 4. **Configuración de la Base de Datos (Supabase):**
-   Ejecuta las migraciones necesarias en el **SQL Editor** de Supabase para inicializar las tablas principales: `profiles`, `workouts`, `exercises`, `workout_exercises`, `workout_logs`, `nutrition_logs`.
+   Ejecuta las migraciones necesarias en el **SQL Editor** de Supabase para inicializar las tablas principales: `profiles`, `workouts`, `exercises`, `workout_exercises`, `workout_logs`, `exercise_logs`, `food_logs` y `ranks`.
 
-5. **Iniciar el servidor de desarrollo:**
+5. **Instalar y validar el backend NestJS:**
+   (Nota: `pnpm install` en la raíz ya instala las dependencias de la API automáticamente debido a los workspaces)
    ```bash
-   npx expo start
+   pnpm run test:api
+   pnpm run typecheck:api
+   pnpm run build:api
    ```
 
-6. **Desplegar en formato nativo:**
-   Abre la app de **Expo Go** en tu celular y escanea el código QR que aparece en la terminal. ¡Eso es todo!
+6. **Iniciar la API local:**
+   ```bash
+   pnpm --filter @rankingup/api run start:dev
+   ```
+
+7. **Iniciar el servidor de desarrollo Expo:**
+   ```bash
+   pnpm start
+   ```
+
+8. **Validar y generar APK preview:**
+   ```bash
+   pnpm run typecheck
+   pnpm run doctor
+   pnpm run build:android:preview
+   ```
+
+   El perfil `preview` de EAS genera un APK interno para entregar como prototipo Android.
 
 ---
 
 ## 🛡️ Licencia
 
 Este proyecto opera libremente sujeto bajo término del tipo **MIT**. ¡Siéntete libre de colaborar y modificar!
-

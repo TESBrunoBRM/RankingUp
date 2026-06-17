@@ -3,12 +3,11 @@ import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollVi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { authService } from '../services/auth';
 import { workoutService } from '../services/workoutService';
 import { useAuthStore } from '../store/authStore';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
-import { AppStackParamList } from '../types';
+import { AppStackParamList, WeekDay } from '../types';
 
 type CreateNavigationProp = NativeStackNavigationProp<AppStackParamList, 'CreateWorkout'>;
 
@@ -20,7 +19,7 @@ const DAYS = [
   { id: 'FRI', label: 'VIE' },
   { id: 'SAT', label: 'SÁB' },
   { id: 'SUN', label: 'DOM' },
-];
+] satisfies { id: WeekDay; label: string }[];
 
 export default function CreateWorkoutScreen() {
   const navigation = useNavigation<CreateNavigationProp>();
@@ -28,7 +27,7 @@ export default function CreateWorkoutScreen() {
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [scheduledDay, setScheduledDay] = useState<string | null>(null);
+  const [scheduledDay, setScheduledDay] = useState<WeekDay | null>(null);
   const [creating, setCreating] = useState(false);
 
   const handleCreate = async () => {
@@ -52,9 +51,10 @@ export default function CreateWorkoutScreen() {
       });
       Alert.alert('Éxito', '¡Rutina creada con éxito!');
       // Navigate to the detail screen so they can add exercises
-      navigation.navigate('WorkoutDetail' as any, { workoutId: newWorkout.id });
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo crear la rutina.');
+      navigation.navigate('WorkoutDetail', { workoutId: newWorkout.id });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo crear la rutina.';
+      Alert.alert('Error', message);
     } finally {
       setCreating(false);
     }
@@ -92,7 +92,7 @@ export default function CreateWorkoutScreen() {
 
           <View style={styles.formGroup}>
             <Text style={styles.sectionLabel}>DÍA ASIGNADO (Opcional)</Text>
-            <Text style={styles.helperText}>Asigna un día de la semana para que aparezca en tu Weekly Routine del Home.</Text>
+            <Text style={styles.helperText}>Asigna un día para que aparezca en tu rutina semanal.</Text>
             
             <View style={styles.daysGrid}>
               {DAYS.map(day => {

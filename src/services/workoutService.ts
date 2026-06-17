@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Workout } from '../types';
+import { WeekDay, Workout } from '../types';
 
 export const workoutService = {
   async getWorkouts(userId: string): Promise<Workout[]> {
@@ -16,7 +16,7 @@ export const workoutService = {
     return data as Workout[];
   },
 
-  async createWorkout(workout: { name: string; description?: string; user_id: string; scheduled_day?: string | null }): Promise<Workout> {
+  async createWorkout(workout: { name: string; description?: string; user_id: string; scheduled_day?: WeekDay | null }): Promise<Workout> {
     const { data, error } = await supabase
       .from('workouts')
       .insert([workout])

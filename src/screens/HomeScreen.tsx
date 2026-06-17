@@ -1,27 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AppStackParamList, Workout, Profile } from '../types';
-import { workoutService } from '../services/workoutService';
-import { workoutLogService } from '../services/workoutLogService';
-import { authService } from '../services/auth';
-import { Button } from '../components/Button';
+import { AppStackParamList, Workout, Profile, WeekDay } from '../types';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import { getCurrentWeekDay } from '../utils/date';
+import { getErrorMessage } from '../utils/errors';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
 const WEEK_DAYS = [
-  { id: 'MON', label: 'MON' },
-  { id: 'TUE', label: 'TUE' },
-  { id: 'WED', label: 'WED' },
-  { id: 'THU', label: 'THU' },
-  { id: 'FRI', label: 'FRI' },
-  { id: 'SAT', label: 'SAT' },
-  { id: 'SUN', label: 'SUN' },
-];
+  { id: 'MON', label: 'LUN' },
+  { id: 'TUE', label: 'MAR' },
+  { id: 'WED', label: 'MIE' },
+  { id: 'THU', label: 'JUE' },
+  { id: 'FRI', label: 'VIE' },
+  { id: 'SAT', label: 'SAB' },
+  { id: 'SUN', label: 'DOM' },
+] satisfies { id: WeekDay; label: string }[];
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
@@ -30,24 +29,25 @@ export default function HomeScreen() {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState<string>('MON');
+  const [dashboardError, setDashboardError] = useState('');
+  const [selectedDay, setSelectedDay] = useState<WeekDay>(() => getCurrentWeekDay());
 
   const fetchDashboardData = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [wData, pData] = await Promise.all([
-         workoutService.getWorkouts(user.id),
-         workoutLogService.getUserProfile(user.id)
-      ]);
-      setWorkouts(wData);
-      setProfile(pData);
+      setDashboardError('');
+      const dashboard = await rankingUpApiClient.getDashboard();
+      setWorkouts(dashboard.workouts);
+      setProfile(dashboard.profile);
       
-      if (pData && (!pData.weight || !pData.height || !pData.goal || !pData.target_calories)) {
-         navigation.replace('Onboarding' as any);
+      if (dashboard.requiresOnboarding) {
+         navigation.replace('Onboarding');
       }
-    } catch (error) {
-       console.error(error);
+    } catch (error: unknown) {
+       const message = getErrorMessage(error, 'No se pudo cargar tu resumen.');
+       setDashboardError(message);
+       console.warn('HomeScreen:', message);
     } finally {
       setLoading(false);
     }
@@ -68,16 +68,26 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <Text style={styles.greeting}>HOLA,</Text>
         <Text style={styles.name}>{user?.email?.split('@')[0].toUpperCase()}</Text>
-        <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile' as any)}>
+        <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="person-circle-outline" size={36} color="#CCFF00" />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.titleSection}>
-          <Text style={styles.mainTitle}>WEEKLY ROUTINE</Text>
-          <Text style={styles.subtitle}>PHASE: CUSTOM TRAINING</Text>
+          <Text style={styles.mainTitle}>RUTINA SEMANAL</Text>
+          <Text style={styles.subtitle}>PLAN DE ENTRENAMIENTO</Text>
         </View>
+
+        {dashboardError ? (
+          <View style={styles.noticeCard}>
+            <Text style={styles.noticeTitle}>NO SE PUDO ACTUALIZAR</Text>
+            <Text style={styles.noticeText}>{dashboardError}</Text>
+            <TouchableOpacity style={styles.noticeButton} onPress={fetchDashboardData}>
+              <Text style={styles.noticeButtonText}>REINTENTAR</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <View style={styles.gridContainer}>
            {WEEK_DAYS.map((day) => {
@@ -102,15 +112,15 @@ export default function HomeScreen() {
                  </Text>
                  {hasWorkout ? (
                    <>
-                     <Text style={[styles.iconText, isSelected && styles.iconTextSelected]}>⚡</Text>
+                     <Ionicons name="barbell" size={22} color={isSelected ? '#121212' : '#CCFF00'} style={styles.dayIcon} />
                      <Text style={[styles.dayCardFocus, isSelected && styles.dayCardFocusSelected]} numberOfLines={1}>
                         {primaryWorkout?.name.toUpperCase()}
                      </Text>
                    </>
                  ) : (
                    <>
-                     <Text style={[styles.iconText, isSelected && styles.iconTextSelected]}>🛌</Text>
-                     <Text style={[styles.dayCardFocus, isSelected && styles.dayCardFocusSelected]}>REST</Text>
+                     <Ionicons name="moon-outline" size={22} color={isSelected ? '#121212' : '#A0A0A0'} style={styles.dayIcon} />
+                     <Text style={[styles.dayCardFocus, isSelected && styles.dayCardFocusSelected]}>DESCANSO</Text>
                    </>
                  )}
                </TouchableOpacity>
@@ -121,7 +131,7 @@ export default function HomeScreen() {
         <View style={styles.detailsSection}>
           <View style={styles.detailsHeader}>
              <View>
-               <Text style={styles.detailsTitle}>{selectedDay} DETAILS</Text>
+               <Text style={styles.detailsTitle}>DETALLE {WEEK_DAYS.find(day => day.id === selectedDay)?.label}</Text>
                <Text style={styles.detailsSubtitle}>
                  {workoutsForSelectedDay.length > 0 ? `${workoutsForSelectedDay.length} Rutina(s) agendada(s)` : 'Día de descanso'}
                </Text>
@@ -151,7 +161,7 @@ export default function HomeScreen() {
              <View style={styles.restCard}>
                 <Text style={styles.restCardTitle}>DÍA DE DESCANSO</Text>
                 <Text style={styles.restCardText}>Tus músculos crecen mientras descansas. Tómalo con calma.</Text>
-                <TouchableOpacity style={styles.addWorkoutBtn} onPress={() => navigation.navigate('CreateTab' as any)}>
+                <TouchableOpacity style={styles.addWorkoutBtn} onPress={() => navigation.navigate('MainTabs', { screen: 'CreateTab' })}>
                    <Text style={styles.addWorkoutBtnText}>+ AGENDAR RUTINA</Text>
                 </TouchableOpacity>
              </View>
@@ -179,8 +189,12 @@ const styles = StyleSheet.create({
   dayCardSelected: { backgroundColor: '#CCFF00', borderColor: '#CCFF00', transform: [{ scale: 1.02 }] },
   dayCardTitle: { fontSize: 12, color: '#A0A0A0', fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
   dayCardTitleSelected: { color: '#121212' },
-  iconText: { fontSize: 20, marginBottom: 8 },
-  iconTextSelected: { opacity: 0.9 },
+  dayIcon: { marginBottom: 8 },
+  noticeCard: { marginHorizontal: 24, marginBottom: 18, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#503333' },
+  noticeTitle: { fontSize: 12, color: '#FF8C00', fontWeight: '900', letterSpacing: 1, marginBottom: 6 },
+  noticeText: { fontSize: 13, color: '#D0D0D0', lineHeight: 18, marginBottom: 12 },
+  noticeButton: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#2A2A2A', borderRadius: 8 },
+  noticeButtonText: { color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   dayCardFocus: { fontSize: 16, fontWeight: '900', color: '#FFFFFF' },
   dayCardFocusSelected: { color: '#121212' },
   detailsSection: { marginTop: 30, paddingHorizontal: 24 },

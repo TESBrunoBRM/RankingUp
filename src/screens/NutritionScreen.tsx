@@ -6,29 +6,27 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../store/authStore';
 import { nutritionLogService } from '../services/nutritionLogService';
-import { workoutLogService } from '../services/workoutLogService';
-import { FoodLog, Profile } from '../types';
+import { AppStackParamList, FoodLog, NutritionSummaryResponse } from '../types';
+import { getLocalDateString } from '../utils/date';
+import { getErrorMessage } from '../utils/errors';
 
 export default function NutritionScreen() {
   const { user } = useAuthStore();
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList, 'MainTabs'>>();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<FoodLog[]>([]);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [summary, setSummary] = useState<NutritionSummaryResponse | null>(null);
 
   const fetchNutritionData = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      const today = new Date().toISOString().split('T')[0];
-      const [uProfile, dLogs] = await Promise.all([
-        workoutLogService.getUserProfile(user.id),
-        nutritionLogService.getDailyLogs(user.id, today)
-      ]);
-      setProfile(uProfile);
-      setLogs(dLogs);
-    } catch (e: any) {
-      console.error(e);
+      const today = getLocalDateString();
+      const dailySummary = await nutritionLogService.getDailySummary(today);
+      setSummary(dailySummary);
+      setLogs(dailySummary.logs);
+    } catch (error: unknown) {
+      console.warn('NutritionScreen:', getErrorMessage(error, 'No se pudo cargar nutrición.'));
     } finally {
       setLoading(false);
     }
@@ -54,34 +52,21 @@ export default function NutritionScreen() {
     navigation.navigate('SearchFood');
   };
 
-  // Calculate totals
-  let totalCals = 0; let totalP = 0; let totalC = 0; let totalF = 0;
-  logs.forEach(l => {
-    totalCals += l.calories || 0;
-    totalP += l.protein || 0;
-    totalC += l.carbs || 0;
-    totalF += l.fat || 0;
-  });
-
-  const targetCals = profile?.target_calories || 2000;
-  const remaining = targetCals - totalCals;
-
-  let targetP = Math.round((targetCals * 0.3) / 4);
-  let targetC = Math.round((targetCals * 0.45) / 4);
-  let targetF = Math.round((targetCals * 0.25) / 9);
-
-  if (profile?.goal === 'subir' && profile?.weight) {
-    targetP = Math.round(profile.weight * 2.2);
-    targetF = Math.round((targetCals * 0.25) / 9);
-    const remainingCalsForCarbs = targetCals - (targetP * 4) - (targetF * 9);
-    targetC = Math.round(Math.max(0, remainingCalsForCarbs) / 4);
-  }
+  const totalCals = summary?.totals.calories ?? 0;
+  const totalP = summary?.totals.protein ?? 0;
+  const totalC = summary?.totals.carbs ?? 0;
+  const totalF = summary?.totals.fat ?? 0;
+  const targetCals = summary?.targets.calories ?? 2000;
+  const targetP = summary?.targets.protein ?? 0;
+  const targetC = summary?.targets.carbs ?? 0;
+  const targetF = summary?.targets.fat ?? 0;
+  const remaining = summary?.remainingCalories ?? targetCals;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>NUTRITION</Text>
-        <Text style={styles.subtitle}>DAILY TRACKING</Text>
+        <Text style={styles.mainTitle}>NUTRICION</Text>
+        <Text style={styles.subtitle}>REGISTRO DIARIO</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -95,7 +80,7 @@ export default function NutritionScreen() {
             <Text style={styles.calOperator}>-</Text>
             <View style={styles.calCol}>
               <Text style={[styles.calValue, { color: '#CCFF00' }]}>{Math.round(totalCals)}</Text>
-              <Text style={styles.calLabel}>GATO</Text>
+              <Text style={styles.calLabel}>CONSUMIDO</Text>
             </View>
             <Text style={styles.calOperator}>=</Text>
             <View style={styles.calCol}>
@@ -134,7 +119,7 @@ export default function NutritionScreen() {
           <View style={styles.emptyCard}>
             <Ionicons name="fast-food-outline" size={48} color="#333" />
             <Text style={styles.emptyTitle}>NO HAY REGISTROS</Text>
-            <Text style={styles.emptyText}>Trackea tus alimentos para asegurar tu progreso hacia tus metas.</Text>
+              <Text style={styles.emptyText}>Registra tus alimentos para mantener tu progreso alineado con tus metas.</Text>
             <TouchableOpacity style={styles.addBtn} onPress={navToSearch}>
               <Text style={styles.addBtnText}>+ BUSCAR ALIMENTO</Text>
             </TouchableOpacity>

@@ -1,53 +1,35 @@
-import { supabase } from '../lib/supabase';
-import { FoodLog } from '../types';
+import type { FoodLog, MealType, NutritionSummaryResponse, NutritionUnit } from '../types';
+import { rankingUpApiClient } from './rankingUpApiClient';
 
 export const nutritionLogService = {
-  async getDailyLogs(userId: string, date: string): Promise<FoodLog[]> {
-    try {
-      const { data, error } = await supabase
-        .from('food_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('date', date)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      return data as FoodLog[];
-    } catch (error) {
-      console.error('Error fetching daily logs:', error);
-      return [];
-    }
+  async getDailySummary(date: string): Promise<NutritionSummaryResponse> {
+    return rankingUpApiClient.getNutritionLogs(date);
   },
 
-  async addFoodLog(log: Omit<FoodLog, 'id' | 'created_at'>): Promise<FoodLog | null> {
-    try {
-      const { data, error } = await supabase
-        .from('food_logs')
-        .insert([log])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as FoodLog;
-    } catch (error) {
-      console.error('Error adding food log:', error);
-      throw error;
-    }
+  async getDailyLogs(_userId: string, date: string): Promise<FoodLog[]> {
+    const summary = await rankingUpApiClient.getNutritionLogs(date);
+    return summary.logs;
   },
 
-  async deleteFoodLog(id: string, userId: string): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('food_logs')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId);
+  async addFoodLog(log: {
+    date: string;
+    meal_type: MealType;
+    fatsecret_food_id: string;
+    servings: number;
+    unit?: NutritionUnit;
+  }): Promise<FoodLog | null> {
+    const result = await rankingUpApiClient.addFoodLog({
+      date: log.date,
+      mealType: log.meal_type,
+      foodId: log.fatsecret_food_id,
+      amount: log.servings,
+      unit: log.unit ?? 'porcion',
+    });
+    return result.log;
+  },
 
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error deleting food log:', error);
-      return false;
-    }
-  }
+  async deleteFoodLog(id: string, _userId: string): Promise<boolean> {
+    const result = await rankingUpApiClient.deleteFoodLog(id);
+    return result.deleted;
+  },
 };

@@ -7,6 +7,7 @@ import { authService } from '../services/auth';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import type { AuthStackParamList } from '../types';
+import { getErrorMessage } from '../utils/errors';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -26,9 +27,10 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await authService.login(email, password);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Error al iniciar sesión');
-      setError(err.message || 'Error al iniciar sesión');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, 'Error al iniciar sesión');
+      Alert.alert('Error', message);
+      setError(message);
     } finally {
       setLoading(false);
     }

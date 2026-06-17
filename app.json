@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "proyecto",
-    "slug": "proyecto",
+    "name": "RankingUp",
+    "slug": "rankingup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#121212"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,15 +20,15 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#121212",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.proyecto",
+      "package": "com.brunobrm.rankingup",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -41,7 +41,14 @@
           "photosPermission": "La app necesita acceder a tus fotos para escanear alimentos.",
           "cameraPermission": "La app necesita acceder a tu cámara para analizar tus comidas con Inteligencia Artificial."
         }
-      ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "RankingUp necesita acceder a tu cámara para escanear alimentos y códigos de barras."
+        }
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

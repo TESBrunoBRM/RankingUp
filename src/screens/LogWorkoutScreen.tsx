@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Animated, Modal, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AppStackParamList, WorkoutExercise, Exercise } from '../types';
+import { AppStackParamList, WorkoutExercise, Exercise, WorkoutLogInput } from '../types';
 import { workoutExerciseService } from '../services/workoutExerciseService';
 import { exerciseApi } from '../services/exerciseApi';
 import { workoutLogService } from '../services/workoutLogService';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/Button';
+import { getErrorMessage } from '../utils/errors';
 
 type LogWorkoutRouteProp = RouteProp<AppStackParamList, 'LogWorkout'>;
 type LogWorkoutNavigationProp = NativeStackNavigationProp<AppStackParamList, 'LogWorkout'>;
@@ -56,7 +58,9 @@ export default function LogWorkoutScreen() {
             let details;
             try {
               details = await exerciseApi.getExerciseByName(we.exercise_id);
-            } catch (error) {}
+            } catch {
+              details = undefined;
+            }
             
             const setsData: SetLog[] = Array.from({ length: we.sets || 1 }).map((_, idx) => ({
               id: `${we.id}-set-${idx}`,
@@ -69,7 +73,7 @@ export default function LogWorkoutScreen() {
           })
         );
         setExercises(enriched);
-      } catch (error: any) {
+      } catch {
         Alert.alert('Error', 'No se pudieron cargar los ejercicios.');
         navigation.goBack();
       } finally {
@@ -128,12 +132,12 @@ export default function LogWorkoutScreen() {
 
     setTimeout(() => {
       // Auto nav to ranking to see the new XP fill the bar
-      (navigation as any).navigate('MainTabs', { screen: 'RankTab' });
+      navigation.navigate('MainTabs', { screen: 'RankTab' });
     }, 2800);
   };
 
   const handleSaveData = async () => {
-    const logsPayload: any[] = [];
+    const logsPayload: WorkoutLogInput[] = [];
     
     exercises.forEach(ex => {
        ex.setsData.forEach(set => {
@@ -163,9 +167,10 @@ export default function LogWorkoutScreen() {
       setSaving(false);
       triggerAnimation(result.gainedXp);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSaving(false);
-      Alert.alert('Error', error.message);
+      const message = getErrorMessage(error, 'No se pudo guardar el entrenamiento.');
+      Alert.alert('Error', message);
     }
   };
 
@@ -220,7 +225,10 @@ export default function LogWorkoutScreen() {
                 Alert.alert('Info', 'Detalles no disponibles para este ejercicio.');
               }
            }} style={{ padding: 4 }}>
-             <Text style={{color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1}}>TÉCNICA ℹ️</Text>
+             <View style={styles.techniqueButtonContent}>
+               <Text style={styles.techniqueButtonText}>TÉCNICA</Text>
+               <Ionicons name="information-circle-outline" size={15} color="#CCFF00" />
+             </View>
            </TouchableOpacity>
         </View>
         
@@ -299,7 +307,7 @@ export default function LogWorkoutScreen() {
               </View>
             ) : (
               <View style={{ width: '100%', height: 160, borderRadius: 12, backgroundColor: '#2A2A2A', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#333' }}>
-                 <Text style={{fontSize: 50}}>🏋️</Text>
+                 <Ionicons name="barbell-outline" size={50} color="#666" />
                  <Text style={{color: '#666', marginTop: 12, fontSize: 12, fontWeight: '800', letterSpacing: 1}}>SIN PREVISUALIZACIÓN VISUAL</Text>
               </View>
             )}
@@ -351,6 +359,8 @@ const styles = StyleSheet.create({
   cardCompleted: { borderColor: '#CCFF00', backgroundColor: '#1c220f' },
   cardHeader: { marginBottom: 12 },
   exerciseName: { fontSize: 20, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase' },
+  techniqueButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  techniqueButtonText: { color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   
   setHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, paddingHorizontal: 10 },
   setHeaderText: { color: '#A0A0A0', fontSize: 11, fontWeight: '900', letterSpacing: 1, width: '20%', textAlign: 'center' },

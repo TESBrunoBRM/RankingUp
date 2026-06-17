@@ -7,6 +7,7 @@ import { authService } from '../services/auth';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import type { AuthStackParamList } from '../types';
+import { getErrorMessage } from '../utils/errors';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -28,9 +29,10 @@ export default function RegisterScreen() {
       await authService.register(email, password);
       Alert.alert('Registro exitoso', 'Por favor revisa tu correo o inicia sesión.');
       navigation.navigate('Login');
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Error al registrarse');
-      setError(err.message || 'Error al registrarse');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err, 'Error al registrarse');
+      Alert.alert('Error', message);
+      setError(message);
     } finally {
       setLoading(false);
     }

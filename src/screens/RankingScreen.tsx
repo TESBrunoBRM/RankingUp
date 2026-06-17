@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image, ScrollView, Animated, Easing, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import Body from 'react-native-body-highlighter';
+import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Body, { ExtendedBodyPart } from 'react-native-body-highlighter';
 import { useAuthStore } from '../store/authStore';
-import { workoutLogService } from '../services/workoutLogService';
-import { exerciseApi } from '../services/exerciseApi';
-import { RankInfo, Profile } from '../types';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import { AppStackParamList, MainTabParamList, RankInfo, Profile, RankProgressResponse } from '../types';
+
+type RankingNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'RankTab'>,
+  NativeStackNavigationProp<AppStackParamList>
+>;
 
 const getRankColor = (name: string) => {
   const n = name.toUpperCase();
@@ -20,48 +26,20 @@ const getRankColor = (name: string) => {
 };
 
 export default function RankingScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<RankingNavigationProp>();
   const { user } = useAuthStore();
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [xp, setXp] = useState<number>(0);
   const [ranks, setRanks] = useState<RankInfo[]>([]);
   const [leaderboard, setLeaderboard] = useState<Profile[]>([]);
+  const [rankProgress, setRankProgress] = useState<RankProgressResponse | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Body Highlighter State
   const [isFront, setIsFront] = useState(true);
-  const [muscleData, setMuscleData] = useState<any[]>([]);
+  const [muscleData, setMuscleData] = useState<ExtendedBodyPart[]>([]);
   const [isRankModalVisible, setIsRankModalVisible] = useState(false);
-
-  // Calculate generic base XP just like workoutLogService (fallback)
-  const XP_RULES: { [key: string]: number } = {
-    'pecho': 15, 'pecho superior': 15, 'espalda (dorsales)': 15, 'espalda media': 15,
-    'cuádriceps': 15, 'isquiosurales': 15, 'glúteos': 15,
-    'bíceps': 10, 'tríceps': 10, 'hombros': 10, 'pantorrillas': 10, 'abdominales': 10,
-    'chest': 15, 'lats': 15, 'middle back': 15, 'lower back': 15,
-    'quadriceps': 15, 'hamstrings': 15, 'glutes': 15,
-    'biceps': 10, 'triceps': 10, 'shoulders': 10, 'traps': 10, 'calves': 10, 'abdominals': 10,
-    'default': 5
-  };
-
-  const mapMuscleToSlug = (muscle: string): string => {
-    const m = muscle.toLowerCase();
-    if (m.includes('pecho') || m === 'chest') return 'chest';
-    if (m.includes('hombro') || m === 'shoulders') return 'shoulders';
-    if (m.includes('bíc') || m === 'biceps') return 'biceps';
-    if (m.includes('tríc') || m === 'triceps') return 'triceps';
-    if (m.includes('espalda (dor') || m === 'lats') return 'lats';
-    if (m.includes('espalda m') || m === 'middle back') return 'mid-back';
-    if (m.includes('espalda b') || m === 'lower back') return 'lower-back';
-    if (m.includes('cuádriceps') || m === 'quadriceps') return 'quadriceps';
-    if (m.includes('isquio') || m === 'hamstrings') return 'hamstring';
-    if (m.includes('glúteo') || m === 'glutes') return 'gluteal';
-    if (m.includes('pantorrilla') || m === 'calves') return 'calves';
-    if (m.includes('abdomen') || m === 'abdominals') return 'abs';
-    if (m.includes('trape') || m === 'traps') return 'trapezius';
-    return ''; // empty means ignore/unknown
-  };
 
   const floatAnim = useRef(new Animated.Value(0)).current;
 
@@ -89,70 +67,19 @@ export default function RankingScreen() {
       if (!user) return;
       try {
         setLoading(true);
-        const [pData, dbRanks, lbs] = await Promise.all([
-           workoutLogService.getUserProfile(user.id),
-           workoutLogService.getAllRanks(),
-           workoutLogService.getGlobalLeaderboard()
-        ]);
+        const ranking = await rankingUpApiClient.getRanking();
         
-        if (pData) {
-          setProfile(pData);
-          setXp(pData.xp || 0);
+        if (ranking.profile) {
+          setProfile(ranking.profile);
+          setXp(ranking.xp || 0);
         }
-        if (dbRanks && dbRanks.length > 0) setRanks(dbRanks);
-        if (lbs) setLeaderboard(lbs);
-
-        // Calculate Anatomical Muscle XP
-        const history = await workoutLogService.getUserExerciseHistory(user.id);
-        const uniqueNames = [...new Set(history.map((l: any) => l.exercise_id))];
-        const muscleCache: {[name: string]: string} = {};
-        
-        await Promise.all(uniqueNames.map(async (name: any) => {
-           const ex = await exerciseApi.getExerciseByName(name);
-           if (ex) muscleCache[name] = ex.muscle;
-        }));
-
-        const muscleXpMap: {[slug: string]: number} = {};
-        history.forEach((log: any) => {
-           const muscle = muscleCache[log.exercise_id];
-           if (muscle) {
-              const baseXP = XP_RULES[muscle.toLowerCase()] || XP_RULES['default'];
-              const slug = mapMuscleToSlug(muscle);
-              if (slug) {
-                muscleXpMap[slug] = (muscleXpMap[slug] || 0) + baseXP;
-              }
-           }
-         });
-
-         // --- TEST INJECTION PARA VISUALIZAR ESPALDA ---
-         // Forzamos XP en músculos de la espalda para que el usuario pueda ver los colores
-         muscleXpMap['lats'] = (muscleXpMap['lats'] || 0) + 2000; // Platino (Azul oscuro)
-         muscleXpMap['mid-back'] = (muscleXpMap['mid-back'] || 0) + 1000; // Oro
-         muscleXpMap['lower-back'] = (muscleXpMap['lower-back'] || 0) + 500; // Plata
-         muscleXpMap['trapezius'] = (muscleXpMap['trapezius'] || 0) + 200; // Bronce
-         muscleXpMap['hamstring'] = (muscleXpMap['hamstring'] || 0) + 100; // Hierro
-         muscleXpMap['gluteal'] = (muscleXpMap['gluteal'] || 0) + 300; // Bronce/Plata
-         muscleXpMap['calves'] = (muscleXpMap['calves'] || 0) + 800; // Oro
-         // ----------------------------------------------
-
-         // Translate XP Map into BodyData mapped to Rank Colors
-        // Note: For body visualization, we might want lower rank scaling so it populates faster,
-        // or just use the global ranks min_xp / max_xp exactly. Let's use exact ranks.
-        const bodyData = Object.keys(muscleXpMap).map(slug => {
-           const bodyXp = muscleXpMap[slug];
-           const rnk = dbRanks.find(r => 
-               bodyXp >= r.min_xp && (r.max_xp === null || bodyXp <= r.max_xp)
-           ) || dbRanks[0];
-
-           return {
-              slug: slug,
-              intensity: 1, // Doesn't matter because color overrides
-              color: getRankColor(rnk.name)
-           };
-        });
-        setMuscleData(bodyData);
-      } catch (e) {
-        console.error(e);
+        setRanks(ranking.ranks);
+        setLeaderboard(ranking.leaderboard);
+        setRankProgress(ranking.progress);
+        setMuscleData(ranking.muscleData as ExtendedBodyPart[]);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'No se pudo cargar ranking.';
+        console.warn('RankingScreen:', message);
       } finally {
         setLoading(false);
       }
@@ -160,18 +87,15 @@ export default function RankingScreen() {
     fetchProfileAndRanks();
   }, [user]);
 
-  const currentRank = ranks.find(r => 
-     xp >= r.min_xp && (r.max_xp === null || xp <= r.max_xp)
-  ) || ranks[0] || { id: 0, name: 'Unranked', min_xp: 0, max_xp: null };
+  const fallbackRank = { id: 0, name: 'Sin rango', min_xp: 0, max_xp: null, color: '#CCFF00' };
+  const currentRank = rankProgress?.currentRank || (ranks[0] ? { ...ranks[0], color: getRankColor(ranks[0].name) } : fallbackRank);
 
-  const rankColor = getRankColor(currentRank.name);
+  const rankColor = currentRank.color;
   
-  const progressMin = currentRank.min_xp;
-  const progressMax = currentRank.max_xp !== null ? currentRank.max_xp : progressMin + 1;
-  const isMaxLevel = currentRank.max_xp === null;
-  const range = isMaxLevel ? 1 : progressMax - progressMin;
-  const currentProgress = xp - progressMin;
-  const progressPercent = isMaxLevel ? 100 : Math.min(100, Math.max(0, (currentProgress / range) * 100));
+  const progressMax = rankProgress?.progressMax ?? (currentRank.max_xp !== null ? currentRank.max_xp : currentRank.min_xp + 1);
+  const isMaxLevel = rankProgress?.isMaxLevel ?? currentRank.max_xp === null;
+  const progressPercent = rankProgress?.progressPercent ?? 0;
+  const nextLevelXp = rankProgress?.nextLevelXp ?? null;
 
   const getIMC = () => {
     if (!profile || !profile.weight || !profile.height) return { value: 0, text: 'N/A', color: '#666' };
@@ -246,7 +170,7 @@ export default function RankingScreen() {
                       ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
                          <Image source={require('../../assets/images/bronce.png')} style={{ width: 60, height: 60, marginBottom: 4 }} resizeMode="contain" />
                       ) : (
-                         <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 12, marginBottom: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+                         <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 12, marginBottom: 4 }]}>{currentRank.name.toUpperCase()}</Text>
                       )}
                       <Text style={styles.xpLabel}>TOTAL</Text>
                       <Text style={{fontSize: 14, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 10, color: '#CCFF00'}}>XP</Text></Text>
@@ -266,7 +190,7 @@ export default function RankingScreen() {
              <View style={styles.track}>
                 <View style={[styles.fill, { width: `${progressPercent}%`, backgroundColor: rankColor }]} />
              </View>
-             <Text style={styles.remainText}>{!isMaxLevel ? `${(progressMax - xp + 1).toLocaleString()} XP para el siguiente nivel`  : '¡Alcanzaste el rango máximo!'}</Text>
+             <Text style={styles.remainText}>{!isMaxLevel ? `${(nextLevelXp ?? 0).toLocaleString()} XP para el siguiente nivel`  : '¡Alcanzaste el rango máximo!'}</Text>
            </View>
            
            <View style={styles.metricsRow}>
@@ -282,7 +206,7 @@ export default function RankingScreen() {
            </View>
 
            <View style={styles.strengthCard}>
-             <Text style={styles.strengthTitle}>🎯 FUERZA RELATIVA (MVP)</Text>
+             <Text style={styles.strengthTitle}>FUERZA RELATIVA</Text>
              <Text style={styles.strengthText}>
                Como pesas <Text style={styles.hl}>{profile?.weight || '--'}kg</Text>, levantar <Text style={styles.hl}>{profile?.weight || '--'}kg</Text> en Press de Banca ya te califica como <Text style={{color:'#CCFF00', fontWeight:'bold'}}>PROMEDIO</Text>. Levantar <Text style={styles.hl}>{profile?.weight ? Math.round(profile.weight * 1.5) : '--'}kg</Text> equivale al Rango <Text style={{color:'#B9F2FF', fontWeight:'bold'}}>AVANZADO</Text>. ¡Compite contra tu propio peso corporal!
              </Text>
@@ -290,7 +214,7 @@ export default function RankingScreen() {
            
            {/* GLOBAL LEADERBOARD */}
            <View style={styles.leaderboardSection}>
-             <Text style={styles.leaderboardTitle}>🌍 RANKING GLOBAL</Text>
+             <Text style={styles.leaderboardTitle}>RANKING GLOBAL</Text>
              <Text style={styles.leaderboardSubtitle}>COMPITE CONTRA OTROS ATLETAS</Text>
              
              <View style={styles.leaderboardList}>
@@ -321,7 +245,7 @@ export default function RankingScreen() {
              ) : currentRank.name.toUpperCase().includes('BRONCE') ? (
                <Image source={require('../../assets/images/bronce.png')} style={{ width: 280, height: 280 }} resizeMode="contain" />
              ) : (
-               <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 36, letterSpacing: 4 }]}>❖ {currentRank.name.toUpperCase()}</Text>
+               <Text style={[styles.rankBadgeText, { color: rankColor, fontSize: 36, letterSpacing: 4 }]}>{currentRank.name.toUpperCase()}</Text>
              )}
              <Text style={[styles.xpLabel, { fontSize: 14, marginTop: 20 }]}>EXPERIENCIA TOTAL</Text>
              <Text style={{fontSize: 48, fontWeight: '900', color: '#FFF'}}>{xp.toLocaleString()} <Text style={{fontSize: 24, color: '#CCFF00'}}>XP</Text></Text>
