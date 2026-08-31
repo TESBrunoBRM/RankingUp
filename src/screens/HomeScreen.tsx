@@ -1,11 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Linking,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../store/authStore';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AppStackParamList, Workout, Profile, WeekDay } from '../types';
+import type {
+  AppStackParamList,
+  FitnessNewsItem,
+  HomeContentResponse,
+  Profile,
+  WeekDay,
+  Workout,
+} from '../types';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { getCurrentWeekDay } from '../utils/date';
 import { getErrorMessage } from '../utils/errors';
@@ -13,204 +31,378 @@ import { getErrorMessage } from '../utils/errors';
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
 const WEEK_DAYS = [
-  { id: 'MON', label: 'LUN' },
-  { id: 'TUE', label: 'MAR' },
-  { id: 'WED', label: 'MIE' },
-  { id: 'THU', label: 'JUE' },
-  { id: 'FRI', label: 'VIE' },
-  { id: 'SAT', label: 'SAB' },
-  { id: 'SUN', label: 'DOM' },
+  { id: 'MON', label: 'L' },
+  { id: 'TUE', label: 'M' },
+  { id: 'WED', label: 'M' },
+  { id: 'THU', label: 'J' },
+  { id: 'FRI', label: 'V' },
+  { id: 'SAT', label: 'S' },
+  { id: 'SUN', label: 'D' },
 ] satisfies { id: WeekDay; label: string }[];
+
+const HOME_DATE_FORMATTER = new Intl.DateTimeFormat('es-CL', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+const NEWS_DATE_FORMATTER = new Intl.DateTimeFormat('es-CL', {
+  day: '2-digit',
+  month: 'short',
+});
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'BUENOS DIAS';
+  if (hour < 20) return 'BUENAS TARDES';
+  return 'BUENAS NOCHES';
+};
+
+const formatNewsDate = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'RECIENTE' : NEWS_DATE_FORMATTER.format(date).toUpperCase();
+};
+
+interface NewsCardProps {
+  item: FitnessNewsItem;
+  onPress: (item: FitnessNewsItem) => void;
+}
+
+const NewsCard = React.memo(function NewsCard({ item, onPress }: NewsCardProps) {
+  return (
+    <Pressable style={styles.newsCard} onPress={() => onPress(item)}>
+      <View style={styles.newsIcon}>
+        <Ionicons name="newspaper-outline" size={22} color="#CCFF00" />
+      </View>
+      <View style={styles.newsMetaRow}>
+        <Text style={styles.newsSource} numberOfLines={1}>{item.source.toUpperCase()}</Text>
+        <Text style={styles.newsDate}>{formatNewsDate(item.publishedAt)}</Text>
+      </View>
+      <Text style={styles.newsTitle} numberOfLines={3}>{item.title}</Text>
+      <View style={styles.newsLinkRow}>
+        <Text style={styles.newsLink}>LEER NOTICIA</Text>
+        <Ionicons name="arrow-forward" size={15} color="#CCFF00" />
+      </View>
+    </Pressable>
+  );
+});
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const navigation = useNavigation<NavigationProp>();
-  
+  const splashAnimation = useRef(new Animated.Value(0)).current;
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [homeContent, setHomeContent] = useState<HomeContentResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [contentLoading, setContentLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
   const [selectedDay, setSelectedDay] = useState<WeekDay>(() => getCurrentWeekDay());
+  const [splashIndex, setSplashIndex] = useState(0);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!user) return;
     try {
-      setLoading(true);
       setDashboardError('');
       const dashboard = await rankingUpApiClient.getDashboard();
       setWorkouts(dashboard.workouts);
       setProfile(dashboard.profile);
-      
-      if (dashboard.requiresOnboarding) {
-         navigation.replace('Onboarding');
-      }
+      if (dashboard.requiresOnboarding) navigation.replace('Onboarding');
     } catch (error: unknown) {
-       const message = getErrorMessage(error, 'No se pudo cargar tu resumen.');
-       setDashboardError(message);
-       console.warn('HomeScreen:', message);
+      const message = getErrorMessage(error, 'No se pudo cargar tu resumen.');
+      setDashboardError(message);
+      console.warn('HomeScreen:', message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigation, user]);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchDashboardData();
-    }, [user])
+  const fetchHomeContent = useCallback(async () => {
+    try {
+      setHomeContent(await rankingUpApiClient.getHomeContent());
+    } catch (error: unknown) {
+      console.warn('HomeContent:', getErrorMessage(error, 'No se pudo cargar el contenido editorial.'));
+    } finally {
+      setContentLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    setLoading(true);
+    void fetchDashboardData();
+    void fetchHomeContent();
+  }, [fetchDashboardData, fetchHomeContent]));
+
+  const messages = homeContent?.messages ?? [];
+  useEffect(() => {
+    if (messages.length === 0) return undefined;
+    splashAnimation.setValue(0);
+    const animation = Animated.sequence([
+      Animated.timing(splashAnimation, { toValue: 1, duration: 280, useNativeDriver: true }),
+      Animated.delay(3_300),
+      Animated.timing(splashAnimation, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]);
+    animation.start(({ finished }) => {
+      if (finished) setSplashIndex((current) => (current + 1) % messages.length);
+    });
+    return () => animation.stop();
+  }, [messages.length, splashAnimation, splashIndex]);
+
+  const workoutsForSelectedDay = useMemo(
+    () => workouts.filter((workout) => workout.scheduled_day === selectedDay),
+    [selectedDay, workouts],
+  );
+  const workoutsToday = useMemo(
+    () => workouts.filter((workout) => workout.scheduled_day === getCurrentWeekDay()),
+    [workouts],
   );
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.allSettled([fetchDashboardData(), fetchHomeContent()]);
+    setRefreshing(false);
+  }, [fetchDashboardData, fetchHomeContent]);
 
+  const openNews = useCallback(async (item: FitnessNewsItem) => {
+    try {
+      if (!(await Linking.canOpenURL(item.url))) throw new Error('unsupported');
+      await Linking.openURL(item.url);
+    } catch {
+      Alert.alert('Enlace no disponible', 'No se pudo abrir esta noticia en el dispositivo.');
+    }
+  }, []);
 
-  const workoutsForSelectedDay = workouts.filter(w => w.scheduled_day === selectedDay);
+  const displayName = profile?.name || user?.email?.split('@')[0] || 'ATLETA';
+  const currentMessage = messages[splashIndex % Math.max(messages.length, 1)];
+  const splashStyle = {
+    opacity: splashAnimation,
+    transform: [
+      { rotate: '-5deg' },
+      { scale: splashAnimation.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
+    ],
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>HOLA,</Text>
-        <Text style={styles.name}>{user?.email?.split('@')[0].toUpperCase()}</Text>
-        <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person-circle-outline" size={36} color="#CCFF00" />
-        </TouchableOpacity>
+        <View style={styles.headerCopy}>
+          <Text style={styles.eyebrow}>{getGreeting()}</Text>
+          <Text style={styles.name} numberOfLines={1}>{displayName.toUpperCase()}</Text>
+          <Text style={styles.date}>{HOME_DATE_FORMATTER.format(new Date()).toUpperCase()}</Text>
+        </View>
+        <Pressable accessibilityLabel="Abrir perfil" style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
+          <Ionicons name="person-outline" size={21} color="#CCFF00" />
+        </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.titleSection}>
-          <Text style={styles.mainTitle}>RUTINA SEMANAL</Text>
-          <Text style={styles.subtitle}>PLAN DE ENTRENAMIENTO</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor="#CCFF00" colors={['#CCFF00']} />}
+      >
+        <View style={styles.summaryBand}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{profile?.xp ?? 0}</Text>
+            <Text style={styles.summaryLabel}>XP TOTAL</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{workouts.length}</Text>
+            <Text style={styles.summaryLabel}>RUTINAS</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{workoutsToday.length || 'LIBRE'}</Text>
+            <Text style={styles.summaryLabel}>PARA HOY</Text>
+          </View>
+        </View>
+
+        <View style={styles.splashViewport}>
+          {currentMessage ? (
+            <Animated.Text style={[styles.splashText, splashStyle]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.78}>
+              {currentMessage.text}
+            </Animated.Text>
+          ) : contentLoading ? (
+            <ActivityIndicator size="small" color="#CCFF00" />
+          ) : (
+            <Text style={styles.splashText}>SIGUE SUMANDO REPETICIONES.</Text>
+          )}
         </View>
 
         {dashboardError ? (
-          <View style={styles.noticeCard}>
-            <Text style={styles.noticeTitle}>NO SE PUDO ACTUALIZAR</Text>
-            <Text style={styles.noticeText}>{dashboardError}</Text>
-            <TouchableOpacity style={styles.noticeButton} onPress={fetchDashboardData}>
-              <Text style={styles.noticeButtonText}>REINTENTAR</Text>
-            </TouchableOpacity>
+          <View style={styles.notice}>
+            <Ionicons name="cloud-offline-outline" size={20} color="#FF9F0A" />
+            <View style={styles.noticeCopy}>
+              <Text style={styles.noticeTitle}>NO SE PUDO ACTUALIZAR</Text>
+              <Text style={styles.noticeText}>{dashboardError}</Text>
+            </View>
+            <Pressable accessibilityLabel="Reintentar" style={styles.retryButton} onPress={() => void fetchDashboardData()}>
+              <Ionicons name="refresh" size={18} color="#CCFF00" />
+            </Pressable>
           </View>
         ) : null}
 
-        <View style={styles.gridContainer}>
-           {WEEK_DAYS.map((day) => {
-             const dayWorkouts = workouts.filter(w => w.scheduled_day === day.id);
-             const hasWorkout = dayWorkouts.length > 0;
-             const isSelected = selectedDay === day.id;
-             const primaryWorkout = hasWorkout ? dayWorkouts[0] : null;
-             
-             return (
-               <TouchableOpacity 
-                 key={day.id} 
-                 style={[
-                   styles.dayCard, 
-                   isSelected && styles.dayCardSelected,
-                   !hasWorkout && !isSelected && styles.dayCardRest
-                 ]}
-                 onPress={() => setSelectedDay(day.id)}
-                 activeOpacity={0.8}
-               >
-                 <Text style={[styles.dayCardTitle, isSelected && styles.dayCardTitleSelected]}>
-                   {day.label}
-                 </Text>
-                 {hasWorkout ? (
-                   <>
-                     <Ionicons name="barbell" size={22} color={isSelected ? '#121212' : '#CCFF00'} style={styles.dayIcon} />
-                     <Text style={[styles.dayCardFocus, isSelected && styles.dayCardFocusSelected]} numberOfLines={1}>
-                        {primaryWorkout?.name.toUpperCase()}
-                     </Text>
-                   </>
-                 ) : (
-                   <>
-                     <Ionicons name="moon-outline" size={22} color={isSelected ? '#121212' : '#A0A0A0'} style={styles.dayIcon} />
-                     <Text style={[styles.dayCardFocus, isSelected && styles.dayCardFocusSelected]}>DESCANSO</Text>
-                   </>
-                 )}
-               </TouchableOpacity>
-             );
-           })}
-        </View>
-
-        <View style={styles.detailsSection}>
-          <View style={styles.detailsHeader}>
-             <View>
-               <Text style={styles.detailsTitle}>DETALLE {WEEK_DAYS.find(day => day.id === selectedDay)?.label}</Text>
-               <Text style={styles.detailsSubtitle}>
-                 {workoutsForSelectedDay.length > 0 ? `${workoutsForSelectedDay.length} Rutina(s) agendada(s)` : 'Día de descanso'}
-               </Text>
-             </View>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionEyebrow}>PLANIFICACION</Text>
+            <Text style={styles.sectionTitle}>TU SEMANA</Text>
           </View>
-
-          {loading ? (
-             <ActivityIndicator size="small" color="#CCFF00" style={{ marginTop: 20 }} />
-          ) : workoutsForSelectedDay.length > 0 ? (
-             workoutsForSelectedDay.map(workout => (
-                <TouchableOpacity 
-                   key={workout.id} 
-                   style={styles.workoutItem}
-                   onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
-                >
-                   <View style={styles.workoutItemAvatar}>
-                      <Text style={styles.workoutItemAvatarText}> {workout.name.charAt(0).toUpperCase()} </Text>
-                   </View>
-                   <View style={styles.workoutItemContent}>
-                      <Text style={styles.workoutItemName}>{workout.name}</Text>
-                      <Text style={styles.workoutItemDesc} numberOfLines={1}>{workout.description || 'Sin descripción'}</Text>
-                   </View>
-                   <Text style={styles.workoutItemArrow}>›</Text>
-                </TouchableOpacity>
-             ))
-          ) : (
-             <View style={styles.restCard}>
-                <Text style={styles.restCardTitle}>DÍA DE DESCANSO</Text>
-                <Text style={styles.restCardText}>Tus músculos crecen mientras descansas. Tómalo con calma.</Text>
-                <TouchableOpacity style={styles.addWorkoutBtn} onPress={() => navigation.navigate('MainTabs', { screen: 'CreateTab' })}>
-                   <Text style={styles.addWorkoutBtnText}>+ AGENDAR RUTINA</Text>
-                </TouchableOpacity>
-             </View>
-          )}
+          <Text style={styles.sectionMeta}>{workouts.length} PROGRAMADAS</Text>
         </View>
-      </ScrollView>
 
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekRow}>
+          {WEEK_DAYS.map((day) => {
+            const isSelected = selectedDay === day.id;
+            const hasWorkout = workouts.some((workout) => workout.scheduled_day === day.id);
+            const isToday = getCurrentWeekDay() === day.id;
+            return (
+              <Pressable
+                key={day.id}
+                accessibilityLabel={`Seleccionar ${day.id}`}
+                style={[styles.dayButton, isSelected && styles.dayButtonSelected]}
+                onPress={() => setSelectedDay(day.id)}
+              >
+                <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>{day.label}</Text>
+                <View style={[styles.dayDot, hasWorkout && styles.dayDotWorkout, isSelected && styles.dayDotSelected]} />
+                {isToday ? <Text style={[styles.todayLabel, isSelected && styles.todayLabelSelected]}>HOY</Text> : <View style={styles.todaySpacer} />}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.workoutHeader}>
+          <Text style={styles.workoutDay}>DIA {WEEK_DAYS.find((day) => day.id === selectedDay)?.label}</Text>
+          <Text style={styles.workoutCount}>{workoutsForSelectedDay.length ? `${workoutsForSelectedDay.length} SESION` : 'RECUPERACION'}</Text>
+        </View>
+
+        {loading && workouts.length === 0 ? (
+          <View style={styles.loadingBlock}><ActivityIndicator color="#CCFF00" /></View>
+        ) : workoutsForSelectedDay.length > 0 ? (
+          workoutsForSelectedDay.map((workout) => (
+            <Pressable
+              key={workout.id}
+              style={styles.workoutItem}
+              onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
+            >
+              <View style={styles.workoutIcon}>
+                <Ionicons name="barbell" size={23} color="#CCFF00" />
+              </View>
+              <View style={styles.workoutContent}>
+                <Text style={styles.workoutName} numberOfLines={1}>{workout.name.toUpperCase()}</Text>
+                <Text style={styles.workoutDescription} numberOfLines={2}>{workout.description || 'Rutina lista para comenzar.'}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#6D7681" />
+            </Pressable>
+          ))
+        ) : (
+          <View style={styles.restState}>
+            <View style={styles.restIcon}><Ionicons name="moon-outline" size={26} color="#8D96A1" /></View>
+            <View style={styles.restCopy}>
+              <Text style={styles.restTitle}>DIA DE DESCANSO</Text>
+              <Text style={styles.restText}>Recupera energia o agenda una sesion para este dia.</Text>
+            </View>
+            <Pressable accessibilityLabel="Crear rutina" style={styles.addButton} onPress={() => navigation.navigate('MainTabs', { screen: 'CreateTab' })}>
+              <Ionicons name="add" size={22} color="#111111" />
+            </Pressable>
+          </View>
+        )}
+
+        <View style={styles.sectionHeaderNews}>
+          <View>
+            <Text style={styles.sectionEyebrow}>ACTUALIDAD</Text>
+            <Text style={styles.sectionTitle}>NOTICIAS FITNESS</Text>
+          </View>
+          {homeContent ? (
+            <View style={styles.feedStatus}>
+              <View style={[styles.statusDot, homeContent.newsStatus === 'live' && styles.statusDotLive]} />
+              <Text style={styles.feedStatusText}>{homeContent.newsStatus === 'live' ? 'EN VIVO' : 'SELECCION'}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {contentLoading && !homeContent ? (
+          <View style={styles.newsLoading}>
+            <ActivityIndicator size="small" color="#CCFF00" />
+            <Text style={styles.newsLoadingText}>Buscando novedades...</Text>
+          </View>
+        ) : homeContent?.news.length ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.newsRow}>
+            {homeContent.news.map((item) => <NewsCard key={item.id} item={item} onPress={openNews} />)}
+          </ScrollView>
+        ) : (
+          <View style={styles.newsLoading}><Text style={styles.newsLoadingText}>Las noticias no estan disponibles por ahora.</Text></View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
-  header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  greeting: { fontSize: 24, color: '#A0A0A0', fontWeight: '800', marginRight: 8 },
-  name: { fontSize: 24, color: '#CCFF00', fontWeight: '900', flex: 1 },
-  profileBtn: { padding: 4 },
-  scrollContent: { paddingBottom: 40 },
-  titleSection: { paddingHorizontal: 24, marginTop: 20, marginBottom: 20 },
-  mainTitle: { fontSize: 32, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1, marginBottom: 4 },
-  subtitle: { fontSize: 10, color: '#A0A0A0', letterSpacing: 2, fontWeight: '700' },
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, justifyContent: 'space-between', gap: 12 },
-  dayCard: { width: '46%', backgroundColor: '#1A1A1A', borderRadius: 16, padding: 16, alignItems: 'center', borderWidth: 2, borderColor: '#1A1A1A', marginBottom: 8 },
-  dayCardRest: { opacity: 0.6 },
-  dayCardSelected: { backgroundColor: '#CCFF00', borderColor: '#CCFF00', transform: [{ scale: 1.02 }] },
-  dayCardTitle: { fontSize: 12, color: '#A0A0A0', fontWeight: '800', letterSpacing: 1, marginBottom: 8 },
-  dayCardTitleSelected: { color: '#121212' },
-  dayIcon: { marginBottom: 8 },
-  noticeCard: { marginHorizontal: 24, marginBottom: 18, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#503333' },
-  noticeTitle: { fontSize: 12, color: '#FF8C00', fontWeight: '900', letterSpacing: 1, marginBottom: 6 },
-  noticeText: { fontSize: 13, color: '#D0D0D0', lineHeight: 18, marginBottom: 12 },
-  noticeButton: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#2A2A2A', borderRadius: 8 },
-  noticeButtonText: { color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
-  dayCardFocus: { fontSize: 16, fontWeight: '900', color: '#FFFFFF' },
-  dayCardFocusSelected: { color: '#121212' },
-  detailsSection: { marginTop: 30, paddingHorizontal: 24 },
-  detailsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 },
-  detailsTitle: { fontSize: 24, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase' },
-  detailsSubtitle: { fontSize: 12, color: '#A0A0A0', fontWeight: '600', marginTop: 4 },
-  workoutItem: { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#333' },
-  workoutItemAvatar: { width: 50, height: 50, borderRadius: 12, backgroundColor: '#2A2A2A', justifyContent: 'center', alignItems: 'center' },
-  workoutItemAvatarText: { fontSize: 24, color: '#CCFF00', fontWeight: '900' },
-  workoutItemContent: { flex: 1, marginLeft: 16 },
-  workoutItemName: { fontSize: 18, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase' },
-  workoutItemDesc: { fontSize: 12, color: '#A0A0A0', marginTop: 4, fontWeight: '500' },
-  workoutItemArrow: { fontSize: 24, color: '#666', fontWeight: 'bold', marginLeft: 12 },
-  restCard: { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: '#333', borderStyle: 'dashed' },
-  restCardTitle: { fontSize: 16, fontWeight: '900', color: '#FFFFFF', letterSpacing: 2, marginBottom: 8 },
-  restCardText: { fontSize: 13, color: '#A0A0A0', textAlign: 'center', marginBottom: 20 },
-  addWorkoutBtn: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: '#2A2A2A', borderRadius: 20 },
-  addWorkoutBtnText: { color: '#CCFF00', fontWeight: '800', letterSpacing: 1, fontSize: 12 }
+  container: { flex: 1, backgroundColor: '#101114' },
+  header: { minHeight: 94, paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#24262B' },
+  headerCopy: { flex: 1, minWidth: 0 },
+  eyebrow: { color: '#7E8792', fontSize: 10, fontWeight: '900' },
+  name: { color: '#FFFFFF', fontSize: 25, fontWeight: '900', marginTop: 2 },
+  date: { color: '#CCFF00', fontSize: 10, fontWeight: '800', marginTop: 4 },
+  profileButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1B1D22', borderWidth: 1, borderColor: '#30333A', marginLeft: 14 },
+  content: { paddingTop: 18, paddingBottom: 120 },
+  summaryBand: { minHeight: 72, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2B2E35' },
+  summaryItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  summaryValue: { color: '#FFFFFF', fontSize: 19, fontWeight: '900' },
+  summaryLabel: { color: '#727B86', fontSize: 8, fontWeight: '900', marginTop: 4 },
+  summaryDivider: { width: 1, height: 30, backgroundColor: '#2B2E35' },
+  splashViewport: { height: 100, marginHorizontal: 26, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  splashText: { width: '94%', color: '#FFF600', fontSize: 20, lineHeight: 23, fontWeight: '900', textAlign: 'center', textShadowColor: '#000000', textShadowOffset: { width: 3, height: 3 }, textShadowRadius: 0 },
+  notice: { marginHorizontal: 20, marginBottom: 20, minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 8, padding: 12, backgroundColor: 'rgba(255,159,10,0.08)', borderWidth: 1, borderColor: 'rgba(255,159,10,0.25)' },
+  noticeCopy: { flex: 1 },
+  noticeTitle: { color: '#FFFFFF', fontSize: 11, fontWeight: '900' },
+  noticeText: { color: '#A8B0BA', fontSize: 11, lineHeight: 16, marginTop: 3 },
+  retryButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  sectionHeader: { marginTop: 8, marginBottom: 12, paddingHorizontal: 20, minHeight: 42, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  sectionHeaderNews: { marginTop: 34, marginBottom: 14, paddingHorizontal: 20, minHeight: 42, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  sectionEyebrow: { color: '#7E8792', fontSize: 9, fontWeight: '900', marginBottom: 3 },
+  sectionTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  sectionMeta: { color: '#727B86', fontSize: 9, fontWeight: '800' },
+  weekRow: { paddingHorizontal: 20, gap: 8, paddingBottom: 18 },
+  dayButton: { width: 44, height: 70, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35' },
+  dayButtonSelected: { backgroundColor: '#CCFF00', borderColor: '#CCFF00' },
+  dayText: { color: '#D7DCE2', fontSize: 13, fontWeight: '900' },
+  dayTextSelected: { color: '#111111' },
+  dayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#3A3E46', marginTop: 7 },
+  dayDotWorkout: { backgroundColor: '#CCFF00' },
+  dayDotSelected: { backgroundColor: '#111111' },
+  todayLabel: { color: '#727B86', fontSize: 7, fontWeight: '900', marginTop: 5 },
+  todayLabelSelected: { color: '#111111' },
+  todaySpacer: { height: 13 },
+  workoutHeader: { minHeight: 32, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  workoutDay: { color: '#C5CBD2', fontSize: 10, fontWeight: '900' },
+  workoutCount: { color: '#727B86', fontSize: 9, fontWeight: '800' },
+  loadingBlock: { height: 92, alignItems: 'center', justifyContent: 'center' },
+  workoutItem: { minHeight: 82, marginHorizontal: 20, marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 13, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35' },
+  workoutIcon: { width: 48, height: 48, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#24272D' },
+  workoutContent: { flex: 1, minWidth: 0 },
+  workoutName: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  workoutDescription: { color: '#858E99', fontSize: 11, lineHeight: 16, marginTop: 4 },
+  restState: { minHeight: 82, marginHorizontal: 20, marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderRadius: 8, borderWidth: 1, borderColor: '#2B2E35', borderStyle: 'dashed' },
+  restIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
+  restCopy: { flex: 1 },
+  restTitle: { color: '#D7DCE2', fontSize: 12, fontWeight: '900' },
+  restText: { color: '#727B86', fontSize: 10, lineHeight: 15, marginTop: 4 },
+  addButton: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CCFF00' },
+  feedStatus: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingBottom: 2 },
+  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF9F0A' },
+  statusDotLive: { backgroundColor: '#5CE18B' },
+  feedStatusText: { color: '#7E8792', fontSize: 8, fontWeight: '900' },
+  newsRow: { paddingHorizontal: 20, gap: 10 },
+  newsCard: { width: 264, height: 180, padding: 15, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35' },
+  newsIcon: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#24272D', marginBottom: 12 },
+  newsMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  newsSource: { flex: 1, color: '#CCFF00', fontSize: 9, fontWeight: '900' },
+  newsDate: { color: '#727B86', fontSize: 8, fontWeight: '800' },
+  newsTitle: { flex: 1, color: '#FFFFFF', fontSize: 14, lineHeight: 19, fontWeight: '800', marginTop: 7 },
+  newsLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  newsLink: { color: '#CCFF00', fontSize: 9, fontWeight: '900' },
+  newsLoading: { minHeight: 120, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2B2E35', borderStyle: 'dashed' },
+  newsLoadingText: { color: '#7E8792', fontSize: 11 },
 });

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Push Ups Detector - MediaPipe</title>
-  
+
   <!-- MediaPipe dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
@@ -66,7 +66,7 @@
     #hud {
       position: absolute; top: 15px; left: 15px; right: 15px;
       z-index: 5; pointer-events: none;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: space-between; align-items: flex-start;
     }
     .hud-box {
       background: rgba(15, 15, 25, 0.85);
@@ -84,16 +84,51 @@
       border-color: #FF007F;
       color: #FF007F;
       box-shadow: 0 0 10px rgba(255,0,127,0.2);
+      text-align: right;
     }
-    #depth-bar-container {
+    #angle-indicator {
       position: absolute; right: 15px; top: 70px; bottom: 70px;
-      width: 12px; background: rgba(255,255,255,0.1);
-      border-radius: 6px; overflow: hidden; z-index: 5;
+      width: 16px; z-index: 5;
+      display: flex; flex-direction: column; align-items: center;
     }
-    #depth-bar-fill {
+    #angle-bar-container {
+      flex: 1; width: 12px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 6px; overflow: hidden;
+      position: relative;
+    }
+    #angle-bar-fill {
       position: absolute; bottom: 0; width: 100%;
-      background: #CCFF00; border-radius: 6px;
-      transition: height 0.1s ease;
+      background: linear-gradient(to top, #FF2D55, #FF9500, #CCFF00);
+      border-radius: 6px;
+      transition: height 0.15s ease;
+    }
+    /* Threshold markers */
+    #threshold-down {
+      position: absolute; width: 100%; height: 2px;
+      background: #FF2D55; left: 0;
+    }
+    #threshold-up {
+      position: absolute; width: 100%; height: 2px;
+      background: #CCFF00; left: 0;
+    }
+    #angle-label {
+      color: #888; font-size: 8px; font-weight: bold;
+      margin-top: 4px; text-align: center;
+    }
+    /* Feedback banner */
+    #feedback-banner {
+      position: absolute; bottom: 15px; left: 15px; right: 15px;
+      z-index: 5; pointer-events: none;
+      text-align: center;
+      font-size: 12px; font-weight: 900;
+      letter-spacing: 1px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(15,15,25,0.85);
+      border: 1px solid #555;
+      color: #888;
+      transition: all 0.2s ease;
     }
   </style>
 </head>
@@ -104,22 +139,29 @@
   </div>
 
   <div id="countdown-overlay" style="display: none;">
-    <div id="countdown-instruction">Acomoda la cámara apuntando a tu perfil o frente.</div>
+    <div id="countdown-instruction">Coloca tu celular en el piso frente a ti.<br>Quédate en posición de flexión con los brazos extendidos.</div>
     <div id="countdown-number">5</div>
   </div>
 
   <div id="container">
     <video id="webcam" playsinline muted></video>
     <canvas id="canvas"></canvas>
-    
+
     <div id="hud">
       <div class="hud-box" id="info-box">Buscando cuerpo...</div>
       <div class="hud-box" id="status-box">Calibrando</div>
     </div>
 
-    <div id="depth-bar-container">
-      <div id="depth-bar-fill" style="height: 0%;"></div>
+    <div id="angle-indicator">
+      <div id="angle-bar-container">
+        <div id="angle-bar-fill" style="height: 0%;"></div>
+        <div id="threshold-down"></div>
+        <div id="threshold-up"></div>
+      </div>
+      <div id="angle-label">0°</div>
     </div>
+
+    <div id="feedback-banner">Esperando calibración...</div>
   </div>
 
   <script>
@@ -132,15 +174,47 @@
     const countdownNumber = document.getElementById('countdown-number');
     const infoBox = document.getElementById('info-box');
     const statusBox = document.getElementById('status-box');
-    const depthFill = document.getElementById('depth-bar-fill');
+    const angleFill = document.getElementById('angle-bar-fill');
+    const angleLabel = document.getElementById('angle-label');
+    const thresholdDown = document.getElementById('threshold-down');
+    const thresholdUp = document.getElementById('threshold-up');
+    const feedbackBanner = document.getElementById('feedback-banner');
 
-    let state = 'UP';
+    // ============= STATE MACHINE =============
+    let pushupState = 'IDLE'; // IDLE -> UP -> DOWN -> UP (cycle)
     let lastPushupTime = 0;
-    
-    // Autocalibration histories
-    let yHistory = [];
+    const PUSHUP_COOLDOWN_MS = 600; // minimum ms between counted reps
+
+    // ============= CALIBRATION =============
     let isCalibrated = false;
     let countdownVal = 5;
+    let calibrationSamples = [];     // shoulder Y values during countdown
+    let baselineShoulderY = null;    // "arms extended" shoulder Y (top position)
+
+    // ============= DETECTION PARAMS =============
+    // We use a HYBRID approach:
+    // 1) Elbow angle: angle formed by shoulder-elbow-wrist. Straight arms ~160-180°, bent ~60-100°
+    // 2) Shoulder Y displacement from baseline: how much shoulders moved down from calibration
+    //
+    // A push-up is detected when:
+    // - DOWN: elbow angle drops below DOWN_ANGLE_THRESHOLD AND shoulders drop by at least MIN_SHOULDER_DROP
+    // - UP:   elbow angle rises above UP_ANGLE_THRESHOLD OR shoulders return near baseline
+    //
+    // Hysteresis: different thresholds for entering DOWN vs returning to UP prevents flickering
+
+    const DOWN_ANGLE_THRESHOLD = 110;  // elbow angle below this = arms are bent enough (DOWN)
+    const UP_ANGLE_THRESHOLD = 145;    // elbow angle above this = arms are extended (UP)
+    const MIN_SHOULDER_DROP = 0.04;    // minimum normalized shoulder Y displacement to confirm DOWN
+
+    // Smoothing: exponential moving average for angles
+    let smoothedAngle = 170;
+    const SMOOTHING_FACTOR = 0.35; // 0 = no smoothing, 1 = no change. Lower = more responsive
+
+    // Frame counter for stability (require N consecutive frames in target zone)
+    let downFrameCount = 0;
+    let upFrameCount = 0;
+    const REQUIRED_FRAMES_DOWN = 2;  // frames in DOWN zone before triggering
+    const REQUIRED_FRAMES_UP = 2;    // frames in UP zone before triggering
 
     function sendToApp(data) {
       if (window.ReactNativeWebView) {
@@ -148,7 +222,20 @@
       }
     }
 
-    // Initialize MediaPipe Pose
+    // ============= ANGLE CALCULATION =============
+    function calcAngle(a, b, c) {
+      // Calculate angle at point B given points A, B, C (in 2D: x, y)
+      const ab = { x: a.x - b.x, y: a.y - b.y };
+      const cb = { x: c.x - b.x, y: c.y - b.y };
+      const dot = ab.x * cb.x + ab.y * cb.y;
+      const magAB = Math.sqrt(ab.x * ab.x + ab.y * ab.y);
+      const magCB = Math.sqrt(cb.x * cb.x + cb.y * cb.y);
+      if (magAB === 0 || magCB === 0) return 180;
+      const cosine = Math.max(-1, Math.min(1, dot / (magAB * magCB)));
+      return Math.acos(cosine) * (180 / Math.PI);
+    }
+
+    // ============= MEDIAPIPE SETUP =============
     const pose = new Pose({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
     });
@@ -156,8 +243,8 @@
     pose.setOptions({
       modelComplexity: 1,
       smoothLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
+      minDetectionConfidence: 0.6,
+      minTrackingConfidence: 0.6
     });
 
     pose.onResults(onResults);
@@ -182,8 +269,10 @@
         sendToApp({ type: 'error', message: err.message });
       });
 
+    // ============= COUNTDOWN & CALIBRATION =============
     function startCountdown() {
       countdownOverlay.style.display = 'flex';
+      calibrationSamples = [];
       const interval = setInterval(() => {
         countdownVal--;
         if (countdownVal > 0) {
@@ -193,12 +282,86 @@
         } else {
           clearInterval(interval);
           countdownOverlay.style.display = 'none';
-          isCalibrated = true;
-          statusBox.innerText = "UP";
+          finishCalibration();
         }
       }, 1000);
     }
 
+    function finishCalibration() {
+      if (calibrationSamples.length > 5) {
+        // Use the median of calibration samples as baseline (more robust than mean)
+        const sorted = [...calibrationSamples].sort((a, b) => a - b);
+        baselineShoulderY = sorted[Math.floor(sorted.length / 2)];
+      } else {
+        // Fallback: just use 0.4 as a reasonable default for shoulder position
+        baselineShoulderY = 0.4;
+      }
+
+      isCalibrated = true;
+      pushupState = 'UP';
+      statusBox.innerText = "ARRIBA ✓";
+      statusBox.style.borderColor = "#CCFF00";
+      statusBox.style.color = "#CCFF00";
+      feedbackBanner.innerText = "¡Calibrado! Empieza tus flexiones";
+      feedbackBanner.style.borderColor = "#CCFF00";
+      feedbackBanner.style.color = "#CCFF00";
+
+      // Position threshold markers on the angle bar
+      // DOWN threshold at 110° -> (110/180) from bottom
+      const downPct = ((180 - DOWN_ANGLE_THRESHOLD) / 180) * 100;
+      const upPct = ((180 - UP_ANGLE_THRESHOLD) / 180) * 100;
+      thresholdDown.style.bottom = downPct + '%';
+      thresholdUp.style.bottom = upPct + '%';
+    }
+
+    // ============= SKELETON DRAWING HELPERS =============
+    const POSE_CONNECTIONS = [
+      [11, 13], [13, 15], // left arm
+      [12, 14], [14, 16], // right arm
+      [11, 12],           // shoulders
+      [11, 23], [12, 24], // torso
+      [23, 24],           // hips
+      [23, 25], [25, 27], // left leg
+      [24, 26], [26, 28], // right leg
+    ];
+
+    function drawSkeleton(landmarks) {
+      // Draw connections
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+      ctx.lineWidth = 3;
+      POSE_CONNECTIONS.forEach(([i, j]) => {
+        const a = landmarks[i];
+        const b = landmarks[j];
+        if (a && b && a.visibility > 0.4 && b.visibility > 0.4) {
+          ctx.beginPath();
+          ctx.moveTo(a.x * canvas.width, a.y * canvas.height);
+          ctx.lineTo(b.x * canvas.width, b.y * canvas.height);
+          ctx.stroke();
+        }
+      });
+
+      // Draw key joint dots
+      const keyJoints = [0, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+      keyJoints.forEach(i => {
+        const pt = landmarks[i];
+        if (pt && pt.visibility > 0.4) {
+          // Highlight elbow joints in different color
+          if (i === 13 || i === 14) {
+            ctx.fillStyle = '#FF9500';
+            ctx.beginPath();
+            ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 7, 0, 2 * Math.PI);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = '#CCFF00';
+            ctx.beginPath();
+            ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 5, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+      });
+    }
+
+    // ============= MAIN DETECTION LOOP =============
     function onResults(results) {
       if (canvas.width !== results.image.width) {
         canvas.width = results.image.width;
@@ -208,97 +371,203 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
-      // Draw HUD grid
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      // Subtle grid overlay
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
       ctx.lineWidth = 1;
-      for (let i = 0; i < canvas.width; i += 40) {
+      for (let i = 0; i < canvas.width; i += 50) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
       }
-      for (let j = 0; j < canvas.height; j += 40) {
+      for (let j = 0; j < canvas.height; j += 50) {
         ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
       }
 
-      if (results.poseLandmarks) {
-        infoBox.innerText = isCalibrated ? "LISTO PARA FLEXIONES" : "Acomodando cámara...";
-        infoBox.style.borderColor = isCalibrated ? "#CCFF00" : "#FF9500";
-        infoBox.style.color = isCalibrated ? "#CCFF00" : "#FF9500";
-
-        const landmarks = results.poseLandmarks;
-        const nose = landmarks[0];
-        const lShoulder = landmarks[11];
-        const rShoulder = landmarks[12];
-
-        // Draw neon blue skeleton shoulder
-        ctx.strokeStyle = '#00F0FF';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(lShoulder.x * canvas.width, lShoulder.y * canvas.height);
-        ctx.lineTo(rShoulder.x * canvas.width, rShoulder.y * canvas.height);
-        ctx.stroke();
-
-        ctx.fillStyle = '#CCFF00';
-        [nose, lShoulder, rShoulder].forEach(pt => {
-          ctx.beginPath();
-          ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 6, 0, 2 * Math.PI);
-          ctx.fill();
-        });
-
-        // AUTOCALIBRATING Y-DISPLACEMENT DETECTION
-        const yShoulder = (lShoulder.y + rShoulder.y) / 2;
-
-        if (isCalibrated) {
-          yHistory.push(yShoulder);
-          // Keep last 4 seconds (120 frames at ~30fps)
-          if (yHistory.length > 120) yHistory.shift();
-
-          const maxY = Math.max(...yHistory);
-          const minY = Math.min(...yHistory);
-          const range = maxY - minY;
-
-          // Only detect if user is moving significantly (range > 0.08 of screen height)
-          if (range > 0.08) {
-            // Percent represents position: 0 is top (arms extended), 1 is bottom (down)
-            const percent = (yShoulder - minY) / range;
-            depthFill.style.height = `${percent * 100}%`;
-
-            const now = Date.now();
-            if (state === 'UP') {
-              // Went down (depth > 75% of range)
-              if (percent > 0.75) {
-                state = 'DOWN';
-                statusBox.innerText = 'ABAJO';
-                statusBox.style.borderColor = '#CCFF00';
-                statusBox.style.color = '#CCFF00';
-                sendToApp({ type: 'state', value: 'DOWN' });
-              }
-            } else if (state === 'DOWN') {
-              // Pushed back up (depth < 25% of range)
-              if (percent < 0.25 && (now - lastPushupTime > 800)) {
-                state = 'UP';
-                lastPushupTime = now;
-                statusBox.innerText = 'ARRIBA';
-                statusBox.style.borderColor = '#FF007F';
-                statusBox.style.color = '#FF007F';
-                sendToApp({ type: 'state', value: 'UP' });
-                sendToApp({ type: 'pushup' });
-              }
-            }
-          } else {
-            // Calm state
-            depthFill.style.height = `0%`;
-          }
-        } else {
-          // Clear history during countdown calibration
-          yHistory = [];
-          statusBox.innerText = "Calibrando";
-          statusBox.style.borderColor = "#FF9500";
-          statusBox.style.color = "#FF9500";
-        }
-      } else {
+      if (!results.poseLandmarks) {
         infoBox.innerText = "Buscando cuerpo...";
         infoBox.style.borderColor = "#FF9500";
         infoBox.style.color = "#FF9500";
+        feedbackBanner.innerText = "No se detecta el cuerpo";
+        feedbackBanner.style.borderColor = "#FF9500";
+        feedbackBanner.style.color = "#FF9500";
+        return;
       }
+
+      const landmarks = results.poseLandmarks;
+      drawSkeleton(landmarks);
+
+      // Key landmarks
+      const lShoulder = landmarks[11];
+      const rShoulder = landmarks[12];
+      const lElbow = landmarks[13];
+      const rElbow = landmarks[14];
+      const lWrist = landmarks[15];
+      const rWrist = landmarks[16];
+
+      // Check if key joints are visible enough
+      const keyVisibility = [lShoulder, rShoulder, lElbow, rElbow, lWrist, rWrist]
+        .filter(pt => pt.visibility > 0.4).length;
+
+      if (keyVisibility < 4) {
+        infoBox.innerText = "Ajusta la cámara...";
+        infoBox.style.borderColor = "#FF9500";
+        infoBox.style.color = "#FF9500";
+        feedbackBanner.innerText = "Necesito ver tus brazos y hombros";
+        feedbackBanner.style.borderColor = "#FF9500";
+        feedbackBanner.style.color = "#FF9500";
+        return;
+      }
+
+      infoBox.innerText = isCalibrated ? "CUERPO DETECTADO ✓" : "Calibrando...";
+      infoBox.style.borderColor = isCalibrated ? "#CCFF00" : "#FF9500";
+      infoBox.style.color = isCalibrated ? "#CCFF00" : "#FF9500";
+
+      // ---- COMPUTE ELBOW ANGLES ----
+      // Use whichever arm has better visibility
+      let elbowAngle = 180;
+      let usedArms = 0;
+      let totalAngle = 0;
+
+      // Left arm angle
+      if (lShoulder.visibility > 0.4 && lElbow.visibility > 0.4 && lWrist.visibility > 0.4) {
+        const leftAngle = calcAngle(lShoulder, lElbow, lWrist);
+        totalAngle += leftAngle;
+        usedArms++;
+      }
+      // Right arm angle
+      if (rShoulder.visibility > 0.4 && rElbow.visibility > 0.4 && rWrist.visibility > 0.4) {
+        const rightAngle = calcAngle(rShoulder, rElbow, rWrist);
+        totalAngle += rightAngle;
+        usedArms++;
+      }
+
+      if (usedArms > 0) {
+        elbowAngle = totalAngle / usedArms;
+      }
+
+      // Apply exponential moving average smoothing
+      smoothedAngle = smoothedAngle * SMOOTHING_FACTOR + elbowAngle * (1 - SMOOTHING_FACTOR);
+
+      // ---- COMPUTE SHOULDER DISPLACEMENT ----
+      const avgShoulderY = (lShoulder.y + rShoulder.y) / 2;
+
+      // During countdown, collect calibration data
+      if (!isCalibrated) {
+        calibrationSamples.push(avgShoulderY);
+        statusBox.innerText = "Calibrando";
+        statusBox.style.borderColor = "#FF9500";
+        statusBox.style.color = "#FF9500";
+        return;
+      }
+
+      // Shoulder displacement from baseline (positive = moved down)
+      const shoulderDrop = avgShoulderY - baselineShoulderY;
+
+      // ---- UPDATE VISUAL INDICATORS ----
+      // Angle bar: 180° = 0% fill (arms straight), 0° = 100% fill (fully bent)
+      const anglePct = Math.max(0, Math.min(100, ((180 - smoothedAngle) / 180) * 100));
+      angleFill.style.height = anglePct + '%';
+      angleLabel.innerText = Math.round(smoothedAngle) + '°';
+
+      // Color the angle bar based on state
+      if (smoothedAngle < DOWN_ANGLE_THRESHOLD) {
+        angleFill.style.background = 'linear-gradient(to top, #FF2D55, #FF2D55)';
+      } else if (smoothedAngle < UP_ANGLE_THRESHOLD) {
+        angleFill.style.background = 'linear-gradient(to top, #FF9500, #CCFF00)';
+      } else {
+        angleFill.style.background = 'linear-gradient(to top, #CCFF00, #4CD964)';
+      }
+
+      // ---- PUSH-UP STATE MACHINE ----
+      const now = Date.now();
+
+      if (pushupState === 'UP') {
+        // Looking for the user to go DOWN
+        const isAngleDown = smoothedAngle < DOWN_ANGLE_THRESHOLD;
+        const isShoulderDown = shoulderDrop > MIN_SHOULDER_DROP;
+
+        // Need BOTH angle AND shoulder drop (prevents false triggers from just waving arms)
+        if (isAngleDown && isShoulderDown) {
+          downFrameCount++;
+          upFrameCount = 0;
+
+          if (downFrameCount >= REQUIRED_FRAMES_DOWN) {
+            pushupState = 'DOWN';
+            downFrameCount = 0;
+            statusBox.innerText = "¡ABAJO!";
+            statusBox.style.borderColor = "#FF2D55";
+            statusBox.style.color = "#FF2D55";
+            feedbackBanner.innerText = "¡Bien! Ahora sube";
+            feedbackBanner.style.borderColor = "#FF2D55";
+            feedbackBanner.style.color = "#FF2D55";
+            sendToApp({ type: 'state', value: 'DOWN' });
+          } else {
+            feedbackBanner.innerText = "Bajando...";
+            feedbackBanner.style.borderColor = "#FF9500";
+            feedbackBanner.style.color = "#FF9500";
+          }
+        } else {
+          downFrameCount = 0;
+          feedbackBanner.innerText = isAngleDown
+            ? "Baja más el cuerpo"
+            : "Dobla los codos para bajar";
+          feedbackBanner.style.borderColor = "#555";
+          feedbackBanner.style.color = "#888";
+        }
+      } else if (pushupState === 'DOWN') {
+        // Looking for the user to come back UP
+        const isAngleUp = smoothedAngle > UP_ANGLE_THRESHOLD;
+
+        if (isAngleUp) {
+          upFrameCount++;
+          downFrameCount = 0;
+
+          if (upFrameCount >= REQUIRED_FRAMES_UP && (now - lastPushupTime > PUSHUP_COOLDOWN_MS)) {
+            pushupState = 'UP';
+            lastPushupTime = now;
+            upFrameCount = 0;
+            statusBox.innerText = "¡ARRIBA! ✓";
+            statusBox.style.borderColor = "#CCFF00";
+            statusBox.style.color = "#CCFF00";
+            feedbackBanner.innerText = "¡FLEXIÓN CONTADA! 💪";
+            feedbackBanner.style.borderColor = "#CCFF00";
+            feedbackBanner.style.color = "#CCFF00";
+            sendToApp({ type: 'state', value: 'UP' });
+            sendToApp({ type: 'pushup' });
+
+            // Flash the feedback banner
+            setTimeout(() => {
+              if (pushupState === 'UP') {
+                feedbackBanner.innerText = "Sigue bajando para la siguiente";
+                feedbackBanner.style.borderColor = "#555";
+                feedbackBanner.style.color = "#888";
+              }
+            }, 1200);
+          } else {
+            feedbackBanner.innerText = "Subiendo...";
+            feedbackBanner.style.borderColor = "#CCFF00";
+            feedbackBanner.style.color = "#CCFF00";
+          }
+        } else {
+          upFrameCount = 0;
+          feedbackBanner.innerText = "Extiende los brazos para subir";
+          feedbackBanner.style.borderColor = "#FF2D55";
+          feedbackBanner.style.color = "#FF2D55";
+        }
+      }
+
+      // ---- DRAW ANGLE ARC ON ELBOWS (visual feedback) ----
+      [[lShoulder, lElbow, lWrist], [rShoulder, rElbow, rWrist]].forEach(([shoulder, elbow, wrist]) => {
+        if (shoulder.visibility > 0.4 && elbow.visibility > 0.4 && wrist.visibility > 0.4) {
+          const angle = calcAngle(shoulder, elbow, wrist);
+          const ex = elbow.x * canvas.width;
+          const ey = elbow.y * canvas.height;
+
+          // Draw angle text near elbow
+          ctx.font = 'bold 14px monospace';
+          ctx.fillStyle = angle < DOWN_ANGLE_THRESHOLD ? '#FF2D55' : (angle < UP_ANGLE_THRESHOLD ? '#FF9500' : '#CCFF00');
+          ctx.textAlign = 'center';
+          ctx.fillText(Math.round(angle) + '°', ex, ey - 15);
+        }
+      });
     }
   </script>
 </body>

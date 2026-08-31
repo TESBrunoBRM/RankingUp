@@ -16,26 +16,34 @@ export default function NutritionScreen() {
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<FoodLog[]>([]);
   const [summary, setSummary] = useState<NutritionSummaryResponse | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const fetchNutritionData = async () => {
-    if (!user) return;
+  const fetchNutritionData = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      setErrorMessage('');
       const today = getLocalDateString();
       const dailySummary = await nutritionLogService.getDailySummary(today);
       setSummary(dailySummary);
       setLogs(dailySummary.logs);
     } catch (error: unknown) {
-      console.warn('NutritionScreen:', getErrorMessage(error, 'No se pudo cargar nutrición.'));
+      const message = getErrorMessage(error, 'No se pudo cargar nutrición.');
+      console.warn('NutritionScreen:', message);
+      setErrorMessage(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchNutritionData();
-    }, [user])
+      void fetchNutritionData();
+    }, [fetchNutritionData])
   );
 
   const handleDelete = async (id: string) => {
@@ -70,8 +78,32 @@ export default function NutritionScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {errorMessage ? (
+          <View style={styles.errorNotice}>
+            <Ionicons name="cloud-offline-outline" size={22} color="#FFB020" />
+            <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>NO SE PUDO ACTUALIZAR</Text>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+            <TouchableOpacity
+              accessibilityLabel="Reintentar carga de nutrición"
+              style={styles.retryButton}
+              onPress={() => void fetchNutritionData()}
+            >
+              <Ionicons name="refresh" size={20} color="#121212" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {loading && !summary ? (
+          <View style={styles.loadingPanel}>
+            <ActivityIndicator color="#CCFF00" />
+            <Text style={styles.loadingText}>CARGANDO RESUMEN</Text>
+          </View>
+        ) : null}
+
         {/* Calories Card */}
-        <View style={styles.summaryCard}>
+        {summary ? <View style={styles.summaryCard}>
           <View style={styles.caloriesRow}>
             <View style={styles.calCol}>
               <Text style={styles.calValue}>{targetCals}</Text>
@@ -104,7 +136,7 @@ export default function NutritionScreen() {
               <Text style={styles.macroLabel}>GRASAS</Text>
             </View>
           </View>
-        </View>
+        </View> : null}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>ALIMENTOS DE HOY</Text>
@@ -113,8 +145,14 @@ export default function NutritionScreen() {
           </TouchableOpacity>
         </View>
 
-        {loading ? (
+        {loading && summary ? (
           <ActivityIndicator color="#CCFF00" style={{ marginTop: 40 }} />
+        ) : errorMessage && !summary ? (
+          <View style={styles.emptyCard}>
+            <Ionicons name="warning-outline" size={44} color="#FFB020" />
+            <Text style={styles.emptyTitle}>SIN DATOS DISPONIBLES</Text>
+            <Text style={styles.emptyText}>Revisa que la API esté activa y vuelve a intentarlo.</Text>
+          </View>
         ) : logs.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="fast-food-outline" size={48} color="#333" />
@@ -145,13 +183,21 @@ export default function NutritionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
+  container: { flex: 1, backgroundColor: '#101114' },
   header: { padding: 24, paddingBottom: 10 },
   mainTitle: { fontSize: 32, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 },
   subtitle: { fontSize: 10, color: '#A0A0A0', letterSpacing: 2, fontWeight: '700' },
   scrollContent: { padding: 24, paddingBottom: 60 },
   
-  summaryCard: { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#333', marginBottom: 32 },
+  errorNotice: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#211D14', borderRadius: 8, padding: 14, borderWidth: 1, borderColor: '#594719', marginBottom: 16 },
+  errorContent: { flex: 1 },
+  errorTitle: { color: '#FFB020', fontSize: 11, fontWeight: '900' },
+  errorText: { color: '#D6D6D6', fontSize: 12, lineHeight: 17, marginTop: 3 },
+  retryButton: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CCFF00' },
+  loadingPanel: { minHeight: 150, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#1A1A1A', borderRadius: 8, borderWidth: 1, borderColor: '#333', marginBottom: 24 },
+  loadingText: { color: '#A0A0A0', fontSize: 11, fontWeight: '800' },
+
+  summaryCard: { backgroundColor: '#1A1A1A', borderRadius: 8, padding: 20, borderWidth: 1, borderColor: '#333', marginBottom: 32 },
   caloriesRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottomWidth: 1, borderBottomColor: '#2A2A2A', paddingBottom: 20 },
   calCol: { alignItems: 'center' },
   calValue: { fontSize: 28, fontWeight: '900', color: '#FFF' },
@@ -167,15 +213,15 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 },
   addBtnSmall: { backgroundColor: '#CCFF00', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   
-  logCard: { backgroundColor: '#1A1A1A', padding: 16, borderRadius: 12, flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#2A2A2A' },
+  logCard: { backgroundColor: '#1A1A1A', padding: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#2A2A2A' },
   logContent: { flex: 1 },
   logName: { color: '#FFF', fontSize: 16, fontWeight: '800', marginBottom: 4 },
   logMacros: { color: '#A0A0A0', fontSize: 12, fontWeight: '600' },
   deleteBtn: { padding: 8 },
   
-  emptyCard: { alignItems: 'center', padding: 40, backgroundColor: '#1A1A1A', borderRadius: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#333', marginTop: 12 },
+  emptyCard: { alignItems: 'center', padding: 40, backgroundColor: '#1A1A1A', borderRadius: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: '#333', marginTop: 12 },
   emptyTitle: { color: '#FFF', fontSize: 16, fontWeight: '900', marginTop: 16, marginBottom: 8, letterSpacing: 1 },
   emptyText: { color: '#888', textAlign: 'center', fontSize: 12, marginBottom: 24, lineHeight: 18 },
-  addBtn: { backgroundColor: '#2A2A2A', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 20 },
+  addBtn: { backgroundColor: '#2A2A2A', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
   addBtnText: { color: '#CCFF00', fontWeight: '900', fontSize: 12, letterSpacing: 1 }
 });

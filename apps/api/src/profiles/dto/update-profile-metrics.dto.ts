@@ -1,8 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, Max, Min } from 'class-validator';
-import type { GoalType } from '../../domain/domain.types';
+import { IsEnum, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import type { GenderType, GoalType } from '../../domain/domain.types';
 
 const GOAL_TYPES: GoalType[] = ['bajar', 'mantener', 'subir'];
+const GENDER_TYPES: GenderType[] = ['hombre', 'mujer'];
 
 export class UpdateProfileMetricsDto {
   @ApiProperty({ example: 75, minimum: 30, maximum: 300 })
@@ -28,4 +29,16 @@ export class UpdateProfileMetricsDto {
   @Min(800)
   @Max(7000)
   targetCalories?: number;
+
+  @ApiPropertyOptional({ example: 25, minimum: 10, maximum: 100 })
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(100)
+  age?: number;
+
+  @ApiPropertyOptional({ enum: GENDER_TYPES })
+  @IsOptional()
+  @IsEnum(GENDER_TYPES)
+  gender?: GenderType;
 }

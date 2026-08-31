@@ -115,7 +115,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
+  container: { flex: 1, backgroundColor: '#101114' },
   scrollContent: { padding: 24, paddingBottom: 40 },
   title: { fontSize: 32, fontWeight: '900', color: '#CCFF00', marginBottom: 8, fontStyle: 'italic', letterSpacing: 1 },
   subtitle: { fontSize: 14, color: '#A0A0A0', marginBottom: 32, lineHeight: 20 },

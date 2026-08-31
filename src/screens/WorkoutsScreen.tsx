@@ -125,7 +125,7 @@ export default function WorkoutsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#101114',
   },
   header: {
     flexDirection: 'row',

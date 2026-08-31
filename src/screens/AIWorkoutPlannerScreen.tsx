@@ -200,7 +200,7 @@ export default function AIWorkoutPlannerScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
+  container: { flex: 1, backgroundColor: '#101114' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 },
   backButton: { padding: 8 },
   backButtonText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   gridBtnActive: { backgroundColor: 'rgba(204,255,0,0.1)', borderColor: '#CCFF00' },
   gridText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800' },
   gridTextActive: { color: '#CCFF00' },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingBottom: 40, paddingTop: 20, backgroundColor: '#121212' },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingBottom: 40, paddingTop: 20, backgroundColor: '#101114' },
   generateBtn: { backgroundColor: '#1E90FF', borderRadius: 12, height: 56, justifyContent: 'center', alignItems: 'center', marginVertical: 8 },
   generateText: { color: '#FFF', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.5, textTransform: 'uppercase' },
   loadingTitle: { fontSize: 24, fontWeight: '900', color: '#FFF', marginTop: 20, marginBottom: 8, letterSpacing: 1 },

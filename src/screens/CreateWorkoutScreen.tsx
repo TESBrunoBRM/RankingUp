@@ -128,7 +128,7 @@ export default function CreateWorkoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#101114',
   },
   header: {
     paddingHorizontal: 24,

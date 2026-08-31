@@ -1,6 +1,5 @@
-import type { GoalType } from './domain.types';
-
-export type GenderType = 'hombre' | 'mujer';
+import type { GenderType, GoalType } from './domain.types';
+export type { GenderType } from './domain.types';
 
 interface TargetCaloriesInput {
   weight: number;

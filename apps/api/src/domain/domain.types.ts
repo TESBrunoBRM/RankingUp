@@ -1,6 +1,7 @@
 export type WeekDay = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 export type MealType = 'desayuno' | 'almuerzo' | 'cena' | 'snack';
 export type GoalType = 'bajar' | 'mantener' | 'subir';
+export type GenderType = 'hombre' | 'mujer';
 export type NutritionUnit = 'g' | 'ml' | 'oz' | 'unidad' | 'porcion';
 export type BodySlug =
   | 'chest'
@@ -54,6 +55,11 @@ export interface ProfileRecord {
   height: number | null;
   goal?: GoalType | null;
   target_calories?: number | null;
+  age?: number | null;
+  gender?: GenderType | null;
+  username?: string | null;
+  bio?: string | null;
+  is_public?: boolean | null;
   created_at?: string;
 }
 
