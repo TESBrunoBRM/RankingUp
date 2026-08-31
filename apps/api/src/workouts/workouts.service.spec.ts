@@ -4,6 +4,7 @@ import { SupabaseRepository } from '../supabase/supabase.repository';
 import { WorkoutsService } from './workouts.service';
 
 const repositoryMock = {
+  getExerciseTargetsByNames: jest.fn().mockResolvedValue(new Map()),
   getWorkoutForUser: jest.fn(),
   createWorkoutLog: jest.fn(),
   insertExerciseLogs: jest.fn(),

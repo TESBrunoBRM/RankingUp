@@ -58,5 +58,3 @@ export const searchFoods = (query: string): FoodSearchResult[] => {
 
 export const getFoodById = (foodId: string): FoodSearchResult | null =>
   FOOD_CATALOG.find((item) => item.food_id === foodId) ?? null;
-
-export const findFoodByBarcode = (_barcode: string): FoodSearchResult | null => null;

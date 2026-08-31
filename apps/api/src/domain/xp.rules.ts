@@ -24,6 +24,17 @@ const XP_RULES: Record<string, number> = {
   hombros: 10,
   pantorrillas: 10,
   abdominales: 10,
+  // Vocabulario `target` del dataset de ejercicios (en ingles).
+  pectorals: 15,
+  'upper back': 15,
+  quads: 15,
+  spine: 15,
+  abs: 10,
+  delts: 10,
+  forearms: 10,
+  'cardiovascular system': 10,
+  adductors: 10,
+  abductors: 10,
 };
 
 export const getXpForMuscle = (muscle: string): number =>

@@ -1,4 +1,5 @@
-import { Exercise } from '../types';
+import { CatalogExerciseDetail, Exercise } from '../types';
+import { rankingUpApiClient } from './rankingUpApiClient';
 
 const FEATURED_EXERCISES: Exercise[] = [
   { name: 'Press de Banca', type: 'Fuerza', muscle: 'Pecho', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Acostado en banca, baja la barra con control hasta el pecho y empuja verticalmente manteniendo los hombros estables.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif' },
@@ -23,29 +24,70 @@ const normalize = (value: string) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
+// El catalogo completo (1.324 ejercicios) vive en la API. Estos 14 destacados
+// se mantienen como respaldo offline y para las rutinas antiguas en espanol.
+const detailCache = new Map<string, Exercise | undefined>();
+
+const findFeatured = (name: string): Exercise | undefined => {
+  const normalizedName = normalize(name);
+  return (
+    FEATURED_EXERCISES.find((exercise) => normalize(exercise.name) === normalizedName) ??
+    FEATURED_EXERCISES.find((exercise) => normalize(exercise.name).includes(normalizedName))
+  );
+};
+
+const toExercise = (detail: CatalogExerciseDetail): Exercise => ({
+  name: detail.name,
+  type: detail.bodyPartLabel,
+  muscle: detail.targetLabel,
+  equipment: detail.equipmentLabel,
+  difficulty: detail.muscleGroupLabel,
+  instructions: detail.instructions,
+  gifUrl: detail.gifUrl ?? undefined,
+});
+
 export const exerciseApi = {
-  async getExercises(
-    filterType: 'muscle' | 'type' | 'difficulty' | 'name' = 'type',
-    filterValue: string = 'strength'
-  ): Promise<Exercise[]> {
-    const normalizedFilter = normalize(filterValue);
+  /**
+   * Precarga la ficha de varios ejercicios en una sola peticion y las deja en
+   * cache, para que las pantallas de rutina no hagan una llamada por ejercicio.
+   */
+  async primeExercises(names: string[]): Promise<void> {
+    const pending = names
+      .map((name) => name.trim())
+      .filter((name) => name && !detailCache.has(normalize(name)) && !findFeatured(name));
 
-    if (filterType === 'type' && ['strength', 'fuerza'].includes(normalizedFilter)) {
-      return FEATURED_EXERCISES;
+    if (pending.length === 0) return;
+
+    try {
+      const details = await rankingUpApiClient.getExercisesByNames([...new Set(pending)]);
+      const byNormalizedName = new Map(details.map((detail) => [normalize(detail.name), detail]));
+
+      for (const name of pending) {
+        const key = normalize(name);
+        const detail = byNormalizedName.get(key);
+        detailCache.set(key, detail ? toExercise(detail) : undefined);
+      }
+    } catch {
+      // Sin red: cada pantalla cae al lookup individual, que ya tolera el fallo.
     }
-
-    const results = FEATURED_EXERCISES.filter((exercise) =>
-      normalize(String(exercise[filterType])).includes(normalizedFilter)
-    );
-
-    return results.length > 0 ? results : FEATURED_EXERCISES;
   },
 
   async getExerciseByName(name: string): Promise<Exercise | undefined> {
     const normalizedName = normalize(name);
-    return (
-      FEATURED_EXERCISES.find((exercise) => normalize(exercise.name) === normalizedName) ??
-      FEATURED_EXERCISES.find((exercise) => normalize(exercise.name).includes(normalizedName))
-    );
+
+    const featured = findFeatured(name);
+    if (featured) return featured;
+
+    if (detailCache.has(normalizedName)) return detailCache.get(normalizedName);
+
+    try {
+      const detail = await rankingUpApiClient.getExerciseByName(name);
+      const mapped = detail ? toExercise(detail) : undefined;
+      detailCache.set(normalizedName, mapped);
+      return mapped;
+    } catch {
+      // Sin red o sin sesion: la pantalla se pinta sin previsualizacion.
+      return undefined;
+    }
   },
 };

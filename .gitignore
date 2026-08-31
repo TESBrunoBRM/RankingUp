@@ -25,14 +25,22 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+.rankingup-api.*.log
 
 # macOS
 .DS_Store
 *.pem
 
 # local env files
+# Se ignora cualquier .env salvo la plantilla sin secretos.
 .env
-.env*.local
+.env.*
+!.env.example
+
+# skills instaladas con `npx skills add`
+.agents/
+.claude/skills/
+.serena/
 
 # typescript
 *.tsbuildinfo

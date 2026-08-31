@@ -1,11 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../types';
-
-const { width } = Dimensions.get('window');
+import { PUSH_UP_MONSTERS, PUSH_UP_VICTORY_TARGET } from '../constants/pushUpGame';
 
 export default function MinigamesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -43,31 +42,19 @@ export default function MinigamesScreen() {
           <View style={styles.cardBody}>
             <Text style={styles.gameTitle}>Push Ups vs Monsters</Text>
             <Text style={styles.gameDesc}>
-              Coloca tu celular en el suelo y usa la cámara frontal. Cada flexión (push up) que hagas es un ataque para derrotar a las criaturas. ¡Gana XP y limpia el calabozo!
+              Supera seis niveles con la cámara frontal. Cada flexión es un ataque y la campaña completa termina exactamente en {PUSH_UP_VICTORY_TARGET} repeticiones.
             </Text>
 
-            {/* Monster Preview List */}
             <View style={styles.monsterRow}>
-              <View style={styles.monsterIconContainer}>
-                <Text style={styles.monsterEmoji}>👹</Text>
-                <Text style={styles.monsterMiniLabel}>Goblins</Text>
-              </View>
-              <View style={styles.monsterIconContainer}>
-                <Text style={styles.monsterEmoji}>💀</Text>
-                <Text style={styles.monsterMiniLabel}>Skeletons</Text>
-              </View>
-              <View style={styles.monsterIconContainer}>
-                <Text style={styles.monsterEmoji}>🐗</Text>
-                <Text style={styles.monsterMiniLabel}>Orcs</Text>
-              </View>
-              <View style={styles.monsterIconContainer}>
-                <Text style={styles.monsterEmoji}>🧙‍♂️</Text>
-                <Text style={styles.monsterMiniLabel}>Mages</Text>
-              </View>
-              <View style={styles.monsterIconContainer}>
-                <Text style={styles.monsterEmoji}>🐲</Text>
-                <Text style={styles.monsterMiniLabel}>Dragons</Text>
-              </View>
+              {PUSH_UP_MONSTERS.map((monster) => (
+                <View key={monster.level} style={styles.monsterIconContainer}>
+                  <View style={[styles.monsterIconBadge, { borderColor: monster.color }]}>
+                    <Ionicons name={monster.icon} size={20} color={monster.color} />
+                  </View>
+                  <Text style={styles.monsterMiniLabel} numberOfLines={1}>{monster.shortName}</Text>
+                  <Text style={styles.monsterHpLabel}>{monster.maxHp} HP</Text>
+                </View>
+              ))}
             </View>
 
             <View style={styles.rewardRow}>
@@ -84,6 +71,47 @@ export default function MinigamesScreen() {
             <View style={styles.playButton}>
               <Text style={styles.playButtonText}>¡JUGAR AHORA!</Text>
               <Ionicons name="play-forward" size={18} color="#000" />
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Game Card 2: 1v1 duel */}
+        <TouchableOpacity
+          style={styles.card}
+          activeOpacity={0.9}
+          onPress={() => navigation.navigate('DuelLobby')}
+        >
+          <View style={styles.cardHeader}>
+            <View style={[styles.badge, { backgroundColor: '#FF007F' }]}>
+              <Ionicons name="flash" size={14} color="#FFF" />
+              <Text style={[styles.badgeText, { color: '#FFF' }]}>NUEVO</Text>
+            </View>
+            <View style={styles.difficultyBadge}>
+              <Text style={styles.difficultyText}>1v1</Text>
+            </View>
+          </View>
+
+          <View style={styles.cardBody}>
+            <Text style={styles.gameTitle}>Duelo de Flexiones</Text>
+            <Text style={styles.gameDesc}>
+              Reta a otro atleta de RankingUp. Los dos hacéis flexiones a la vez y veis el
+              marcador del rival en tiempo real. Gana quien llegue antes al objetivo.
+            </Text>
+
+            <View style={styles.rewardRow}>
+              <View style={styles.rewardItem}>
+                <Ionicons name="add-circle" size={16} color="#CCFF00" />
+                <Text style={styles.rewardText}>+75 XP al ganador</Text>
+              </View>
+              <View style={styles.rewardItem}>
+                <Ionicons name="people" size={16} color="#CCFF00" />
+                <Text style={styles.rewardText}>Marcador en vivo</Text>
+              </View>
+            </View>
+
+            <View style={styles.playButton}>
+              <Text style={styles.playButtonText}>BUSCAR RIVAL</Text>
+              <Ionicons name="flash" size={18} color="#000" />
             </View>
           </View>
         </TouchableOpacity>
@@ -114,7 +142,7 @@ export default function MinigamesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#101114',
   },
   header: {
     flexDirection: 'row',
@@ -218,27 +246,37 @@ const styles = StyleSheet.create({
   },
   monsterRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     backgroundColor: '#111',
-    padding: 12,
-    borderRadius: 16,
+    padding: 10,
+    borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: '#222',
   },
   monsterIconContainer: {
     alignItems: 'center',
+    width: '16%',
   },
-  monsterEmoji: {
-    fontSize: 22,
+  monsterIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    backgroundColor: '#191921',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 4,
   },
   monsterMiniLabel: {
-    fontSize: 8,
-    color: '#666',
+    width: '100%',
+    fontSize: 7,
+    color: '#A0A0A0',
     fontWeight: '700',
     textTransform: 'uppercase',
+    textAlign: 'center',
   },
+  monsterHpLabel: { fontSize: 7, color: '#666', fontWeight: '800', marginTop: 2 },
   rewardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

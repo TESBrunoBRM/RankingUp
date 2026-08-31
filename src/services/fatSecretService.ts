@@ -6,11 +6,6 @@ export const fatSecretService = {
     return rankingUpApiClient.searchFoods(query);
   },
 
-  async findFoodIdByBarcode(barcode: string): Promise<string | null> {
-    const result = await rankingUpApiClient.findFoodIdByBarcode(barcode);
-    return result.food_id;
-  },
-
   async getFood(foodId: string): Promise<FoodSearchResult | null> {
     try {
       return await rankingUpApiClient.getFood(foodId);

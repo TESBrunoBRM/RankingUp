@@ -7,17 +7,14 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../types';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { aiAnalyzerService } from '../services/aiAnalyzerService';
-import { fatSecretService } from '../services/fatSecretService';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'CameraScanner'>;
 
 export default function CameraScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
-  const [mode, setMode] = useState<'ai' | 'barcode'>('ai');
   const [isProcessing, setIsProcessing] = useState(false);
   const cameraRef = useRef<React.ElementRef<typeof CameraView> | null>(null);
   const navigation = useNavigation<NavigationProp>();
-  const [barcodeScanned, setBarcodeScanned] = useState(false);
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -68,46 +65,9 @@ export default function CameraScannerScreen() {
     }
   };
 
-  const handleBarcodeScanned = async ({ data }: { type: string; data: string }) => {
-    if (barcodeScanned || isProcessing || mode !== 'barcode') return;
-    setBarcodeScanned(true);
-    setIsProcessing(true);
-
-    try {
-      const foodId = await fatSecretService.findFoodIdByBarcode(data);
-      if (foodId) {
-        const food = await fatSecretService.getFood(foodId);
-        if (food) {
-          setIsProcessing(false);
-          navigation.navigate('SearchFood', { scannedFood: food });
-        } else {
-          Alert.alert('Sin resultados', 'No pudimos obtener la información del alimento.', [
-            { text: 'OK', onPress: () => { setBarcodeScanned(false); setIsProcessing(false); } }
-          ]);
-        }
-      } else {
-        Alert.alert('No encontrado', 'Este código de barras no está en nuestra base de datos.', [
-          { text: 'OK', onPress: () => { setBarcodeScanned(false); setIsProcessing(false); } }
-        ]);
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Hubo un problema al buscar el código de barras.', [
-        { text: 'OK', onPress: () => { setBarcodeScanned(false); setIsProcessing(false); } }
-      ]);
-    }
-  };
-
   return (
     <View style={styles.container}>
-      <CameraView 
-        style={styles.camera} 
-        facing="back"
-        ref={cameraRef}
-        barcodeScannerSettings={{
-          barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'qr'],
-        }}
-        onBarcodeScanned={mode === 'barcode' && !barcodeScanned ? handleBarcodeScanned : undefined}
-      >
+      <CameraView style={styles.camera} facing="back" ref={cameraRef}>
         <View style={styles.overlay}>
           {/* Header */}
           <View style={styles.header}>
@@ -134,34 +94,14 @@ export default function CameraScannerScreen() {
 
           {/* Controls */}
           <View style={styles.controls}>
-            <View style={styles.modeSelector}>
-              <TouchableOpacity 
-                style={[styles.modeBtn, mode === 'ai' && styles.modeBtnActive]}
-                onPress={() => setMode('ai')}
-              >
-                <Text style={[styles.modeText, mode === 'ai' && styles.modeTextActive]}>Alimento (IA)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modeBtn, mode === 'barcode' && styles.modeBtnActive]}
-                onPress={() => setMode('barcode')}
-              >
-                <Text style={[styles.modeText, mode === 'barcode' && styles.modeTextActive]}>Código Barras</Text>
-              </TouchableOpacity>
-            </View>
-
-            {mode === 'ai' ? (
-              <TouchableOpacity 
-                style={[styles.captureBtn, isProcessing && styles.captureBtnDisabled]} 
-                onPress={handleCapture}
-                disabled={isProcessing}
-              >
-                <View style={styles.captureBtnInner} />
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.barcodeInstruction}>
-                <Text style={styles.barcodeText}>Apunta a un código de barras para escanear</Text>
-              </View>
-            )}
+            <Text style={styles.hint}>Encuadra el plato y pulsa para analizarlo</Text>
+            <TouchableOpacity
+              style={[styles.captureBtn, isProcessing && styles.captureBtnDisabled]}
+              onPress={handleCapture}
+              disabled={isProcessing}
+            >
+              <View style={styles.captureBtnInner} />
+            </TouchableOpacity>
           </View>
         </View>
       </CameraView>
@@ -188,18 +128,12 @@ const styles = StyleSheet.create({
   processingText: { color: '#121212', fontWeight: 'bold', fontSize: 12 },
 
   controls: { paddingBottom: 50, alignItems: 'center' },
-  modeSelector: { flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 30, padding: 4, marginBottom: 30 },
-  modeBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 26 },
-  modeBtnActive: { backgroundColor: '#CCFF00' },
-  modeText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-  modeTextActive: { color: '#121212' },
 
   captureBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center' },
   captureBtnInner: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFF' },
   captureBtnDisabled: { opacity: 0.5 },
   
-  barcodeInstruction: { height: 80, justifyContent: 'center', alignItems: 'center' },
-  barcodeText: { color: '#FFF', fontSize: 16, fontWeight: '500', textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: {width: 0, height: 1}, textShadowRadius: 4 },
+  hint: { color: '#FFF', fontSize: 14, fontWeight: '600', textAlign: 'center', marginBottom: 24, textShadowColor: 'rgba(0,0,0,0.8)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
 
   permissionText: { color: '#FFF', fontSize: 16, textAlign: 'center', marginBottom: 20 },
   btn: { backgroundColor: '#CCFF00', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },

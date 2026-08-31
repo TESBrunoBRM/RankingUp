@@ -16,12 +16,6 @@ export class FoodsController {
     return this.foodsService.search(query);
   }
 
-  @Get('barcode/:barcode')
-  @ApiOperation({ summary: 'Resuelve un codigo de barras a food_id.' })
-  findByBarcode(@Param('barcode') barcode: string) {
-    return this.foodsService.findByBarcode(barcode);
-  }
-
   @Get(':foodId')
   @ApiOperation({ summary: 'Obtiene un alimento por id.' })
   getFood(@Param('foodId') foodId: string) {

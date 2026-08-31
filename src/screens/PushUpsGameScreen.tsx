@@ -16,33 +16,22 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../types';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
-import { appEnv } from '../config/env';
+import {
+  ALLOWED_WEBVIEW_PERMISSIONS,
+  MINIGAME_ORIGIN,
+  MINIGAME_URL,
+  PUSH_UP_MONSTERS,
+  PUSH_UP_VICTORY_TARGET,
+} from '../constants/pushUpGame';
 
 const { width, height } = Dimensions.get('window');
-
-interface Monster {
-  name: string;
-  emoji: string;
-  maxHp: number;
-  level: number;
-  color: string;
-}
-
-const MONSTERS: Monster[] = [
-  { name: 'Goblin Travieso', emoji: '👹', maxHp: 8, level: 1, color: '#4CD964' },
-  { name: 'Guerrero Esqueleto', emoji: '💀', maxHp: 12, level: 2, color: '#A0A0A0' },
-  { name: 'General Orco', emoji: '🐗', maxHp: 18, level: 3, color: '#FF9500' },
-  { name: 'Mago de las Sombras', emoji: '🧙‍♂️', maxHp: 24, level: 4, color: '#5856D6' },
-  { name: 'Dragón Bebé', emoji: '🐲', maxHp: 32, level: 5, color: '#FF2D55' },
-  { name: 'Dragón Ancestral', emoji: '🐉', maxHp: 45, level: 6, color: '#CCFF00' },
-];
 
 export default function PushUpsGameScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const [permission, requestPermission] = useCameraPermissions();
 
   const [currentLevel, setCurrentLevel] = useState(0);
-  const [monsterHp, setMonsterHp] = useState(MONSTERS[0].maxHp);
+  const [monsterHp, setMonsterHp] = useState(PUSH_UP_MONSTERS[0].maxHp);
   const [playerReps, setPlayerReps] = useState(0);
   const [isVictory, setIsVictory] = useState(false);
   const [gainingXp, setGainingXp] = useState(false);
@@ -58,7 +47,7 @@ export default function PushUpsGameScreen() {
   const levelUpAnim = useRef(new Animated.Value(0)).current;
 
   // Active monster data
-  const currentMonster = MONSTERS[currentLevel];
+  const currentMonster = PUSH_UP_MONSTERS[currentLevel];
 
   // Request permission on mount
   useEffect(() => {
@@ -110,7 +99,7 @@ export default function PushUpsGameScreen() {
 
     // Check if monster defeated
     if (nextHp === 0) {
-      if (currentLevel < MONSTERS.length - 1) {
+      if (currentLevel < PUSH_UP_MONSTERS.length - 1) {
         // Next Level / Next Monster
         setGainingXp(true);
         Animated.timing(levelUpAnim, {
@@ -120,7 +109,7 @@ export default function PushUpsGameScreen() {
         }).start(() => {
           setTimeout(() => {
             setCurrentLevel(currentLevel + 1);
-            setMonsterHp(MONSTERS[currentLevel + 1].maxHp);
+            setMonsterHp(PUSH_UP_MONSTERS[currentLevel + 1].maxHp);
             setGainingXp(false);
             levelUpAnim.setValue(0);
           }, 1200);
@@ -130,7 +119,7 @@ export default function PushUpsGameScreen() {
         setIsVictory(true);
         setGainingXp(true);
         try {
-          const res = await rankingUpApiClient.rewardMinigameXp();
+          const res = await rankingUpApiClient.rewardMinigameXp(PUSH_UP_VICTORY_TARGET);
           setEarnedXp(res.gainedXp);
           setTotalXp(res.totalXp);
         } catch (err) {
@@ -208,7 +197,6 @@ export default function PushUpsGameScreen() {
 
   // Cargamos el minijuego directamente por HTTPS desde GitHub Pages. Esto es estrictamente necesario porque los celulares
   // bloquean el acceso a la cámara (getUserMedia) en conexiones inseguras (como HTTP local con la IP de tu PC).
-  const minigameUrl = 'https://tesbrunobrm.github.io/RankingUp/apps/api/public/minigame.html';
 
   return (
     <View style={styles.container}>
@@ -220,7 +208,17 @@ export default function PushUpsGameScreen() {
         <Text style={styles.headerTitle}>PUSH UPS VS MONSTERS</Text>
         <View style={styles.repCounter}>
           <Ionicons name="fitness" size={16} color="#CCFF00" />
-          <Text style={styles.repCountText}>{playerReps} REPS</Text>
+          <Text style={styles.repCountText}>{playerReps}/{PUSH_UP_VICTORY_TARGET}</Text>
+        </View>
+      </View>
+
+      <View style={styles.campaignProgress}>
+        <View style={styles.campaignProgressHeader}>
+          <Text style={styles.campaignProgressLabel}>PROGRESO DE CAMPAÑA</Text>
+          <Text style={styles.campaignProgressValue}>{Math.max(0, PUSH_UP_VICTORY_TARGET - playerReps)} RESTANTES</Text>
+        </View>
+        <View style={styles.campaignTrack}>
+          <View style={[styles.campaignFill, { width: `${Math.min(100, playerReps)}%` }]} />
         </View>
       </View>
 
@@ -230,27 +228,26 @@ export default function PushUpsGameScreen() {
           
           {/* WebView Camera Viewport (Large full width screen) */}
           <View style={styles.cameraFrame}>
-            {minigameUrl ? (
-              <WebView
-                source={{ uri: minigameUrl }}
+            <WebView
+                source={{ uri: MINIGAME_URL }}
                 style={styles.camera}
-                originWhitelist={['*']}
+                originWhitelist={[`${MINIGAME_ORIGIN}/*`]}
+                onShouldStartLoadWithRequest={(request) => request.url.startsWith(MINIGAME_ORIGIN)}
                 allowsInlineMediaPlayback={true}
                 mediaPlaybackRequiresUserAction={false}
                 onMessage={onWebViewMessage}
                 javaScriptEnabled={true}
                 domStorageEnabled={true}
                 onPermissionRequest={(event: any) => {
-                  event.grant(event.nativeEvent.resources);
+                  const requested: string[] = event.nativeEvent?.resources ?? [];
+                  const allowed = requested.filter((resource) => ALLOWED_WEBVIEW_PERMISSIONS.includes(resource));
+                  if (allowed.length > 0) {
+                    event.grant(allowed);
+                  } else {
+                    event.deny();
+                  }
                 }}
               />
-            ) : (
-              <View style={[styles.camera, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }]}>
-                <Text style={{ color: '#FF007F', fontWeight: 'bold', fontSize: 12, textAlign: 'center' }}>
-                  Falta EXPO_PUBLIC_RANKINGUP_API_URL en .env
-                </Text>
-              </View>
-            )}
             {/* Status floating badge */}
             <View style={[styles.detectorStatus, { borderColor: detectorState === 'DOWN' ? '#CCFF00' : '#FF007F' }]}>
               <Text style={[styles.detectorStatusText, { color: detectorState === 'DOWN' ? '#CCFF00' : '#FF007F' }]}>
@@ -267,11 +264,13 @@ export default function PushUpsGameScreen() {
             ]}
           >
             <View style={styles.levelIndicator}>
-              <Text style={styles.levelText}>NIVEL {currentMonster.level} / 6</Text>
+              <Text style={styles.levelText}>NIVEL {currentMonster.level} / {PUSH_UP_MONSTERS.length}</Text>
             </View>
 
             <View style={styles.monsterProfile}>
-              <Text style={styles.monsterEmoji}>{currentMonster.emoji}</Text>
+              <View style={[styles.monsterIcon, { borderColor: currentMonster.color }]}>
+                <Ionicons name={currentMonster.icon} size={38} color={currentMonster.color} />
+              </View>
               <View style={styles.monsterDetail}>
                 <Text style={styles.monsterName}>{currentMonster.name}</Text>
                 <Text style={styles.monsterHpVal}>
@@ -339,20 +338,17 @@ export default function PushUpsGameScreen() {
             <Text style={styles.instructionText}>
               Apoya tu celular frente a ti. Haz flexiones completas subiendo y bajando en el encuadre de la cámara.
             </Text>
-            
-            <TouchableOpacity style={styles.debugBtn} onPress={handlePushUp}>
-              <Ionicons name="sparkles" size={14} color="#000" />
-              <Text style={styles.debugBtnText}>Simular Ataque</Text>
-            </TouchableOpacity>
           </View>
         </View>
       ) : (
         /* Victory Screen */
         <View style={styles.victoryContainer}>
-          <Text style={styles.victoryIcon}>🏆</Text>
+          <View style={styles.victoryIcon}>
+            <Ionicons name="trophy" size={54} color="#CCFF00" />
+          </View>
           <Text style={styles.victoryTitle}>¡VICTORIA TOTAL!</Text>
           <Text style={styles.victorySubtitle}>
-            Has completado el calabozo derrotando al Dragón Ancestral con {playerReps} flexiones.
+            Completaste los seis niveles con {playerReps} flexiones y derrotaste al jefe final.
           </Text>
 
           <View style={styles.rewardCard}>
@@ -392,7 +388,9 @@ export default function PushUpsGameScreen() {
             },
           ]}
         >
-          <Text style={styles.levelUpEmoji}>🔥</Text>
+          <View style={styles.levelUpIcon}>
+            <Ionicons name="flash" size={30} color="#FF2D55" />
+          </View>
           <Text style={styles.levelUpTitle}>¡MONSTRUO ELIMINADO!</Text>
           <Text style={styles.levelUpSubtitle}>
             Cargando el siguiente nivel... prepárate.
@@ -503,6 +501,12 @@ const styles = StyleSheet.create({
     color: '#CCFF00',
     marginLeft: 4,
   },
+  campaignProgress: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#111118', borderBottomWidth: 1, borderBottomColor: '#242432' },
+  campaignProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  campaignProgressLabel: { color: '#8E8E9F', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  campaignProgressValue: { color: '#CCFF00', fontSize: 9, fontWeight: '900' },
+  campaignTrack: { height: 5, backgroundColor: '#252532', borderRadius: 3, overflow: 'hidden' },
+  campaignFill: { height: '100%', backgroundColor: '#CCFF00', borderRadius: 3 },
   playArea: {
     flex: 1,
     alignItems: 'center',
@@ -563,8 +567,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  monsterEmoji: {
-    fontSize: 48,
+  monsterIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    backgroundColor: '#101018',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 16,
   },
   monsterDetail: {
@@ -631,23 +641,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 12,
   },
-  debugBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#CCFF00',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    width: '100%',
-  },
-  debugBtnText: {
-    color: '#000',
-    fontSize: 13,
-    fontWeight: '900',
-    marginLeft: 6,
-    letterSpacing: 0.5,
-  },
   victoryContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -655,7 +648,14 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   victoryIcon: {
-    fontSize: 80,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 2,
+    borderColor: '#CCFF00',
+    backgroundColor: 'rgba(204,255,0,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
   victoryTitle: {
@@ -750,8 +750,13 @@ const styles = StyleSheet.create({
     elevation: 8,
     zIndex: 100,
   },
-  levelUpEmoji: {
-    fontSize: 40,
+  levelUpIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,45,85,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
   },
   levelUpTitle: {

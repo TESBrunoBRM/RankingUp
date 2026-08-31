@@ -3,18 +3,21 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AppStackParamList, Workout, WorkoutExercise, Exercise } from '../types';
+import { AppStackParamList, Workout, WorkoutExercise, Exercise, ExerciseStrengthLevel } from '../types';
 import { workoutService } from '../services/workoutService';
 import { workoutExerciseService } from '../services/workoutExerciseService';
 import { exerciseApi } from '../services/exerciseApi';
 import { Button } from '../components/Button';
 import { getErrorMessage } from '../utils/errors';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import { StrengthLevelBadge } from '../components/StrengthLevelBadge';
 
 type WorkoutDetailRouteProp = RouteProp<AppStackParamList, 'WorkoutDetail'>;
 type WorkoutDetailNavigationProp = NativeStackNavigationProp<AppStackParamList, 'WorkoutDetail'>;
 
 interface EnrichedExercise extends WorkoutExercise {
   exerciseDetails?: Exercise;
+  currentStrength?: ExerciseStrengthLevel;
 }
 
 export default function WorkoutDetailScreen() {
@@ -32,13 +35,20 @@ export default function WorkoutDetailScreen() {
       const workoutData = await workoutService.getWorkoutById(workoutId);
       setWorkout(workoutData);
 
-      const workoutExercises = await workoutExerciseService.getWorkoutExercises(workoutId);
+      const [workoutExercises, profileData] = await Promise.all([
+        workoutExerciseService.getWorkoutExercises(workoutId),
+        rankingUpApiClient.getOwnProfile(),
+      ]);
       
+      // Una sola peticion para las fichas de todos los ejercicios de la rutina.
+      await exerciseApi.primeExercises(workoutExercises.map((we) => we.exercise_id));
+
       const enriched = await Promise.all(
         workoutExercises.map(async (we) => {
           try {
             const details = await exerciseApi.getExerciseByName(we.exercise_id);
-            return { ...we, exerciseDetails: details };
+            const currentStrength = profileData.strengths.find((strength) => strength.exerciseName === we.exercise_id);
+            return { ...we, exerciseDetails: details, currentStrength };
           } catch {
             return we; 
           }
@@ -104,6 +114,7 @@ export default function WorkoutDetailScreen() {
           <Text style={styles.statsNumber}>{item.reps}</Text>
           <Text style={styles.statsLabel}> REPS</Text>
         </View>
+        {item.currentStrength ? <View style={styles.rankRow}><StrengthLevelBadge level={item.currentStrength.level} /></View> : null}
       </View>
       <TouchableOpacity 
         style={styles.deleteButton}
@@ -169,7 +180,7 @@ export default function WorkoutDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#101114',
   },
   header: {
     paddingHorizontal: 20,
@@ -252,6 +263,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  rankRow: { marginTop: 10 },
   statsNumber: {
     fontSize: 16,
     fontWeight: '900',
@@ -279,7 +291,7 @@ const styles = StyleSheet.create({
   footer: {
     padding: 24,
     paddingBottom: 32,
-    backgroundColor: '#121212',
+    backgroundColor: '#101114',
     borderTopWidth: 1,
     borderTopColor: '#1A1A1A',
   },

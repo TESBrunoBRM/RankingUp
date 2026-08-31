@@ -25,6 +25,8 @@
   - Calcula automáticamente tus objetivos calóricos diarios y distribución de macronutrientes.
   - Catálogo de alimentos servido desde backend y soporte opcional de proxy externo.
   - 📸 **Escáner de Alimentos:** Flujo de cámara preparado para demo con fallback seguro hacia búsqueda backend.
+- 📚 **Catálogo de 1.324 ejercicios:** Buscador con filtros por zona, equipamiento y músculo, GIF animado y pasos en español para cada ejercicio.
+- ⚔️ **Duelo 1v1 de flexiones:** Reta a otro atleta y competid a la vez con marcador en vivo (Supabase Realtime). El ganador lo decide el backend.
 - 🔒 **Seguridad y Sincronización:** Autenticación fluida y sincronización en tiempo real potenciada por **Supabase** y políticas RLS.
 
 ---
@@ -97,8 +99,14 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    SUPABASE_ANON_KEY=tu_clave_anonima_publica
    SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_solo_backend
    PORT=3001
-   CORS_ORIGIN=*
+   CORS_ORIGIN=http://localhost:8081
+   NODE_ENV=development
    ```
+
+   > ⚠️ `SUPABASE_SERVICE_ROLE_KEY` ignora RLS por completo. Va **solo** en el
+   > entorno del servidor, nunca en `.env.example` ni en variables `EXPO_PUBLIC_*`
+   > (esas se empaquetan en el APK). En producción `CORS_ORIGIN` no puede ser `*`:
+   > la API se niega a arrancar.
 
 4. **Configuración de la Base de Datos (Supabase):**
    Ejecuta las migraciones necesarias en el **SQL Editor** de Supabase para inicializar las tablas principales: `profiles`, `workouts`, `exercises`, `workout_exercises`, `workout_logs`, `exercise_logs`, `food_logs` y `ranks`.
@@ -129,6 +137,49 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    ```
 
    El perfil `preview` de EAS genera un APK interno para entregar como prototipo Android.
+
+---
+
+## 📚 Catálogo de ejercicios
+
+El catálogo procede de [`hasaneyldrm/exercises-dataset`](https://github.com/hasaneyldrm/exercises-dataset):
+1.324 ejercicios con zona, equipamiento, músculo objetivo e instrucciones paso a paso en español.
+
+Para cargarlo en Supabase (idempotente, se puede repetir):
+
+```bash
+pnpm --filter @rankingup/api seed:exercises
+```
+
+Endpoints: `GET /v1/exercises` (búsqueda con filtros y paginación),
+`GET /v1/exercises/filters` (facetas con conteo), `GET /v1/exercises/:id`
+y `GET /v1/exercises/by-name?name=` (usado por las pantallas de rutina).
+
+### ⚠️ Licencia de la media
+
+Los **datos** del dataset son MIT. Las **imágenes y GIF son © Gym visual** y el
+repositorio de origen los redistribuye con un permiso escrito propio:
+*clonar ese repositorio no te concede una licencia*. Este proyecto **no** copia
+los binarios: solo guarda la ruta relativa y la atribución, y compone la URL con
+`EXERCISE_MEDIA_BASE_URL` (por defecto apunta al repositorio original).
+
+Antes de publicar la app revisa los
+[términos de Gym visual](https://gymvisual.com/content/3-terms-and-conditions-of-use)
+y, si hace falta, obtén tu licencia y apunta `EXERCISE_MEDIA_BASE_URL` a tu propia
+copia. La atribución se muestra en la ficha de cada ejercicio y debe mantenerse.
+
+---
+
+## ⚔️ Duelo 1v1 de flexiones
+
+- El reto y la aceptación van por la API (`/v1/duels`).
+- Durante la partida, los contadores viajan por un **canal privado de Supabase
+  Realtime**: `realtime.messages` tiene políticas RLS que solo admiten a los dos
+  participantes mientras el duelo sigue abierto.
+- El **ganador y el XP los decide el backend** con las repeticiones que cada
+  jugador reporta al terminar y la marca de tiempo del servidor. Los contadores
+  en vivo son solo visuales: manipularlos no cambia el resultado.
+- Tope de 5 duelos con recompensa cada 24 h, igual que el minijuego individual.
 
 ---
 

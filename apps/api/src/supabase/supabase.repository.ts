@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import type {
   FoodLogRecord,
   MealType,
@@ -48,10 +48,79 @@ interface UpdateProfileMetricsInput {
   height: number;
   goal?: ProfileRecord['goal'];
   target_calories?: number;
+  age?: number;
+  gender?: ProfileRecord['gender'];
+}
+
+export interface DuelRow {
+  id: string;
+  challenger_id: string;
+  opponent_id: string;
+  game: string;
+  target_reps: number;
+  status: string;
+  challenger_reps: number;
+  opponent_reps: number;
+  challenger_finished_at: string | null;
+  opponent_finished_at: string | null;
+  winner_id: string | null;
+  xp_awarded: number;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  expires_at: string;
+}
+
+export interface DuelWithProfilesRow extends DuelRow {
+  challenger: { id: string; name: string | null; username: string | null } | null;
+  opponent: { id: string; name: string | null; username: string | null } | null;
+}
+
+export interface ExerciseCatalogRow {
+  id: string;
+  name: string;
+  body_part: string | null;
+  equipment: string | null;
+  target: string | null;
+  muscle_group: string | null;
+  secondary_muscles: string[] | null;
+  instructions_es: string | null;
+  instructions_en: string | null;
+  steps_es: string[] | null;
+  steps_en: string[] | null;
+  image_path: string | null;
+  gif_path: string | null;
+  attribution: string | null;
+}
+
+export interface ExerciseCatalogFilters {
+  query?: string;
+  bodyPart?: string;
+  equipment?: string;
+  target?: string;
+  offset: number;
+  limit: number;
+}
+
+interface InsertMinigameSessionInput {
+  user_id: string;
+  game: string;
+  reps: number;
+  xp_awarded: number;
+}
+
+interface UpdateSocialProfileInput {
+  name: string;
+  username: string;
+  bio: string;
+  is_public: boolean;
 }
 
 const toServerError = (message: string): InternalServerErrorException =>
   new InternalServerErrorException(message);
+
+/** Neutraliza los comodines de LIKE (`%`, `_`) y su caracter de escape. */
+const escapeLikePattern = (value: string): string => value.replace(/[\\%_]/g, '\\$&');
 
 @Injectable()
 export class SupabaseRepository {
@@ -148,6 +217,232 @@ export class SupabaseRepository {
     if (error) throw toServerError(error.message);
   }
 
+  private static readonly CATALOG_COLUMNS =
+    'id,name,body_part,equipment,target,muscle_group,secondary_muscles,instructions_es,instructions_en,steps_es,steps_en,image_path,gif_path,attribution';
+
+  async searchExerciseCatalog(
+    filters: ExerciseCatalogFilters,
+  ): Promise<{ items: ExerciseCatalogRow[]; total: number }> {
+    let request = this.db
+      .from('exercises')
+      .select(SupabaseRepository.CATALOG_COLUMNS, { count: 'exact' })
+      .not('body_part', 'is', null);
+
+    if (filters.bodyPart) request = request.eq('body_part', filters.bodyPart);
+    if (filters.equipment) request = request.eq('equipment', filters.equipment);
+    if (filters.target) request = request.eq('target', filters.target);
+    // search_text es una columna generada (lower(name + target + body_part + equipment
+    // + muscle_group)) con indice GIN trigram detras.
+    if (filters.query) request = request.like('search_text', `%${filters.query}%`);
+
+    const { data, error, count } = await request
+      .order('name', { ascending: true })
+      .range(filters.offset, filters.offset + filters.limit - 1);
+
+    if (error) throw toServerError(error.message);
+    return { items: (data ?? []) as unknown as ExerciseCatalogRow[], total: count ?? 0 };
+  }
+
+  async findExerciseCatalogEntryByName(name: string): Promise<ExerciseCatalogRow | null> {
+    const { data, error } = await this.db
+      .from('exercises')
+      .select(SupabaseRepository.CATALOG_COLUMNS)
+      .ilike('name', name)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return (data as unknown as ExerciseCatalogRow) ?? null;
+  }
+
+  async findExerciseCatalogEntriesByNames(names: string[]): Promise<ExerciseCatalogRow[]> {
+    if (names.length === 0) return [];
+
+    // Los nombres del dataset estan en minusculas, pero exercise_id guarda lo
+    // que se escribio en su dia: se consultan ambas variantes.
+    const variants = [...new Set([...names, ...names.map((name) => name.toLowerCase())])];
+
+    const { data, error } = await this.db
+      .from('exercises')
+      .select(SupabaseRepository.CATALOG_COLUMNS)
+      .in('name', variants);
+
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as unknown as ExerciseCatalogRow[];
+  }
+
+  async getExerciseTargetsByNames(names: string[]): Promise<Map<string, string>> {
+    if (names.length === 0) return new Map();
+
+    const { data, error } = await this.db
+      .from('exercises')
+      .select('name,target,muscle_group')
+      .in('name', names);
+
+    if (error) throw toServerError(error.message);
+
+    const result = new Map<string, string>();
+    for (const row of (data ?? []) as { name: string; target: string | null; muscle_group: string | null }[]) {
+      const muscle = row.target ?? row.muscle_group;
+      if (muscle) result.set(row.name.toLowerCase(), muscle);
+    }
+    return result;
+  }
+
+  async getExerciseCatalogEntry(id: string): Promise<ExerciseCatalogRow | null> {
+    const { data, error } = await this.db
+      .from('exercises')
+      .select(SupabaseRepository.CATALOG_COLUMNS)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return (data as unknown as ExerciseCatalogRow) ?? null;
+  }
+
+  async getExerciseCatalogFacetRows(): Promise<Pick<ExerciseCatalogRow, 'body_part' | 'equipment' | 'target'>[]> {
+    const { data, error } = await this.db
+      .from('exercises')
+      .select('body_part,equipment,target')
+      .not('body_part', 'is', null);
+
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as Pick<ExerciseCatalogRow, 'body_part' | 'equipment' | 'target'>[];
+  }
+
+  private static readonly DUEL_COLUMNS = '*';
+  private static readonly DUEL_WITH_PROFILES =
+    '*,challenger:profiles!duels_challenger_id_fkey(id,name,username),opponent:profiles!duels_opponent_id_fkey(id,name,username)';
+
+  async createDuel(input: {
+    challenger_id: string;
+    opponent_id: string;
+    target_reps: number;
+    expires_at: string;
+  }): Promise<DuelRow> {
+    const { data, error } = await this.db.from('duels').insert([input]).select().single();
+
+    if (error) {
+      // 23505 = unique_violation contra duels_single_open_per_pair.
+      if (error.code === '23505') {
+        throw new ConflictException('Ya tienes un duelo abierto con este usuario.');
+      }
+      throw toServerError(error.message);
+    }
+    return data as DuelRow;
+  }
+
+  async getDuelById(duelId: string): Promise<DuelRow | null> {
+    const { data, error } = await this.db
+      .from('duels')
+      .select(SupabaseRepository.DUEL_COLUMNS)
+      .eq('id', duelId)
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return (data as DuelRow) ?? null;
+  }
+
+  async getDuelWithProfiles(duelId: string): Promise<DuelWithProfilesRow | null> {
+    const { data, error } = await this.db
+      .from('duels')
+      .select(SupabaseRepository.DUEL_WITH_PROFILES)
+      .eq('id', duelId)
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return (data as unknown as DuelWithProfilesRow) ?? null;
+  }
+
+  async listDuelsForUser(userId: string, statuses: string[], limit = 20): Promise<DuelWithProfilesRow[]> {
+    const { data, error } = await this.db
+      .from('duels')
+      .select(SupabaseRepository.DUEL_WITH_PROFILES)
+      .or(`challenger_id.eq.${userId},opponent_id.eq.${userId}`)
+      .in('status', statuses)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as unknown as DuelWithProfilesRow[];
+  }
+
+  async updateDuel(duelId: string, patch: Record<string, unknown>): Promise<DuelRow> {
+    const { data, error } = await this.db
+      .from('duels')
+      .update(patch)
+      .eq('id', duelId)
+      .select()
+      .single();
+
+    if (error) throw toServerError(error.message);
+    return data as DuelRow;
+  }
+
+  /**
+   * Cierra invitaciones caducadas antes de leer o crear duelos, para que el
+   * indice unico de "un duelo abierto por pareja" no bloquee retos nuevos.
+   */
+  async expireStaleDuels(): Promise<void> {
+    const now = new Date().toISOString();
+    const { error } = await this.db
+      .from('duels')
+      .update({ status: 'expired', finished_at: now })
+      .in('status', ['pending', 'active'])
+      .lt('expires_at', now);
+
+    if (error) throw toServerError(error.message);
+  }
+
+  async countDuelRewardsSince(userId: string, since: Date): Promise<number> {
+    const { count, error } = await this.db
+      .from('duels')
+      .select('id', { count: 'exact', head: true })
+      .eq('winner_id', userId)
+      .gt('xp_awarded', 0)
+      .gte('finished_at', since.toISOString());
+
+    if (error) throw toServerError(error.message);
+    return count ?? 0;
+  }
+
+  async getDuelRecord(userId: string): Promise<{ wins: number; losses: number; draws: number }> {
+    const { data, error } = await this.db
+      .from('duels')
+      .select('winner_id,challenger_id,opponent_id')
+      .eq('status', 'finished')
+      .or(`challenger_id.eq.${userId},opponent_id.eq.${userId}`);
+
+    if (error) throw toServerError(error.message);
+
+    let wins = 0;
+    let losses = 0;
+    let draws = 0;
+    for (const row of (data ?? []) as { winner_id: string | null }[]) {
+      if (row.winner_id === null) draws += 1;
+      else if (row.winner_id === userId) wins += 1;
+      else losses += 1;
+    }
+    return { wins, losses, draws };
+  }
+
+  async countMinigameSessionsSince(userId: string, since: Date, game: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('minigame_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('game', game)
+      .gte('created_at', since.toISOString());
+
+    if (error) throw toServerError(error.message);
+    return count ?? 0;
+  }
+
+  async insertMinigameSession(input: InsertMinigameSessionInput): Promise<void> {
+    const { error } = await this.db.from('minigame_sessions').insert([input]);
+    if (error) throw toServerError(error.message);
+  }
+
   async updateProfileMetrics(userId: string, input: UpdateProfileMetricsInput): Promise<ProfileRecord> {
     const updatePayload: UpdateProfileMetricsInput = {
       weight: input.weight,
@@ -156,6 +451,8 @@ export class SupabaseRepository {
 
     if (input.goal) updatePayload.goal = input.goal;
     if (input.target_calories !== undefined) updatePayload.target_calories = input.target_calories;
+    if (input.age !== undefined) updatePayload.age = input.age;
+    if (input.gender) updatePayload.gender = input.gender;
 
     const { data, error } = await this.db
       .from('profiles')
@@ -166,6 +463,110 @@ export class SupabaseRepository {
 
     if (error) throw toServerError(error.message);
     return data as ProfileRecord;
+  }
+
+  async updateSocialProfile(userId: string, input: UpdateSocialProfileInput): Promise<ProfileRecord> {
+    const { data, error } = await this.db
+      .from('profiles')
+      .update(input)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw toServerError(error.message);
+    return data as ProfileRecord;
+  }
+
+  async findProfileByUsername(username: string): Promise<ProfileRecord | null> {
+    const { data, error } = await this.db
+      .from('profiles')
+      .select('*')
+      .ilike('username', username)
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return data as ProfileRecord | null;
+  }
+
+  async searchProfiles(query: string, excludeUserId: string): Promise<ProfileRecord[]> {
+    const select = 'id,name,username,bio,xp,is_public,created_at';
+    // % y _ son comodines de LIKE: sin escapar, buscar "%" listaria todos los
+    // perfiles publicos y "_" haria de comodin de un caracter.
+    const pattern = `%${escapeLikePattern(query)}%`;
+    const [byUsername, byName] = await Promise.all([
+      this.db.from('profiles').select(select).ilike('username', pattern).neq('id', excludeUserId).eq('is_public', true).limit(20),
+      this.db.from('profiles').select(select).ilike('name', pattern).neq('id', excludeUserId).eq('is_public', true).limit(20),
+    ]);
+
+    if (byUsername.error) throw toServerError(byUsername.error.message);
+    if (byName.error) throw toServerError(byName.error.message);
+
+    const unique = new Map<string, ProfileRecord>();
+    [...(byUsername.data ?? []), ...(byName.data ?? [])].forEach((profile) => {
+      unique.set(profile.id, profile as ProfileRecord);
+    });
+    return Array.from(unique.values()).slice(0, 20);
+  }
+
+  async getFollowingIds(userId: string): Promise<string[]> {
+    const { data, error } = await this.db
+      .from('profile_follows')
+      .select('following_id')
+      .eq('follower_id', userId);
+
+    if (error) throw toServerError(error.message);
+    return (data ?? []).map((row) => String(row.following_id));
+  }
+
+  async isFollowing(followerId: string, followingId: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from('profile_follows')
+      .select('follower_id')
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId)
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return Boolean(data);
+  }
+
+  async followProfile(followerId: string, followingId: string): Promise<void> {
+    const { error } = await this.db
+      .from('profile_follows')
+      .upsert({ follower_id: followerId, following_id: followingId }, { onConflict: 'follower_id,following_id' });
+
+    if (error) throw toServerError(error.message);
+  }
+
+  async unfollowProfile(followerId: string, followingId: string): Promise<void> {
+    const { error } = await this.db
+      .from('profile_follows')
+      .delete()
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId);
+
+    if (error) throw toServerError(error.message);
+  }
+
+  async getFollowCounts(profileId: string): Promise<{ followers: number; following: number }> {
+    const [followersResult, followingResult] = await Promise.all([
+      this.db.from('profile_follows').select('*', { count: 'exact', head: true }).eq('following_id', profileId),
+      this.db.from('profile_follows').select('*', { count: 'exact', head: true }).eq('follower_id', profileId),
+    ]);
+
+    if (followersResult.error) throw toServerError(followersResult.error.message);
+    if (followingResult.error) throw toServerError(followingResult.error.message);
+    return { followers: followersResult.count ?? 0, following: followingResult.count ?? 0 };
+  }
+
+  async getWorkoutCount(userId: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('workout_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (error) throw toServerError(error.message);
+    return count ?? 0;
   }
 
   async getRanks(): Promise<RankRecord[]> {

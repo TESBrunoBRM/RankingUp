@@ -4,13 +4,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AppStackParamList, WorkoutExercise, Exercise, WorkoutLogInput } from '../types';
+import { AppStackParamList, WorkoutExercise, Exercise, WorkoutLogInput, ExerciseStrengthLevel } from '../types';
 import { workoutExerciseService } from '../services/workoutExerciseService';
 import { exerciseApi } from '../services/exerciseApi';
 import { workoutLogService } from '../services/workoutLogService';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/Button';
 import { getErrorMessage } from '../utils/errors';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import { StrengthLevelBadge } from '../components/StrengthLevelBadge';
 
 type LogWorkoutRouteProp = RouteProp<AppStackParamList, 'LogWorkout'>;
 type LogWorkoutNavigationProp = NativeStackNavigationProp<AppStackParamList, 'LogWorkout'>;
@@ -24,6 +26,7 @@ interface SetLog {
 
 interface LogItem extends WorkoutExercise {
   exerciseDetails?: Exercise;
+  currentStrength?: ExerciseStrengthLevel;
   setsData: SetLog[];
 }
 
@@ -51,8 +54,14 @@ export default function LogWorkoutScreen() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const workoutExercises = await workoutExerciseService.getWorkoutExercises(workoutId);
+        const [workoutExercises, profileData] = await Promise.all([
+          workoutExerciseService.getWorkoutExercises(workoutId),
+          rankingUpApiClient.getOwnProfile(),
+        ]);
         
+        // Una sola peticion para las fichas de todos los ejercicios de la rutina.
+        await exerciseApi.primeExercises(workoutExercises.map((we) => we.exercise_id));
+
         const enriched = await Promise.all(
           workoutExercises.map(async (we) => {
             let details;
@@ -69,7 +78,8 @@ export default function LogWorkoutScreen() {
               completed: false
             }));
 
-            return { ...we, exerciseDetails: details, setsData };
+            const currentStrength = profileData.strengths.find((strength) => strength.exerciseName === we.exercise_id);
+            return { ...we, exerciseDetails: details, currentStrength, setsData };
           })
         );
         setExercises(enriched);
@@ -231,6 +241,13 @@ export default function LogWorkoutScreen() {
              </View>
            </TouchableOpacity>
         </View>
+
+        {item.currentStrength ? (
+          <View style={styles.strengthSummary}>
+            <StrengthLevelBadge level={item.currentStrength.level} />
+            <Text style={styles.strengthSummaryText}>MEJOR 1RM {item.currentStrength.estimatedOneRepMax} KG</Text>
+          </View>
+        ) : null}
         
         <View style={styles.setHeaderRow}>
           <Text style={styles.setHeaderText}>SET</Text>
@@ -347,7 +364,7 @@ export default function LogWorkoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
+  container: { flex: 1, backgroundColor: '#101114' },
   header: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 },
   backButton: { paddingVertical: 8 },
   backButtonText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
@@ -358,6 +375,8 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 20, marginBottom: 16, borderWidth: 2, borderColor: '#333333' },
   cardCompleted: { borderColor: '#CCFF00', backgroundColor: '#1c220f' },
   cardHeader: { marginBottom: 12 },
+  strengthSummary: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 14 },
+  strengthSummaryText: { color: '#777777', fontSize: 9, fontWeight: '900' },
   exerciseName: { fontSize: 20, fontWeight: '900', color: '#FFFFFF', textTransform: 'uppercase' },
   techniqueButtonContent: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   techniqueButtonText: { color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
@@ -379,7 +398,7 @@ const styles = StyleSheet.create({
   checkText: { color: '#666', fontSize: 18, fontWeight: 'bold' },
   checkTextActive: { color: '#1A1A1A' },
   
-  footer: { padding: 24, paddingBottom: 32, backgroundColor: '#121212', borderTopWidth: 1, borderTopColor: '#1A1A1A' },
+  footer: { padding: 24, paddingBottom: 32, backgroundColor: '#101114', borderTopWidth: 1, borderTopColor: '#1A1A1A' },
   emptyContainer: { padding: 40, alignItems: 'center' },
   emptyText: { fontSize: 16, color: '#FFFFFF', fontWeight: '900', letterSpacing: 2 },
 

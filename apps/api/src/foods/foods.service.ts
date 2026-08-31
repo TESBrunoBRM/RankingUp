@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { findFoodByBarcode, getFoodById, searchFoods } from '../domain/foods.catalog';
+import { getFoodById, searchFoods } from '../domain/foods.catalog';
 
 @Injectable()
 export class FoodsService {
@@ -9,10 +9,5 @@ export class FoodsService {
 
   getFood(foodId: string) {
     return getFoodById(foodId);
-  }
-
-  findByBarcode(barcode: string) {
-    const food = findFoodByBarcode(barcode);
-    return { food_id: food?.food_id ?? null };
   }
 }

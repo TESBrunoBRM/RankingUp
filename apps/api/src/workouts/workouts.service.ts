@@ -20,7 +20,18 @@ export class WorkoutsService {
       throw new NotFoundException('Rutina no encontrada para este usuario.');
     }
 
-    const muscles = dto.sets.map((set) => resolveExerciseMuscle(set.exerciseId));
+    // exercise_id guarda el nombre del ejercicio. Los 14 destacados se resuelven
+    // en memoria; el resto viene del catalogo en base de datos.
+    const unresolved = dto.sets
+      .filter((set) => resolveExerciseMuscle(set.exerciseId) === 'default')
+      .map((set) => set.exerciseId);
+    const catalogMuscles = await this.repository.getExerciseTargetsByNames([...new Set(unresolved)]);
+
+    const muscles = dto.sets.map((set) => {
+      const legacyMuscle = resolveExerciseMuscle(set.exerciseId);
+      if (legacyMuscle !== 'default') return legacyMuscle;
+      return catalogMuscles.get(set.exerciseId.toLowerCase()) ?? 'default';
+    });
     const gainedXp = calculateWorkoutXp(muscles);
     const workoutLog = await this.repository.createWorkoutLog(userId, dto.workoutId);
 

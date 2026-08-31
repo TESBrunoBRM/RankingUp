@@ -21,10 +21,15 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import NutritionScreen from '../screens/NutritionScreen';
 import SearchFoodScreen from '../screens/SearchFoodScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import DiscoverProfilesScreen from '../screens/DiscoverProfilesScreen';
+import PublicProfileScreen from '../screens/PublicProfileScreen';
+import ProfileComparisonScreen from '../screens/ProfileComparisonScreen';
 import AIWorkoutPlannerScreen from '../screens/AIWorkoutPlannerScreen';
 import CameraScannerScreen from '../screens/CameraScannerScreen';
 import MinigamesScreen from '../screens/MinigamesScreen';
 import PushUpsGameScreen from '../screens/PushUpsGameScreen';
+import DuelLobbyScreen from '../screens/DuelLobbyScreen';
+import DuelScreen from '../screens/DuelScreen';
 
 // Types
 import type { AuthStackParamList, AppStackParamList, MainTabParamList } from '../types';
@@ -63,7 +68,7 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: '#101114',
           borderTopColor: '#1A1A1A',
           height: 80,
           paddingBottom: 25,
@@ -133,10 +138,15 @@ function MainNavigator() {
         <AppStack.Screen name="Onboarding" component={OnboardingScreen} />
         <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
         <AppStack.Screen name="Profile" component={ProfileScreen} />
+        <AppStack.Screen name="DiscoverProfiles" component={DiscoverProfilesScreen} />
+        <AppStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+        <AppStack.Screen name="ProfileComparison" component={ProfileComparisonScreen} />
         <AppStack.Screen name="AIPlanning" component={AIWorkoutPlannerScreen} />
         <AppStack.Screen name="CameraScanner" component={CameraScannerScreen} />
         <AppStack.Screen name="Minigames" component={MinigamesScreen} />
         <AppStack.Screen name="PushUpsGame" component={PushUpsGameScreen} />
+        <AppStack.Screen name="DuelLobby" component={DuelLobbyScreen} />
+        <AppStack.Screen name="Duel" component={DuelScreen} />
       </AppStack.Navigator>
       <PlanningMenuModal />
     </>
@@ -148,7 +158,7 @@ export default function AppNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#121212' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#101114' }}>
         <ActivityIndicator size="large" color="#CCFF00" />
       </View>
     );

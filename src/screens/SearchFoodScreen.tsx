@@ -73,13 +73,6 @@ export default function SearchFoodScreen() {
       handleSearch(route.params.initialQuery);
       navigation.setParams({ initialQuery: undefined });
     }
-
-    if (route.params?.scannedFood) {
-      const food = route.params.scannedFood;
-      setFoods([food]);
-      selectFood(food);
-      navigation.setParams({ scannedFood: undefined });
-    }
   }, [route.params]);
 
   const totals = useMemo(() => {
@@ -298,7 +291,7 @@ export default function SearchFoodScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
+  container: { flex: 1, backgroundColor: '#101114' },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#1A1A1A' },
   backBtn: { padding: 4, marginRight: 12 },
   headerTitle: { fontSize: 16, color: '#FFFFFF', fontWeight: '900', letterSpacing: 1 },

@@ -6,6 +6,7 @@ export type MealType = 'desayuno' | 'almuerzo' | 'cena' | 'snack';
 export type GoalType = 'bajar' | 'mantener' | 'subir';
 export type GenderType = 'hombre' | 'mujer';
 export type NutritionUnit = 'g' | 'ml' | 'oz' | 'unidad' | 'porcion';
+export type StrengthLevelName = 'sin-clasificar' | 'principiante' | 'novato' | 'intermedio' | 'avanzado' | 'elite';
 
 export interface NutritionServing {
   amount: number;
@@ -125,6 +126,27 @@ export interface DashboardResponse {
   requiresOnboarding: boolean;
 }
 
+export interface HomeMessage {
+  id: string;
+  kind: 'motivacion' | 'sabias-que';
+  text: string;
+}
+
+export interface FitnessNewsItem {
+  id: string;
+  title: string;
+  source: string;
+  publishedAt: string;
+  url: string;
+}
+
+export interface HomeContentResponse {
+  messages: HomeMessage[];
+  news: FitnessNewsItem[];
+  newsStatus: 'live' | 'fallback';
+  refreshedAt: string;
+}
+
 export interface CompleteOnboardingRequest {
   weight: number;
   height: number;
@@ -138,11 +160,67 @@ export interface ProfileMetricsUpdateRequest {
   height: number;
   goal?: GoalType;
   targetCalories?: number;
+  age?: number;
+  gender?: GenderType;
 }
 
 export interface ProfileUpdateResponse {
   profile: Profile;
   targetCalories: number | null;
+}
+
+export interface ExerciseStrengthLevel {
+  exerciseId: string;
+  exerciseName: string;
+  level: StrengthLevelName;
+  estimatedOneRepMax: number;
+  bodyweightRatio: number;
+  bestWeight: number;
+  bestReps: number;
+  nextLevel: StrengthLevelName | null;
+  nextLevelOneRepMax: number | null;
+  sourceUrl: string;
+}
+
+export interface SocialProfile {
+  id: string;
+  name: string;
+  username: string;
+  bio: string;
+  xp: number;
+  isPublic: boolean;
+  createdAt: string | null;
+  weight?: number | null;
+  height?: number | null;
+  age?: number | null;
+  gender?: GenderType | null;
+  goal?: GoalType | null;
+  targetCalories?: number | null;
+}
+
+export interface SocialProfileResponse {
+  profile: SocialProfile;
+  stats: { followers: number; following: number; workouts: number };
+  strengths: ExerciseStrengthLevel[];
+  isFollowing: boolean;
+  isOwnProfile: boolean;
+}
+
+export interface ProfileSearchResult extends SocialProfile {
+  isFollowing: boolean;
+}
+
+export interface ProfileComparisonRow {
+  exerciseName: string;
+  viewer: ExerciseStrengthLevel | null;
+  other: ExerciseStrengthLevel | null;
+  winner: 'viewer' | 'other' | 'tie';
+}
+
+export interface ProfileComparisonResponse {
+  viewer: SocialProfile;
+  other: SocialProfile;
+  exercises: ProfileComparisonRow[];
 }
 
 // Navigation Types
@@ -168,12 +246,17 @@ export type AppStackParamList = {
   LogWorkout: { workoutId: string };
   Ranking: undefined;
   Onboarding: undefined;
-  SearchFood: { initialQuery?: string; scannedFood?: FoodSearchResult } | undefined;
+  SearchFood: { initialQuery?: string } | undefined;
   Profile: undefined;
+  DiscoverProfiles: undefined;
+  PublicProfile: { profileId: string };
+  ProfileComparison: { profileId: string };
   AIPlanning: undefined;
   CameraScanner: undefined;
   Minigames: undefined;
   PushUpsGame: undefined;
+  DuelLobby: undefined;
+  Duel: { duelId: string };
 };
 
 export type RootStackParamList = AuthStackParamList & AppStackParamList;
@@ -220,6 +303,11 @@ export interface Profile {
   height: number | null;
   goal?: GoalType | null;
   target_calories?: number | null;
+  age?: number | null;
+  gender?: GenderType | null;
+  username?: string | null;
+  bio?: string | null;
+  is_public?: boolean | null;
   created_at: string;
 }
 
@@ -256,4 +344,95 @@ export interface Exercise {
   difficulty: string;
   instructions: string;
   gifUrl?: string;
+}
+
+
+// --- Catalogo de ejercicios (dataset hasaneyldrm/exercises-dataset) ---------
+
+export interface CatalogExerciseSummary {
+  id: string;
+  name: string;
+  bodyPart: string;
+  bodyPartLabel: string;
+  equipment: string;
+  equipmentLabel: string;
+  target: string;
+  targetLabel: string;
+  thumbnailUrl: string | null;
+  gifUrl: string | null;
+}
+
+export interface CatalogExerciseDetail extends CatalogExerciseSummary {
+  muscleGroupLabel: string;
+  secondaryMuscleLabels: string[];
+  instructions: string;
+  steps: string[];
+  attribution: string | null;
+}
+
+export interface CatalogSearchResponse {
+  items: CatalogExerciseSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface CatalogFacet {
+  value: string;
+  label: string;
+  count: number;
+}
+
+export interface CatalogFiltersResponse {
+  bodyParts: CatalogFacet[];
+  equipment: CatalogFacet[];
+  targets: CatalogFacet[];
+  total: number;
+}
+
+export interface CatalogSearchParams {
+  query?: string;
+  bodyPart?: string;
+  equipment?: string;
+  target?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+
+// --- Duelos 1v1 de flexiones ------------------------------------------------
+
+export type DuelStatus = 'pending' | 'active' | 'finished' | 'declined' | 'cancelled' | 'expired';
+export type DuelRole = 'challenger' | 'opponent';
+export type DuelOutcome = 'won' | 'lost' | 'draw';
+
+export interface Duel {
+  id: string;
+  status: DuelStatus;
+  targetReps: number;
+  role: DuelRole;
+  myReps: number;
+  rivalReps: number;
+  iFinished: boolean;
+  rivalFinished: boolean;
+  rival: { id: string; name: string; username: string | null };
+  winnerId: string | null;
+  outcome: DuelOutcome | null;
+  xpAwarded: number;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  expiresAt: string;
+}
+
+export interface OpenDuelsResponse {
+  incoming: Duel[];
+  outgoing: Duel[];
+  active: Duel[];
+}
+
+export interface DuelHistoryResponse {
+  record: { wins: number; losses: number; draws: number };
+  duels: Duel[];
 }
