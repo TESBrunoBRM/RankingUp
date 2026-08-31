@@ -311,7 +311,12 @@ export default function AddExercisesScreen() {
                   accessibilityRole="tab"
                   accessibilityState={{ selected: isActive }}
                 >
-                  <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+                  <Text
+                    style={[styles.segmentText, isActive && styles.segmentTextActive]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}
+                  >
                     {tab.label}
                   </Text>
                   {filters[tab.key] ? (
@@ -325,6 +330,7 @@ export default function AddExercisesScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.chipScroll}
             contentContainerStyle={styles.chipRow}
             keyboardShouldPersistTaps="handled"
           >
@@ -339,12 +345,16 @@ export default function AddExercisesScreen() {
                   accessibilityState={{ selected }}
                   accessibilityLabel={`${facet.label}, ${facet.count} ejercicios`}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextActive]}>
+                  <Text style={[styles.chipText, selected && styles.chipTextActive]} numberOfLines={1}>
                     {facet.label}
                   </Text>
-                  <Text style={[styles.chipCount, selected && styles.chipCountActive]}>
-                    {facet.count}
-                  </Text>
+                  {/* El contador va en un View: un Text con fondo y padding
+                      vertical lo recorta la altura de linea y se ve aplastado. */}
+                  <View style={[styles.chipCount, selected && styles.chipCountActive]}>
+                    <Text style={[styles.chipCountText, selected && styles.chipCountTextActive]}>
+                      {facet.count}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -355,6 +365,7 @@ export default function AddExercisesScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              style={styles.chipScroll}
               contentContainerStyle={styles.chipRow}
               keyboardShouldPersistTaps="handled"
             >
@@ -588,7 +599,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    minHeight: 38,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: 9,
   },
   segmentActive: {
@@ -612,14 +625,20 @@ const styles = StyleSheet.create({
   segmentDotActive: {
     backgroundColor: '#121212',
   },
+  chipScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   chipRow: {
     paddingHorizontal: 24,
     paddingBottom: 12,
     gap: 8,
+    alignItems: 'center',
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 40,
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
@@ -643,23 +662,30 @@ const styles = StyleSheet.create({
   // de la etiqueta ("Brazos 292").
   chipCount: {
     marginLeft: 8,
+    minWidth: 24,
+    height: 20,
     paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
-    color: '#8A8A8A',
-    fontSize: 10,
-    fontWeight: '800',
   },
   chipCountActive: {
     backgroundColor: 'rgba(0,0,0,0.14)',
+  },
+  chipCountText: {
+    color: '#8A8A8A',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  chipCountTextActive: {
     color: 'rgba(0,0,0,0.6)',
   },
   activeFilter: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 7,
+    minHeight: 34,
+    paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
     backgroundColor: '#CCFF00',
