@@ -43,10 +43,15 @@ interface ActiveFilters {
   target?: string;
 }
 
-const FACET_TABS: { key: FacetKey; label: string; source: keyof CatalogFiltersResponse }[] = [
-  { key: 'bodyPart', label: 'ZONA', source: 'bodyParts' },
-  { key: 'equipment', label: 'EQUIPO', source: 'equipment' },
-  { key: 'target', label: 'MÚSCULO', source: 'targets' },
+const FACET_TABS: {
+  key: FacetKey;
+  label: string;
+  short: string;
+  source: keyof CatalogFiltersResponse;
+}[] = [
+  { key: 'bodyPart', label: 'Zona', short: 'Zona', source: 'bodyParts' },
+  { key: 'equipment', label: 'Equipo', short: 'Equipo', source: 'equipment' },
+  { key: 'target', label: 'Músculo', short: 'Músculo', source: 'targets' },
 ];
 
 export default function AddExercisesScreen() {
@@ -159,6 +164,17 @@ export default function AddExercisesScreen() {
     () => Object.values(filters).filter(Boolean).length,
     [filters]
   );
+
+  const activeFilters = useMemo(() => {
+    if (!facets) return [];
+    return FACET_TABS.flatMap((tab) => {
+      const value = filters[tab.key];
+      if (!value) return [];
+      const list = facets[tab.source];
+      const facet = Array.isArray(list) ? list.find((item) => item.value === value) : undefined;
+      return [{ key: tab.key, dimension: tab.short, label: facet?.label ?? value }];
+    });
+  }, [facets, filters]);
 
   const currentFacets: CatalogFacet[] = useMemo(() => {
     if (!facets) return [];
@@ -280,19 +296,30 @@ export default function AddExercisesScreen() {
 
       {facets && (
         <>
-          <View style={styles.tabRow}>
-            {FACET_TABS.map((tab) => (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key)}
-              >
-                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                  {tab.label}
-                  {filters[tab.key] ? ' •' : ''}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <Text style={styles.filterHeading}>FILTRAR POR</Text>
+
+          {/* Control segmentado: relleno solido, para que no se confunda con
+              los chips de valor de abajo. */}
+          <View style={styles.segmented}>
+            {FACET_TABS.map((tab) => {
+              const isActive = activeTab === tab.key;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.segment, isActive && styles.segmentActive]}
+                  onPress={() => setActiveTab(tab.key)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[styles.segmentText, isActive && styles.segmentTextActive]}>
+                    {tab.label}
+                  </Text>
+                  {filters[tab.key] ? (
+                    <View style={[styles.segmentDot, isActive && styles.segmentDotActive]} />
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <ScrollView
@@ -308,14 +335,44 @@ export default function AddExercisesScreen() {
                   key={facet.value}
                   style={[styles.chip, selected && styles.chipActive]}
                   onPress={() => toggleFilter(activeTab, facet.value)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${facet.label}, ${facet.count} ejercicios`}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextActive]}>
-                    {facet.label} {facet.count}
+                    {facet.label}
+                  </Text>
+                  <Text style={[styles.chipCount, selected && styles.chipCountActive]}>
+                    {facet.count}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
+
+          {/* Los filtros aplicados se ven siempre, estes en la pestana que estes. */}
+          {activeFilters.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+              keyboardShouldPersistTaps="handled"
+            >
+              {activeFilters.map((filter) => (
+                <TouchableOpacity
+                  key={filter.key}
+                  style={styles.activeFilter}
+                  onPress={() => setFilters((current) => ({ ...current, [filter.key]: undefined }))}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Quitar filtro ${filter.dimension}: ${filter.label}`}
+                >
+                  <Text style={styles.activeFilterDimension}>{filter.dimension}: </Text>
+                  <Text style={styles.activeFilterValue}>{filter.label}</Text>
+                  <Ionicons name="close" size={13} color="#121212" style={styles.activeFilterIcon} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
         </>
       )}
 
@@ -506,31 +563,54 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
   },
-  tabRow: {
-    flexDirection: 'row',
+  filterHeading: {
     paddingHorizontal: 24,
-    marginBottom: 10,
+    marginBottom: 8,
+    color: '#666',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
   },
-  tab: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    borderRadius: 8,
+  // Control segmentado con relleno solido: tiene que leerse distinto de los
+  // chips de valor, o las dos filas parecen lo mismo.
+  segmented: {
+    flexDirection: 'row',
+    marginHorizontal: 24,
+    marginBottom: 14,
+    padding: 4,
+    borderRadius: 12,
     backgroundColor: '#1A1A1A',
     borderWidth: 1,
     borderColor: '#333',
   },
-  tabActive: {
-    borderColor: '#CCFF00',
+  segment: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 9,
   },
-  tabText: {
+  segmentActive: {
+    backgroundColor: '#CCFF00',
+  },
+  segmentText: {
     color: '#A0A0A0',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 1,
   },
-  tabTextActive: {
-    color: '#CCFF00',
+  segmentTextActive: {
+    color: '#121212',
+  },
+  segmentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginLeft: 6,
+    backgroundColor: '#CCFF00',
+  },
+  segmentDotActive: {
+    backgroundColor: '#121212',
   },
   chipRow: {
     paddingHorizontal: 24,
@@ -538,6 +618,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
@@ -550,12 +632,50 @@ const styles = StyleSheet.create({
     borderColor: '#CCFF00',
   },
   chipText: {
-    color: '#A0A0A0',
-    fontSize: 12,
+    color: '#D0D0D0',
+    fontSize: 13,
     fontWeight: '700',
   },
   chipTextActive: {
     color: '#121212',
+  },
+  // El conteo va en su propia pastilla: pegado al nombre se leia como parte
+  // de la etiqueta ("Brazos 292").
+  chipCount: {
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    color: '#8A8A8A',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  chipCountActive: {
+    backgroundColor: 'rgba(0,0,0,0.14)',
+    color: 'rgba(0,0,0,0.6)',
+  },
+  activeFilter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#CCFF00',
+  },
+  activeFilterDimension: {
+    color: 'rgba(0,0,0,0.55)',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  activeFilterValue: {
+    color: '#121212',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  activeFilterIcon: {
+    marginLeft: 6,
   },
   resultsBar: {
     flexDirection: 'row',
