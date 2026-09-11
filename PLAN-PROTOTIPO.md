@@ -10,13 +10,14 @@
 
 - ✅ Frontend con inicialización perezosa de Supabase y pantalla legible cuando falta configuración.
 - ✅ Dependencias Expo alineadas; `expo-doctor` pasa **18/18**.
-- ✅ API empaquetada en Docker y validada en modo producción: `/health` responde 200, `/docs` responde 404.
+- ✅ API empaquetada en Docker y desplegada en `https://rankingup-api.onrender.com`: `/health` responde 200, `/docs` responde 404.
 - ✅ Blueprint de Render (`render.yaml`) preparado con secretos externos al repositorio.
 - ✅ Proyecto EAS creado y enlazado como `@brunobrm/rankingup`.
-- 🟡 Entorno EAS `preview`: Supabase URL y anon key configuradas; falta la URL HTTPS pública de la API.
+- ✅ Entorno EAS `preview` configurado con Supabase y la URL HTTPS pública de la API.
 - ✅ CI añadida con typecheck, tests, build y Expo Doctor.
 - ✅ Validación local: **14 suites / 64 tests**, typecheck móvil/API y build API en verde.
-- ⏳ Pendiente externo: desplegar Render, rotar `service_role`, autenticar Supabase CLI para `db pull` y construir/probar el APK.
+- ✅ APK firmado generado por EAS y guardado localmente en `artifacts/RankingUp-preview-v1.apk`.
+- ⏳ Pendiente externo: rotar `service_role`, autenticar Supabase CLI para `db pull` y probar el APK en un dispositivo físico.
 
 ---
 
@@ -230,19 +231,19 @@ El escáner de comida por IA ([`aiAnalyzerService.ts`](src/services/aiAnalyzerSe
 
 - [x] Escribir el `Dockerfile` de §3
 - [ ] **Rotar** `SUPABASE_SERVICE_ROLE_KEY` en Supabase (§B5)
-- [ ] Crear el servicio en Render con las variables de entorno (service_role **solo** ahí)
-- [ ] `NODE_ENV=production`, `CORS_ORIGIN` con orígenes reales, `TRUST_PROXY=1`, `ENABLE_SWAGGER=false`
-- [ ] Verificar: `curl https://tu-api/health` → `{"status":"ok"}`
-- [ ] Verificar que `/docs` devuelve 404 (Swagger cerrado en producción)
+- [x] Crear el servicio en Render con las variables de entorno (service_role **solo** ahí)
+- [x] `NODE_ENV=production`, `CORS_ORIGIN` restringido, `TRUST_PROXY=1`, `ENABLE_SWAGGER=false`
+- [x] Verificar: `curl https://rankingup-api.onrender.com/health` → `{"status":"ok"}`
+- [x] Verificar que `/docs` devuelve 404 (Swagger cerrado en producción)
 
 ### Fase 2 — Cablear el build del APK (1–2 h)
 
-- [ ] `eas env:create` para las tres `EXPO_PUBLIC_*` en el entorno `preview` (2/3 listas; falta la URL pública de la API)
+- [x] `eas env:create` para las tres `EXPO_PUBLIC_*` en el entorno `preview`
 - [x] Añadir `"environment": "preview"` al perfil `preview` de `eas.json`
-- [ ] Apuntar `EXPO_PUBLIC_RANKINGUP_API_URL` al dominio HTTPS de la Fase 1
+- [x] Apuntar `EXPO_PUBLIC_RANKINGUP_API_URL` a `https://rankingup-api.onrender.com`
 - [x] (Recomendado) Hacer perezoso el `requireSupabaseEnv()` para fallar con un mensaje legible
 - [x] `pnpm typecheck && pnpm test:api && pnpm doctor` — los tres en verde
-- [ ] `pnpm run build:android:preview`
+- [x] `pnpm run build:android:preview`
 
 ### Fase 3 — Validar en dispositivo (1 h)
 
@@ -277,7 +278,7 @@ El prototipo está listo cuando **las ocho** se cumplen:
 7. Catálogo, ranking, duelo y nutrición traen datos reales en ese móvil
 8. `SUPABASE_SERVICE_ROLE_KEY` rotada y presente solo en el gestor de secretos del host
 
-Los puntos 1–3 ya se cumplen hoy. Los que faltan son **4–8**, y todos cuelgan de las Fases 1 y 2.
+Los puntos 1–5 ya se cumplen hoy. Los puntos **6–8** requieren prueba en un dispositivo físico y cerrar la rotación de credenciales.
 
 ---
 

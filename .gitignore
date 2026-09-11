@@ -56,3 +56,6 @@ yarn-error.*
 # Local security audit artifacts
 /SECURITY-FINDINGS.md
 /strix_runs/
+
+# Downloaded EAS build artifacts
+/artifacts/

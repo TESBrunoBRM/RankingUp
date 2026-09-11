@@ -151,6 +151,10 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
 
 ### Despliegue del prototipo
 
+La API de prototipo activa está disponible en
+`https://rankingup-api.onrender.com`. El APK `preview` debe usar esa URL y no
+una dirección LAN.
+
 1. **Validar la imagen de producción de la API:**
    ```bash
    docker build -t rankingup-api:prototype .
@@ -159,21 +163,23 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
      -e ENABLE_SWAGGER=false -p 3001:3001 rankingup-api:prototype
    ```
 
-2. **Crear la API en Render:** usa el Blueprint `render.yaml` y configura en el
-   panel `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` y
-   `CORS_ORIGIN`. La clave `service_role` nunca debe entrar al APK ni al repo.
+2. **Crear la API en Render:** el servicio actual usa el runtime Node sobre la
+   rama `codex/prototype-deploy`. El Blueprint `render.yaml` conserva la
+   alternativa Docker reproducible. Configura `SUPABASE_URL`,
+   `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` y `CORS_ORIGIN` en Render.
+   La clave `service_role` nunca debe entrar al APK ni al repo.
 
 3. **Configurar el entorno EAS `preview`:**
    ```bash
    eas env:set preview --name EXPO_PUBLIC_SUPABASE_URL --value "..." --visibility plaintext
    eas env:set preview --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "..." --visibility sensitive
-   eas env:set preview --name EXPO_PUBLIC_RANKINGUP_API_URL --value "https://tu-api.onrender.com" --visibility plaintext
+   eas env:set preview --name EXPO_PUBLIC_RANKINGUP_API_URL --value "https://rankingup-api.onrender.com" --visibility plaintext
    ```
 
 4. **Comprobar el servicio público y construir:**
    ```bash
-   curl https://tu-api.onrender.com/health
-   curl -I https://tu-api.onrender.com/docs
+   curl https://rankingup-api.onrender.com/health
+   curl -I https://rankingup-api.onrender.com/docs
    pnpm run build:android:preview
    ```
 
