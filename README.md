@@ -69,7 +69,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
 
 ### 📋 Requisitos Previos
 
-1. [Node.js](https://nodejs.org/es/) (Versión LTS más reciente recomendada).
+1. [Node.js](https://nodejs.org/es/) 22 y pnpm 11.7 mediante Corepack.
 2. [Expo Go](https://expo.dev/client) instalado en tu dispositivo móvil iOS o Android.
 3. Cuenta en [Supabase](https://supabase.com/) con un proyecto activo.
 4. Variables de Supabase configuradas en `.env` o EAS Secrets.
@@ -109,7 +109,18 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    > la API se niega a arrancar.
 
 4. **Configuración de la Base de Datos (Supabase):**
-   Ejecuta las migraciones necesarias en el **SQL Editor** de Supabase para inicializar las tablas principales: `profiles`, `workouts`, `exercises`, `workout_exercises`, `workout_logs`, `exercise_logs`, `food_logs` y `ranks`.
+   El proyecto de desarrollo actual usa las migraciones de `supabase/migrations`.
+   Vincula la CLI antes de inspeccionar o aplicar cambios:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref mpshqfizadislsqjispd
+   npx supabase migration list
+   ```
+
+   > La migración base de las tablas originales todavía debe capturarse con
+   > `npx supabase db pull`. Hasta completar ese paso, no uses estas migraciones
+   > incrementales para inicializar un proyecto Supabase vacío ni ejecutes SQL a
+   > mano en producción.
 
 5. **Instalar y validar el backend NestJS:**
    (Nota: `pnpm install` en la raíz ya instala las dependencias de la API automáticamente debido a los workspaces)
@@ -137,6 +148,38 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    ```
 
    El perfil `preview` de EAS genera un APK interno para entregar como prototipo Android.
+
+### Despliegue del prototipo
+
+1. **Validar la imagen de producción de la API:**
+   ```bash
+   docker build -t rankingup-api:prototype .
+   docker run --rm --env-file .env -e NODE_ENV=production \
+     -e CORS_ORIGIN=https://rankingup.app -e TRUST_PROXY=1 \
+     -e ENABLE_SWAGGER=false -p 3001:3001 rankingup-api:prototype
+   ```
+
+2. **Crear la API en Render:** usa el Blueprint `render.yaml` y configura en el
+   panel `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` y
+   `CORS_ORIGIN`. La clave `service_role` nunca debe entrar al APK ni al repo.
+
+3. **Configurar el entorno EAS `preview`:**
+   ```bash
+   eas env:set preview --name EXPO_PUBLIC_SUPABASE_URL --value "..." --visibility plaintext
+   eas env:set preview --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "..." --visibility sensitive
+   eas env:set preview --name EXPO_PUBLIC_RANKINGUP_API_URL --value "https://tu-api.onrender.com" --visibility plaintext
+   ```
+
+4. **Comprobar el servicio público y construir:**
+   ```bash
+   curl https://tu-api.onrender.com/health
+   curl -I https://tu-api.onrender.com/docs
+   pnpm run build:android:preview
+   ```
+
+   El primer endpoint debe responder 200 y `/docs` debe responder 404 en
+   producción. No construyas el APK mientras la URL de EAS apunte a `localhost`
+   o a una IP privada.
 
 ---
 

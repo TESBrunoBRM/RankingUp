@@ -9,7 +9,7 @@ const repositoryMock = {
   createWorkoutLog: jest.fn(),
   insertExerciseLogs: jest.fn(),
   getProfile: jest.fn(),
-  updateProfileXp: jest.fn(),
+  incrementProfileXp: jest.fn(),
   createWorkout: jest.fn(),
   addWorkoutExercise: jest.fn(),
 };
@@ -46,6 +46,8 @@ describe('WorkoutsService', () => {
     repositoryMock.getWorkoutForUser.mockResolvedValue({ id: 'w1', user_id: 'u1', name: 'Push' });
     repositoryMock.createWorkoutLog.mockResolvedValue({ id: 'wl1' });
     repositoryMock.getProfile.mockResolvedValue({ id: 'u1', xp: 100, weight: 80, height: 180 });
+    // La BD devuelve el total ya sumado (100 + 25).
+    repositoryMock.incrementProfileXp.mockResolvedValue(125);
 
     const result = await service.logSession('u1', {
       workoutId: 'w1',
@@ -59,8 +61,9 @@ describe('WorkoutsService', () => {
       { exercise_id: 'Press de Banca', weight: 80, reps: 10 },
       { exercise_id: 'Curl de Biceps', weight: 15, reps: 12 },
     ]);
-    expect(repositoryMock.updateProfileXp).toHaveBeenCalledTimes(1);
-    expect(repositoryMock.updateProfileXp).toHaveBeenCalledWith('u1', 125);
+    expect(repositoryMock.incrementProfileXp).toHaveBeenCalledTimes(1);
+    // Incremento relativo, no total absoluto: es lo que hace la suma atomica.
+    expect(repositoryMock.incrementProfileXp).toHaveBeenCalledWith('u1', 25);
     expect(result).toEqual({ workoutLogId: 'wl1', gainedXp: 25, totalXp: 125 });
   });
 });

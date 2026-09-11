@@ -36,14 +36,15 @@ const withProfiles = (row: DuelRow) => ({
 describe('DuelsService', () => {
   const repositoryMock = {
     getProfile: jest.fn(),
-    updateProfileXp: jest.fn(),
     createDuel: jest.fn(),
     getDuelById: jest.fn(),
     getDuelWithProfiles: jest.fn(),
     listDuelsForUser: jest.fn(),
     updateDuel: jest.fn(),
+    closeDuelSide: jest.fn(),
+    claimDuelFinish: jest.fn(),
+    awardDuelXp: jest.fn(),
     expireStaleDuels: jest.fn().mockResolvedValue(undefined),
-    countDuelRewardsSince: jest.fn(),
     getDuelRecord: jest.fn(),
   };
 
@@ -81,11 +82,13 @@ describe('DuelsService', () => {
 
   it('closes the duel and pays XP to whoever reached the target first', async () => {
     repositoryMock.getDuelById.mockResolvedValue(buildDuel());
-    repositoryMock.updateDuel.mockResolvedValue(
+    repositoryMock.closeDuelSide.mockResolvedValue(
       buildDuel({ challenger_reps: 30, challenger_finished_at: '2026-08-31T10:02:00.000Z' })
     );
-    repositoryMock.countDuelRewardsSince.mockResolvedValue(0);
-    repositoryMock.getProfile.mockResolvedValue({ id: CHALLENGER, xp: 400 });
+    repositoryMock.claimDuelFinish.mockResolvedValue(
+      buildDuel({ status: 'finished', winner_id: CHALLENGER })
+    );
+    repositoryMock.awardDuelXp.mockResolvedValue({ granted: true, totalXp: 475 });
     repositoryMock.getDuelWithProfiles.mockResolvedValue(
       withProfiles(
         buildDuel({
@@ -99,36 +102,65 @@ describe('DuelsService', () => {
 
     const view = await service.report(DUEL_ID, CHALLENGER, 30);
 
-    expect(repositoryMock.updateProfileXp).toHaveBeenCalledWith(CHALLENGER, 475);
-    expect(repositoryMock.updateDuel).toHaveBeenLastCalledWith(
-      DUEL_ID,
-      expect.objectContaining({ status: 'finished', winner_id: CHALLENGER, xp_awarded: 75 })
+    expect(repositoryMock.claimDuelFinish).toHaveBeenCalledWith(DUEL_ID, CHALLENGER);
+    expect(repositoryMock.awardDuelXp).toHaveBeenCalledWith(
+      expect.objectContaining({ winnerId: CHALLENGER, duelId: DUEL_ID, xp: 75 })
     );
     expect(view.outcome).toBe('won');
   });
 
-  it('still closes the duel but pays no XP past the daily reward cap', async () => {
+  it('does not pay XP twice when two reports race to finalize', async () => {
+    // V-03: la transicion a `finished` la gana una sola peticion. La que pierde
+    // la carrera recibe null de claimDuelFinish y no debe repartir recompensa.
     repositoryMock.getDuelById.mockResolvedValue(buildDuel());
-    repositoryMock.updateDuel.mockResolvedValue(
+    repositoryMock.closeDuelSide.mockResolvedValue(
       buildDuel({ challenger_reps: 30, challenger_finished_at: '2026-08-31T10:02:00.000Z' })
     );
-    repositoryMock.countDuelRewardsSince.mockResolvedValue(5);
+    repositoryMock.claimDuelFinish.mockResolvedValue(null);
     repositoryMock.getDuelWithProfiles.mockResolvedValue(
-      withProfiles(buildDuel({ status: 'finished', winner_id: CHALLENGER, xp_awarded: 0 }))
+      withProfiles(buildDuel({ status: 'finished', winner_id: CHALLENGER, xp_awarded: 75 }))
     );
 
     await service.report(DUEL_ID, CHALLENGER, 30);
 
-    expect(repositoryMock.updateProfileXp).not.toHaveBeenCalled();
-    expect(repositoryMock.updateDuel).toHaveBeenLastCalledWith(
-      DUEL_ID,
-      expect.objectContaining({ status: 'finished', winner_id: CHALLENGER, xp_awarded: 0 })
+    expect(repositoryMock.awardDuelXp).not.toHaveBeenCalled();
+  });
+
+  it('ignores a report that lost the race on its own side', async () => {
+    // closeDuelSide devuelve null: otra peticion ya cerro este lado del duelo.
+    repositoryMock.getDuelById.mockResolvedValue(buildDuel());
+    repositoryMock.closeDuelSide.mockResolvedValue(null);
+    repositoryMock.getDuelWithProfiles.mockResolvedValue(withProfiles(buildDuel()));
+
+    await service.report(DUEL_ID, CHALLENGER, 30);
+
+    expect(repositoryMock.claimDuelFinish).not.toHaveBeenCalled();
+    expect(repositoryMock.awardDuelXp).not.toHaveBeenCalled();
+  });
+
+  it('still closes the duel but pays no XP past the daily reward cap', async () => {
+    repositoryMock.getDuelById.mockResolvedValue(buildDuel());
+    repositoryMock.closeDuelSide.mockResolvedValue(
+      buildDuel({ challenger_reps: 30, challenger_finished_at: '2026-08-31T10:02:00.000Z' })
     );
+    repositoryMock.claimDuelFinish.mockResolvedValue(
+      buildDuel({ status: 'finished', winner_id: CHALLENGER })
+    );
+    // El tope vive dentro de la transaccion: la BD responde granted: false.
+    repositoryMock.awardDuelXp.mockResolvedValue({ granted: false, totalXp: 400 });
+    repositoryMock.getDuelWithProfiles.mockResolvedValue(
+      withProfiles(buildDuel({ status: 'finished', winner_id: CHALLENGER, xp_awarded: 0 }))
+    );
+
+    const view = await service.report(DUEL_ID, CHALLENGER, 30);
+
+    expect(repositoryMock.claimDuelFinish).toHaveBeenCalledWith(DUEL_ID, CHALLENGER);
+    expect(view.xpAwarded).toBe(0);
   });
 
   it('keeps the duel open when the first report did not reach the target', async () => {
     repositoryMock.getDuelById.mockResolvedValue(buildDuel());
-    repositoryMock.updateDuel.mockResolvedValue(
+    repositoryMock.closeDuelSide.mockResolvedValue(
       buildDuel({ challenger_reps: 12, challenger_finished_at: '2026-08-31T10:02:00.000Z' })
     );
     repositoryMock.getDuelWithProfiles.mockResolvedValue(
@@ -137,35 +169,39 @@ describe('DuelsService', () => {
 
     const view = await service.report(DUEL_ID, CHALLENGER, 12);
 
-    expect(repositoryMock.updateDuel).toHaveBeenCalledTimes(1);
+    expect(repositoryMock.claimDuelFinish).not.toHaveBeenCalled();
     expect(view.status).toBe('active');
   });
 
   it('clamps an impossible rep count before storing it', async () => {
     repositoryMock.getDuelById.mockResolvedValue(buildDuel());
-    repositoryMock.updateDuel.mockResolvedValue(buildDuel());
+    repositoryMock.closeDuelSide.mockResolvedValue(buildDuel());
     repositoryMock.getDuelWithProfiles.mockResolvedValue(withProfiles(buildDuel()));
 
     await service.report(DUEL_ID, CHALLENGER, 5000);
 
-    expect(repositoryMock.updateDuel).toHaveBeenCalledWith(
+    expect(repositoryMock.closeDuelSide).toHaveBeenCalledWith(
       DUEL_ID,
+      'challenger',
       expect.objectContaining({ challenger_reps: 60 })
     );
   });
 
   it('hands the win to the rival when a player forfeits', async () => {
     repositoryMock.getDuelById.mockResolvedValue(buildDuel());
-    repositoryMock.countDuelRewardsSince.mockResolvedValue(0);
-    repositoryMock.getProfile.mockResolvedValue({ id: OPPONENT, xp: 100 });
-    repositoryMock.updateDuel.mockResolvedValue(buildDuel({ status: 'finished', winner_id: OPPONENT }));
+    repositoryMock.claimDuelFinish.mockResolvedValue(
+      buildDuel({ status: 'finished', winner_id: OPPONENT })
+    );
+    repositoryMock.awardDuelXp.mockResolvedValue({ granted: true, totalXp: 175 });
     repositoryMock.getDuelWithProfiles.mockResolvedValue(
       withProfiles(buildDuel({ status: 'finished', winner_id: OPPONENT, xp_awarded: 75 }))
     );
 
     const view = await service.forfeit(DUEL_ID, CHALLENGER);
 
-    expect(repositoryMock.updateProfileXp).toHaveBeenCalledWith(OPPONENT, 175);
+    expect(repositoryMock.awardDuelXp).toHaveBeenCalledWith(
+      expect.objectContaining({ winnerId: OPPONENT, duelId: DUEL_ID, xp: 75 })
+    );
     expect(view.outcome).toBe('lost');
   });
 

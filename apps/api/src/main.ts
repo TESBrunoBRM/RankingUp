@@ -4,9 +4,17 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import { join } from 'path';
 import { AppModule } from './app.module';
+
+/**
+ * Ningun payload legitimo de la API se acerca a esto. El limite corta los
+ * cuerpos abusivos en la capa HTTP, antes de que `class-validator` gaste CPU
+ * validando miles de objetos anidados.
+ */
+const MAX_BODY_SIZE = '64kb';
 
 const MEDIAPIPE_CDN = 'https://cdn.jsdelivr.net';
 
@@ -66,6 +74,9 @@ async function bootstrap() {
   if (trustProxy) {
     app.set('trust proxy', Number.isNaN(Number(trustProxy)) ? trustProxy : Number(trustProxy));
   }
+
+  app.use(json({ limit: MAX_BODY_SIZE }));
+  app.use(urlencoded({ extended: true, limit: MAX_BODY_SIZE }));
 
   app.use(helmet({
     contentSecurityPolicy: buildCsp(),

@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { GoalType, Profile, RankInfo, WorkoutLogInput } from '../types';
 import { getErrorMessage } from '../utils/errors';
 import { rankingUpApiClient } from './rankingUpApiClient';
@@ -26,6 +26,7 @@ export const workoutLogService = {
   },
 
   async getUserProfile(userId: string): Promise<Profile | null> {
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('profiles')
       .select('*')

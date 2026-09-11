@@ -228,34 +228,28 @@ export class ProfilesService {
       throw new BadRequestException(`Debes completar ${MINIGAME_REQUIRED_REPS} flexiones para recibir la recompensa.`);
     }
 
-    // El cliente puede repetir la peticion en bucle, asi que el tope vive aqui:
-    // sin el, cualquier usuario autenticado farmea XP sin jugar.
-    const since = new Date(Date.now() - MINIGAME_REWARD_WINDOW_MS);
-    const rewardedToday = await this.repository.countMinigameSessionsSince(userId, since, MINIGAME_NAME);
+    // El cliente puede repetir la peticion en bucle, y hacerlo en paralelo.
+    // Contar aqui y escribir despues dejaba una ventana por la que N peticiones
+    // concurrentes pasaban todas el tope: ahora contar, registrar la sesion y
+    // sumar el XP ocurren en una sola transaccion dentro de la BD.
+    const { granted, totalXp, rewardsToday } = await this.repository.awardMinigameXp({
+      userId,
+      game: MINIGAME_NAME,
+      reps,
+      xp: MINIGAME_XP_REWARD,
+      dailyLimit: MINIGAME_DAILY_REWARD_LIMIT,
+    });
 
-    if (rewardedToday >= MINIGAME_DAILY_REWARD_LIMIT) {
+    if (!granted) {
       throw new TooManyRequestsException(
         `Ya alcanzaste el maximo de ${MINIGAME_DAILY_REWARD_LIMIT} recompensas de minijuego en 24 horas.`
       );
     }
 
-    const profile = await this.repository.getProfile(userId);
-    const currentXp = profile?.xp ?? 0;
-    const gainedXp = MINIGAME_XP_REWARD;
-    const totalXp = currentXp + gainedXp;
-
-    await this.repository.insertMinigameSession({
-      user_id: userId,
-      game: MINIGAME_NAME,
-      reps,
-      xp_awarded: gainedXp,
-    });
-    await this.repository.updateProfileXp(userId, totalXp);
-
     return {
-      gainedXp,
+      gainedXp: MINIGAME_XP_REWARD,
       totalXp,
-      remainingRewardsToday: MINIGAME_DAILY_REWARD_LIMIT - rewardedToday - 1,
+      remainingRewardsToday: Math.max(0, MINIGAME_DAILY_REWARD_LIMIT - rewardsToday),
     };
   }
 }

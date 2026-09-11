@@ -1,10 +1,24 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsNumber, IsString, Max, Min, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsNumber,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+/** Una sesion muy larga ronda las 40 series; 60 deja margen de sobra. */
+export const MAX_SETS_PER_SESSION = 60;
 
 export class LogWorkoutSetDto {
   @ApiProperty({ example: 'Press de Banca' })
   @IsString()
+  @MaxLength(120)
   exerciseId!: string;
 
   @ApiProperty({ example: 80, minimum: 0, maximum: 1000 })
@@ -25,9 +39,10 @@ export class LogWorkoutSessionDto {
   @IsString()
   workoutId!: string;
 
-  @ApiProperty({ type: [LogWorkoutSetDto] })
+  @ApiProperty({ type: [LogWorkoutSetDto], maxItems: MAX_SETS_PER_SESSION })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_SETS_PER_SESSION)
   @ValidateNested({ each: true })
   @Type(() => LogWorkoutSetDto)
   sets!: LogWorkoutSetDto[];

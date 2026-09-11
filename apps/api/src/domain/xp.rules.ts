@@ -40,5 +40,15 @@ const XP_RULES: Record<string, number> = {
 export const getXpForMuscle = (muscle: string): number =>
   XP_RULES[normalizeLabel(muscle)] ?? 5;
 
+/**
+ * Techo de XP por sesion registrada. El DTO ya limita el numero de series, pero
+ * el XP se suma por serie: sin este tope, ampliar `@ArrayMaxSize` el dia de
+ * manana volveria a abrir la puerta a inflar el ranking con una sola peticion.
+ */
+export const MAX_SESSION_XP = 300;
+
 export const calculateWorkoutXp = (muscles: string[]): number =>
-  muscles.reduce((total, muscle) => total + getXpForMuscle(muscle), 0);
+  Math.min(
+    muscles.reduce((total, muscle) => total + getXpForMuscle(muscle), 0),
+    MAX_SESSION_XP,
+  );

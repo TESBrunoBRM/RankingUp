@@ -208,13 +208,71 @@ export class SupabaseRepository {
     return data as ProfileRecord | null;
   }
 
-  async updateProfileXp(userId: string, totalXp: number): Promise<void> {
-    const { error } = await this.db
-      .from('profiles')
-      .update({ xp: totalXp })
-      .eq('id', userId);
+  /**
+   * Incremento relativo y atomico (`xp = xp + n` en la BD). Sustituye al viejo
+   * read-modify-write desde la aplicacion, que perdia sumas concurrentes.
+   */
+  async incrementProfileXp(userId: string, amount: number): Promise<number> {
+    const { data, error } = await this.db.rpc('increment_profile_xp', {
+      p_user_id: userId,
+      p_amount: amount,
+    });
 
     if (error) throw toServerError(error.message);
+    return (data as number | null) ?? 0;
+  }
+
+  /**
+   * Cuenta el tope diario, inserta la sesion y suma el XP en una sola
+   * transaccion. `granted: false` significa que el tope ya estaba alcanzado.
+   */
+  async awardMinigameXp(input: {
+    userId: string;
+    game: string;
+    reps: number;
+    xp: number;
+    dailyLimit: number;
+  }): Promise<{ granted: boolean; totalXp: number; rewardsToday: number }> {
+    const { data, error } = await this.db.rpc('award_minigame_xp', {
+      p_user_id: input.userId,
+      p_game: input.game,
+      p_reps: input.reps,
+      p_xp: input.xp,
+      p_daily_limit: input.dailyLimit,
+    });
+
+    if (error) throw toServerError(error.message);
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { granted: boolean; total_xp: number; rewards_today: number }
+      | undefined;
+
+    return {
+      granted: row?.granted ?? false,
+      totalXp: row?.total_xp ?? 0,
+      rewardsToday: row?.rewards_today ?? 0,
+    };
+  }
+
+  /** Mismo patron que `awardMinigameXp`, para el tope diario de duelos. */
+  async awardDuelXp(input: {
+    winnerId: string;
+    duelId: string;
+    xp: number;
+    dailyLimit: number;
+  }): Promise<{ granted: boolean; totalXp: number }> {
+    const { data, error } = await this.db.rpc('award_duel_xp', {
+      p_winner_id: input.winnerId,
+      p_duel_id: input.duelId,
+      p_xp: input.xp,
+      p_daily_limit: input.dailyLimit,
+    });
+
+    if (error) throw toServerError(error.message);
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { granted: boolean; total_xp: number }
+      | undefined;
+
+    return { granted: row?.granted ?? false, totalXp: row?.total_xp ?? 0 };
   }
 
   private static readonly CATALOG_COLUMNS =
@@ -377,6 +435,50 @@ export class SupabaseRepository {
 
     if (error) throw toServerError(error.message);
     return data as DuelRow;
+  }
+
+  /**
+   * Cierra el lado de un jugador solo si el duelo sigue activo y ese lado no
+   * habia reportado todavia. La condicion viaja dentro del UPDATE, asi que dos
+   * peticiones concurrentes no pueden pasarla las dos.
+   *
+   * Devuelve null si otra peticion se adelanto.
+   */
+  async closeDuelSide(
+    duelId: string,
+    role: 'challenger' | 'opponent',
+    patch: Record<string, unknown>,
+  ): Promise<DuelRow | null> {
+    const finishedColumn = role === 'challenger' ? 'challenger_finished_at' : 'opponent_finished_at';
+    const { data, error } = await this.db
+      .from('duels')
+      .update(patch)
+      .eq('id', duelId)
+      .eq('status', 'active')
+      .is(finishedColumn, null)
+      .select()
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return (data as DuelRow) ?? null;
+  }
+
+  /**
+   * Transicion a `finished` con concurrencia optimista: solo quien consigue
+   * cambiar la fila reparte XP. Evita que dos reportes simultaneos finalicen
+   * el mismo duelo y paguen la recompensa dos veces.
+   */
+  async claimDuelFinish(duelId: string, winnerId: string | null): Promise<DuelRow | null> {
+    const { data, error } = await this.db
+      .from('duels')
+      .update({ status: 'finished', winner_id: winnerId, finished_at: new Date().toISOString() })
+      .eq('id', duelId)
+      .eq('status', 'active')
+      .select()
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return (data as DuelRow) ?? null;
   }
 
   /**

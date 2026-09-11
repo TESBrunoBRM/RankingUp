@@ -1,5 +1,5 @@
 import { appEnv } from '../config/env';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import type {
   CompleteOnboardingRequest,
@@ -76,7 +76,7 @@ const getSessionCredentials = async () => {
   }
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const sessionRequest = supabase.auth.getSession();
+  const sessionRequest = getSupabaseClient().auth.getSession();
   const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
       reject(new Error('Supabase no pudo validar la sesion a tiempo. Intenta iniciar sesion nuevamente.'));

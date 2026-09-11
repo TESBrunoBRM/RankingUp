@@ -1,5 +1,5 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 
 /**
  * Canal en vivo de un duelo 1v1.
@@ -43,6 +43,7 @@ export const joinDuelChannel = async (
   selfUserId: string,
   handlers: DuelChannelHandlers,
 ): Promise<DuelChannel> => {
+  const supabase = getSupabaseClient();
   handlers.onStatusChange?.('connecting');
 
   // Los canales privados se autorizan con el JWT del usuario, no con la anon key.

@@ -225,7 +225,11 @@ export class DuelsService {
         ? { challenger_reps: reps, challenger_finished_at: now.toISOString() }
         : { opponent_reps: reps, opponent_finished_at: now.toISOString() };
 
-    const updated = await this.repository.updateDuel(duelId, patch);
+    // Las comprobaciones de arriba son para dar un mensaje util, pero no cierran
+    // la ventana entre la lectura y la escritura: la condicion real viaja dentro
+    // del UPDATE. Si devuelve null, otra peticion se adelanto y ya esta tratado.
+    const updated = await this.repository.closeDuelSide(duelId, role, patch);
+    if (!updated) return this.loadView(duelId, userId);
 
     const challengerSide: DuelSide = {
       userId: updated.challenger_id,
@@ -245,27 +249,20 @@ export class DuelsService {
   }
 
   private async finalize(row: DuelRow, outcome: DuelOutcome): Promise<void> {
-    const now = new Date();
-    let xpAwarded = 0;
+    // Concurrencia optimista: la transicion a `finished` solo la gana una
+    // peticion. Si dos reportes llegan a la vez, el perdedor de la carrera sale
+    // aqui y el XP no se paga dos veces.
+    const claimed = await this.repository.claimDuelFinish(row.id, outcome.winnerId);
+    if (!claimed || !outcome.winnerId) return;
 
-    if (outcome.winnerId) {
-      // Mismo tope que el minijuego individual: limita el farmeo entre cuentas
-      // complices sin castigar al que juega de verdad.
-      const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const rewardedToday = await this.repository.countDuelRewardsSince(outcome.winnerId, since);
-
-      if (rewardedToday < DUEL_DAILY_REWARD_LIMIT) {
-        const profile = await this.repository.getProfile(outcome.winnerId);
-        xpAwarded = DUEL_XP_REWARD;
-        await this.repository.updateProfileXp(outcome.winnerId, (profile?.xp ?? 0) + xpAwarded);
-      }
-    }
-
-    await this.repository.updateDuel(row.id, {
-      status: 'finished',
-      winner_id: outcome.winnerId,
-      xp_awarded: xpAwarded,
-      finished_at: now.toISOString(),
+    // Mismo tope que el minijuego individual: limita el farmeo entre cuentas
+    // complices sin castigar al que juega de verdad. Contar y otorgar van en la
+    // misma transaccion, igual que en `award_minigame_xp`.
+    await this.repository.awardDuelXp({
+      winnerId: outcome.winnerId,
+      duelId: row.id,
+      xp: DUEL_XP_REWARD,
+      dailyLimit: DUEL_DAILY_REWARD_LIMIT,
     });
   }
 

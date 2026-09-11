@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#121212"
+      "backgroundColor": "#101114"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,13 +20,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#121212",
+        "backgroundColor": "#101114",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.brunobrm.rankingup",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "permissions": [
         "android.permission.CAMERA"
       ]
@@ -45,14 +48,16 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "RankingUp necesita acceder a tu cámara para escanear alimentos y códigos de barras."
+          "cameraPermission": "RankingUp necesita acceder a tu cámara para escanear alimentos y códigos de barras.",
+          "recordAudioAndroid": false
         }
       ],
       "expo-font"
     ],
+    "owner": "brunobrm",
     "extra": {
       "eas": {
-        "projectId": "1a69a9ed-add2-4398-ba3f-647c3fde5cac"
+        "projectId": "1b99545d-2970-4f6d-835c-3b0d47a25495"
       }
     }
   }

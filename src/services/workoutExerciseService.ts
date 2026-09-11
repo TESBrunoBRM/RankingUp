@@ -1,8 +1,9 @@
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { WorkoutExercise } from '../types';
 
 export const workoutExerciseService = {
   async getWorkoutExercises(workoutId: string): Promise<WorkoutExercise[]> {
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('workout_exercises')
       .select('*')
@@ -17,6 +18,7 @@ export const workoutExerciseService = {
   },
 
   async addExerciseToWorkout(exercise: Omit<WorkoutExercise, 'id'>): Promise<WorkoutExercise> {
+    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('workout_exercises')
       .insert([exercise])
@@ -31,6 +33,7 @@ export const workoutExerciseService = {
   },
 
   async removeExerciseFromWorkout(id: string): Promise<void> {
+    const supabase = getSupabaseClient();
     const { error } = await supabase
       .from('workout_exercises')
       .delete()

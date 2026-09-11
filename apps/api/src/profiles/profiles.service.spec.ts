@@ -7,7 +7,7 @@ describe('ProfilesService', () => {
   const repositoryMock = {
     updateProfileMetrics: jest.fn(),
     getProfile: jest.fn(),
-    updateProfileXp: jest.fn(),
+    awardMinigameXp: jest.fn(),
     findProfileByUsername: jest.fn(),
     updateSocialProfile: jest.fn(),
     getExerciseHistory: jest.fn(),
@@ -164,33 +164,42 @@ describe('ProfilesService', () => {
   });
 
   it('rewards XP only after completing 100 push ups', async () => {
-    repositoryMock.getProfile.mockResolvedValue({ id: 'u1', xp: 120 });
-    repositoryMock.countMinigameSessionsSince.mockResolvedValue(0);
+    repositoryMock.awardMinigameXp.mockResolvedValue({
+      granted: true,
+      totalXp: 170,
+      rewardsToday: 1,
+    });
 
     await expect(service.rewardMinigameXp('u1', 99)).rejects.toThrow(BadRequestException);
+    // Un intento invalido no debe llegar siquiera a la transaccion.
+    expect(repositoryMock.awardMinigameXp).not.toHaveBeenCalled();
+
     await expect(service.rewardMinigameXp('u1', 100)).resolves.toEqual({
       gainedXp: 50,
       totalXp: 170,
       remainingRewardsToday: 4,
     });
-    expect(repositoryMock.updateProfileXp).toHaveBeenCalledTimes(1);
-    expect(repositoryMock.updateProfileXp).toHaveBeenCalledWith('u1', 170);
-    expect(repositoryMock.insertMinigameSession).toHaveBeenCalledWith({
-      user_id: 'u1',
+    expect(repositoryMock.awardMinigameXp).toHaveBeenCalledTimes(1);
+    expect(repositoryMock.awardMinigameXp).toHaveBeenCalledWith({
+      userId: 'u1',
       game: 'push_ups',
       reps: 100,
-      xp_awarded: 50,
+      xp: 50,
+      dailyLimit: 5,
     });
   });
 
   it('blocks XP farming once the daily minigame limit is reached', async () => {
-    repositoryMock.getProfile.mockResolvedValue({ id: 'u1', xp: 120 });
-    repositoryMock.countMinigameSessionsSince.mockResolvedValue(5);
+    // V-02: el tope ya no se comprueba con un count() previo (evadible con
+    // peticiones en paralelo), sino dentro de la misma transaccion que escribe.
+    repositoryMock.awardMinigameXp.mockResolvedValue({
+      granted: false,
+      totalXp: 120,
+      rewardsToday: 5,
+    });
 
     await expect(service.rewardMinigameXp('u1', 100)).rejects.toMatchObject({
       status: HttpStatus.TOO_MANY_REQUESTS,
     });
-    expect(repositoryMock.updateProfileXp).not.toHaveBeenCalled();
-    expect(repositoryMock.insertMinigameSession).not.toHaveBeenCalled();
   });
 });

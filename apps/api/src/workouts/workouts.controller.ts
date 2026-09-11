@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
@@ -16,6 +17,9 @@ export class WorkoutsController {
 
   @Post('log-session')
   @HttpCode(HttpStatus.OK)
+  // Es la via principal de XP: sin limite propio heredaba solo el global de
+  // 120 req/min, mucho mas laxo que el resto de endpoints que reparten XP.
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @ApiOperation({ summary: 'Registra un entrenamiento y calcula XP en backend.' })
   logSession(@CurrentUser() user: AuthenticatedUser, @Body() dto: LogWorkoutSessionDto) {
     return this.workoutsService.logSession(user.id, dto);

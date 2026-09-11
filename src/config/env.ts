@@ -2,8 +2,11 @@ import Constants from 'expo-constants';
 
 type EnvStatus = {
   isSupabaseConfigured: boolean;
+  isApiConfigured: boolean;
+  isReady: boolean;
   hasDemoFallbacks: boolean;
   apiProxyUrl: string | null;
+  missingKeys: string[];
 };
 
 const readEnv = (key: string): string => {
@@ -46,10 +49,19 @@ export const appEnv = {
   enableDemoFallbacks: readEnv('EXPO_PUBLIC_ENABLE_DEMO_FALLBACKS') !== 'false',
 };
 
+const missingKeys = [
+  !appEnv.supabaseUrl ? 'EXPO_PUBLIC_SUPABASE_URL' : null,
+  !appEnv.supabaseAnonKey ? 'EXPO_PUBLIC_SUPABASE_ANON_KEY' : null,
+  !appEnv.apiProxyUrl ? 'EXPO_PUBLIC_RANKINGUP_API_URL' : null,
+].filter((key): key is string => key !== null);
+
 export const envStatus: EnvStatus = {
   isSupabaseConfigured: Boolean(appEnv.supabaseUrl && appEnv.supabaseAnonKey),
+  isApiConfigured: Boolean(appEnv.apiProxyUrl),
+  isReady: missingKeys.length === 0,
   hasDemoFallbacks: appEnv.enableDemoFallbacks,
   apiProxyUrl: appEnv.apiProxyUrl || null,
+  missingKeys,
 };
 
 export const requireSupabaseEnv = () => {

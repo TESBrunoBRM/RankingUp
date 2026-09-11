@@ -44,9 +44,8 @@ export class WorkoutsService {
       })),
     );
 
-    const profile = await this.repository.getProfile(userId);
-    const totalXp = (profile?.xp ?? 0) + gainedXp;
-    await this.repository.updateProfileXp(userId, totalXp);
+    // Incremento atomico en la BD: dos sesiones concurrentes suman las dos.
+    const totalXp = await this.repository.incrementProfileXp(userId, gainedXp);
 
     return {
       workoutLogId: workoutLog.id,
