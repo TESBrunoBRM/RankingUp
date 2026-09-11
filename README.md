@@ -148,12 +148,15 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    ```
 
    El perfil `preview` de EAS genera un APK interno para entregar como prototipo Android.
+   El artefacto validado actual es el [build EAS 6d5de9fe](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/6d5de9fe-b0d9-43db-beed-74094eef9138), también guardado localmente como `artifacts/RankingUp-preview-v2.apk`.
 
 ### Despliegue del prototipo
 
 La API de prototipo activa está disponible en
 `https://rankingup-api.onrender.com`. El APK `preview` debe usar esa URL y no
-una dirección LAN.
+una dirección LAN. Como el servicio usa el plan gratuito, el cliente consulta
+`/health` al arrancar y comparte esa espera para evitar timeouts duplicados
+cuando Render despierta una instancia inactiva.
 
 1. **Validar la imagen de producción de la API:**
    ```bash

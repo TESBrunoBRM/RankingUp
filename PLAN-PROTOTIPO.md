@@ -1,7 +1,7 @@
 # RankingUp — Plan para dejar el proyecto "listo para buildear" como prototipo
 
 **Fecha del análisis:** 2026-09-11
-**Rama:** `main` (limpia, `ee45e75`)
+**Rama de entrega:** `codex/prototype-deploy`
 **Objetivo:** un APK `preview` de EAS que cualquiera pueda instalar y usar sin tu Wi-Fi ni tu máquina encendida.
 
 ---
@@ -16,16 +16,20 @@
 - ✅ Entorno EAS `preview` configurado con Supabase y la URL HTTPS pública de la API.
 - ✅ CI añadida con typecheck, tests, build y Expo Doctor.
 - ✅ Validación local: **14 suites / 64 tests**, typecheck móvil/API y build API en verde.
-- ✅ APK firmado generado por EAS y guardado localmente en `artifacts/RankingUp-preview-v1.apk`.
+- ✅ APK final firmado generado por EAS y guardado localmente en `artifacts/RankingUp-preview-v2.apk` ([build EAS](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/6d5de9fe-b0d9-43db-beed-74094eef9138)).
+- ✅ APK inspeccionado: firma v2 válida, package `com.brunobrm.rankingup`, cámara presente y `RECORD_AUDIO` ausente.
+- ✅ Migración `atomic_xp_awards` aplicada en Supabase; las RPC de XP son atómicas y solo `service_role` puede ejecutarlas.
+- ✅ Lectura de variables compatible con el bundle de Expo: URL pública y clave anónima presentes; secretos backend ausentes.
+- ✅ Precalentamiento de `/health` para absorber el arranque en frío del plan gratuito de Render (medido en 41,9 s; caliente en menos de 1 s).
 - ⏳ Pendiente externo: rotar `service_role`, autenticar Supabase CLI para `db pull` y probar el APK en un dispositivo físico.
 
 ---
 
 ## 1. Veredicto en una línea
 
-El **código está en buen estado** (typecheck limpio, 61 tests verdes, RLS bien cerrada, backend con guards y throttling). Lo que **no está listo es el empaquetado y el despliegue**: tal como está hoy, el APK de `preview` **crashea al abrir** porque no lleva variables de entorno, y aunque arrancara, apuntaría a una IP local (`10.198.168.232`) que no existe fuera de tu red.
+La cadena **build → despliegue → configuración** ya está cerrada: API HTTPS activa en Render, Supabase conectado, entorno EAS configurado y APK firmado. El código pasa typecheck, 64 tests y Expo Doctor 18/18.
 
-No hay que reescribir nada. Hay que **cerrar la cadena build → despliegue → configuración**. Estimación: **1–2 días de trabajo real**.
+Para declarar el prototipo entregable falta instalar el APK actualizado en un dispositivo físico, recorrer los flujos de aceptación y rotar/confirmar la rotación de `SUPABASE_SERVICE_ROLE_KEY`.
 
 ---
 
@@ -49,7 +53,9 @@ El diseño de seguridad del backend es sólido y conviene no tocarlo: `service_r
 
 ## 3. 🔴 Bloqueantes — sin esto no hay prototipo
 
-### B1. El APK no lleva variables de entorno → crash al arrancar
+### B1. El APK no lleva variables de entorno → crash al arrancar — RESUELTO
+
+EAS `preview` ya contiene las tres variables. Además, `env.ts` usa accesos estáticos `process.env.EXPO_PUBLIC_*`, requisito de Expo para insertarlas durante el bundle. La exportación Android confirmó la URL de Render y Supabase, sin `service_role`, Gemini ni API Ninjas.
 
 **El más grave, y el menos obvio.**
 
@@ -89,7 +95,9 @@ La `ANON_KEY` igual, con `--visibility sensitive`. Y en `eas.json`:
 
 ---
 
-### B2. La URL de la API es una IP de tu LAN, en HTTP plano
+### B2. La URL de la API es una IP de tu LAN, en HTTP plano — RESUELTO
+
+El cliente y EAS apuntan a `https://rankingup-api.onrender.com`. La IP LAN anterior no aparece en el bundle de validación.
 
 ```
 EXPO_PUBLIC_RANKINGUP_API_URL=http://10.198.168.232:3001
@@ -106,7 +114,9 @@ Esto tumba **todo** lo que pasa por [`rankingUpApiClient.ts:62`](src/services/ra
 
 ---
 
-### B3. No existe ningún artefacto de despliegue para la API
+### B3. No existe ningún artefacto de despliegue para la API — RESUELTO
+
+La API está desplegada y saludable en Render. El repositorio incluye `Dockerfile` y `render.yaml`; el servicio activo usa build nativo Node 22 desde esta rama.
 
 No hay `Dockerfile`, ni `Procfile`, ni `render.yaml`, ni `fly.toml`, ni campo `engines`. `apps/api` además vive dentro de un workspace pnpm con `node-linker=hoisted`, así que un `npm install` ingenuo en el host no reproduce el árbol de dependencias.
 
@@ -235,6 +245,7 @@ El escáner de comida por IA ([`aiAnalyzerService.ts`](src/services/aiAnalyzerSe
 - [x] `NODE_ENV=production`, `CORS_ORIGIN` restringido, `TRUST_PROXY=1`, `ENABLE_SWAGGER=false`
 - [x] Verificar: `curl https://rankingup-api.onrender.com/health` → `{"status":"ok"}`
 - [x] Verificar que `/docs` devuelve 404 (Swagger cerrado en producción)
+- [x] Aplicar y verificar `atomic_xp_awards` en Supabase (`anon=false`, `authenticated=false`, `service_role=true`)
 
 ### Fase 2 — Cablear el build del APK (1–2 h)
 
@@ -242,8 +253,10 @@ El escáner de comida por IA ([`aiAnalyzerService.ts`](src/services/aiAnalyzerSe
 - [x] Añadir `"environment": "preview"` al perfil `preview` de `eas.json`
 - [x] Apuntar `EXPO_PUBLIC_RANKINGUP_API_URL` a `https://rankingup-api.onrender.com`
 - [x] (Recomendado) Hacer perezoso el `requireSupabaseEnv()` para fallar con un mensaje legible
+- [x] Usar accesos estáticos `process.env.EXPO_PUBLIC_*` para que Expo inserte la configuración en el APK
+- [x] Precalentar la API y compartir una única solicitud de arranque entre pantallas
 - [x] `pnpm typecheck && pnpm test:api && pnpm doctor` — los tres en verde
-- [x] `pnpm run build:android:preview`
+- [x] `pnpm run build:android:preview` → build final `6d5de9fe-b0d9-43db-beed-74094eef9138`
 
 ### Fase 3 — Validar en dispositivo (1 h)
 
@@ -278,7 +291,7 @@ El prototipo está listo cuando **las ocho** se cumplen:
 7. Catálogo, ranking, duelo y nutrición traen datos reales en ese móvil
 8. `SUPABASE_SERVICE_ROLE_KEY` rotada y presente solo en el gestor de secretos del host
 
-Los puntos 1–5 ya se cumplen hoy. Los puntos **6–8** requieren prueba en un dispositivo físico y cerrar la rotación de credenciales.
+Los puntos 1–5 ya se cumplen hoy. El APK final también pasó inspección estática de firma, permisos, URLs y secretos. Los puntos **6–8** todavía requieren prueba funcional en un dispositivo físico y cerrar la rotación de credenciales.
 
 ---
 
