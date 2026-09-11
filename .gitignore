@@ -52,3 +52,7 @@ yarn-error.*
 # Supabase CLI local state
 /supabase/.temp/
 /supabase/.branches/
+
+# Local security audit artifacts
+/SECURITY-FINDINGS.md
+/strix_runs/
