@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { envStatus } from './src/config/env';
 import { getSupabaseClient, registerSupabaseAutoRefresh } from './src/lib/supabase';
 import { useAuthStore } from './src/store/authStore';
+import { rankingUpApiClient } from './src/services/rankingUpApiClient';
 import AppNavigator from './src/navigation/AppNavigator';
 import { getAuthErrorMessage } from './src/utils/errors';
 
@@ -16,6 +17,10 @@ function ConfiguredApp() {
     let isMounted = true;
     const supabase = getSupabaseClient();
     const stopAutoRefreshListener = registerSupabaseAutoRefresh();
+
+    void rankingUpApiClient.warmUp().catch((error: unknown) => {
+      console.warn('No se pudo preparar la API:', getAuthErrorMessage(error, 'Error de conexion.'));
+    });
 
     const restoreSession = async () => {
       try {

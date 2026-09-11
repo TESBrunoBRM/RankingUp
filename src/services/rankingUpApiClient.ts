@@ -54,16 +54,61 @@ interface CachedResponse {
 }
 
 const API_TIMEOUT_MS = 7000;
+const API_COLD_START_TIMEOUT_MS = 65000;
+const API_HEALTH_TTL_MS = 10 * 60 * 1000;
 const AUTH_SESSION_TIMEOUT_MS = 4000;
 const API_CACHE_MS = 15000;
 const responseCache = new Map<string, CachedResponse>();
 const inFlightRequests = new Map<string, Promise<unknown>>();
+let apiWarmupPromise: Promise<void> | null = null;
+let lastApiHealthAt = 0;
 
 const getApiBaseUrl = () => {
   if (!appEnv.apiProxyUrl) {
     throw new Error('Configura EXPO_PUBLIC_RANKINGUP_API_URL para usar el backend RankingUp.');
   }
   return appEnv.apiProxyUrl.replace(/\/$/, '');
+};
+
+const warmUpApi = async (): Promise<void> => {
+  if (Date.now() - lastApiHealthAt < API_HEALTH_TTL_MS) return;
+  if (apiWarmupPromise) return apiWarmupPromise;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_COLD_START_TIMEOUT_MS);
+
+  const currentWarmup = (async () => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/health`, {
+        method: 'GET',
+        signal: controller.signal,
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) throw new Error(`La API respondio con estado ${response.status}.`);
+      lastApiHealthAt = Date.now();
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('El servidor de RankingUp no respondio. Reintenta en unos segundos.');
+      }
+
+      if (error instanceof TypeError) {
+        throw new Error('No se pudo conectar con la API de RankingUp. Revisa tu conexion a internet.');
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  })();
+
+  apiWarmupPromise = currentWarmup;
+
+  try {
+    await currentWarmup;
+  } finally {
+    if (apiWarmupPromise === currentWarmup) apiWarmupPromise = null;
+  }
 };
 
 const getSessionCredentials = async () => {
@@ -109,6 +154,7 @@ interface RequestOptions {
 }
 
 const request = async <T>(path: string, init: RequestInit = {}, options: RequestOptions = {}): Promise<T> => {
+  await warmUpApi();
   const { token, userId } = await getSessionCredentials();
   const method = (init.method ?? 'GET').toUpperCase();
   const cacheKey = `${userId}:${method}:${path}`;
@@ -146,6 +192,8 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
         throw new Error(readErrorMessage(payload, 'No se pudo completar la solicitud al backend.'));
       }
 
+      lastApiHealthAt = Date.now();
+
       if (canCache) {
         responseCache.set(cacheKey, { value: payload, expiresAt: Date.now() + API_CACHE_MS });
       } else {
@@ -157,11 +205,11 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
       return payload as T;
     } catch (error: unknown) {
       if (didTimeout || (error instanceof Error && error.name === 'AbortError')) {
-        throw new Error('La API de RankingUp tarda demasiado en responder. Verifica que el servidor este iniciado y en la misma red.');
+        throw new Error('La API de RankingUp tarda demasiado en responder. Reintenta en unos segundos.');
       }
 
       if (error instanceof TypeError) {
-        throw new Error('No se pudo conectar con la API de RankingUp. Verifica el servidor y tu conexion de red.');
+        throw new Error('No se pudo conectar con la API de RankingUp. Revisa tu conexion a internet.');
       }
 
       throw error;
@@ -178,6 +226,8 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
 };
 
 export const rankingUpApiClient = {
+  warmUp: warmUpApi,
+
   getDashboard: () => request<DashboardResponse>('/v1/dashboard'),
 
   getHomeContent: () => request<HomeContentResponse>('/v1/home-content'),

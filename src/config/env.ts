@@ -9,8 +9,7 @@ type EnvStatus = {
   missingKeys: string[];
 };
 
-const readEnv = (key: string): string => {
-  const value = process.env[key];
+const normalizeEnv = (value: string | undefined): string => {
   return typeof value === 'string' ? value.trim() : '';
 };
 
@@ -32,7 +31,7 @@ const getExpoDevelopmentHost = (): string | null => {
 };
 
 const resolveApiProxyUrl = (): string => {
-  const configuredUrl = readEnv('EXPO_PUBLIC_RANKINGUP_API_URL');
+  const configuredUrl = normalizeEnv(process.env.EXPO_PUBLIC_RANKINGUP_API_URL);
   if (!__DEV__ || !configuredUrl.startsWith('http://')) return configuredUrl;
 
   const expoHost = getExpoDevelopmentHost();
@@ -43,10 +42,12 @@ const resolveApiProxyUrl = (): string => {
 };
 
 export const appEnv = {
-  supabaseUrl: readEnv('EXPO_PUBLIC_SUPABASE_URL'),
-  supabaseAnonKey: readEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
+  // Expo reemplaza solamente accesos estaticos `process.env.EXPO_PUBLIC_*`
+  // durante el bundle. El acceso dinamico `process.env[key]` queda vacio en APK.
+  supabaseUrl: normalizeEnv(process.env.EXPO_PUBLIC_SUPABASE_URL),
+  supabaseAnonKey: normalizeEnv(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY),
   apiProxyUrl: resolveApiProxyUrl(),
-  enableDemoFallbacks: readEnv('EXPO_PUBLIC_ENABLE_DEMO_FALLBACKS') !== 'false',
+  enableDemoFallbacks: normalizeEnv(process.env.EXPO_PUBLIC_ENABLE_DEMO_FALLBACKS) !== 'false',
 };
 
 const missingKeys = [

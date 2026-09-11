@@ -39,6 +39,8 @@ $$;
 
 revoke execute on function public.increment_profile_xp(uuid, int)
   from public, anon, authenticated;
+grant execute on function public.increment_profile_xp(uuid, int)
+  to service_role;
 
 -- ---------------------------------------------------------------------------
 -- 2. Minijuego: contar, insertar la sesion y sumar el XP en una transaccion.
@@ -88,6 +90,8 @@ $$;
 
 revoke execute on function public.award_minigame_xp(uuid, text, int, int, int)
   from public, anon, authenticated;
+grant execute on function public.award_minigame_xp(uuid, text, int, int, int)
+  to service_role;
 
 -- ---------------------------------------------------------------------------
 -- 3. Duelos: mismo patron. `duels.xp_awarded` se escribe DENTRO de la misma
@@ -136,3 +140,5 @@ $$;
 
 revoke execute on function public.award_duel_xp(uuid, uuid, int, int)
   from public, anon, authenticated;
+grant execute on function public.award_duel_xp(uuid, uuid, int, int)
+  to service_role;
