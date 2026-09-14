@@ -8,6 +8,9 @@ import type {
   HomeContentResponse,
   GeneratedWorkoutPlanResponse,
   LogWorkoutSessionResponse,
+  SessionPreview,
+  WorkoutHistoryItem,
+  ProgressPost,
   MealType,
   NutritionSummaryResponse,
   NutritionUnit,
@@ -17,6 +20,8 @@ import type {
   ProfileUpdateResponse,
   RankingResponse,
   SocialProfileResponse,
+  StreakCheckInResponse,
+  StreakResponse,
   WorkoutLogInput,
   CatalogExerciseDetail,
   CatalogFiltersResponse,
@@ -230,6 +235,12 @@ export const rankingUpApiClient = {
 
   getDashboard: () => request<DashboardResponse>('/v1/dashboard'),
 
+  checkInStreak: (timeZone: string) => request<StreakCheckInResponse>('/v1/streak/check-in', {
+    method: 'POST', body: JSON.stringify({ timeZone }),
+  }),
+
+  getStreak: (timeZone: string) => request<StreakResponse>(`/v1/streak?timeZone=${encodeURIComponent(timeZone)}`),
+
   getHomeContent: () => request<HomeContentResponse>('/v1/home-content'),
 
   searchExercises: (params: CatalogSearchParams = {}) => {
@@ -328,15 +339,51 @@ export const rankingUpApiClient = {
   compareProfile: (profileId: string) =>
     request<ProfileComparisonResponse>(`/v1/profiles/${encodeURIComponent(profileId)}/comparison`),
 
-  logWorkoutSession: (workoutId: string, sets: WorkoutLogInput[]) =>
+  getSessionPreview: (workoutId: string) =>
+    request<SessionPreview>(`/v1/workouts/${encodeURIComponent(workoutId)}/session-preview`),
+
+  getWorkoutHistory: (cursor?: string) =>
+    request<{ items: WorkoutHistoryItem[]; nextCursor: string | null }>(`/v1/workouts/history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  getWorkoutHistoryDetail: (logId: string) =>
+    request<WorkoutHistoryItem>(`/v1/workouts/history/${encodeURIComponent(logId)}`),
+
+  getExerciseProgress: (name: string) =>
+    request<Array<{ date: string; bestWeight: number; estimatedOneRm: number; volume: number }>>(`/v1/exercises/progress?name=${encodeURIComponent(name)}`),
+
+  createProgressUploadUrl: (input: { workoutLogId: string; contentType: string; sizeBytes: number }) =>
+    request<{ uploadUrl: string; path: string; token: string }>('/v1/progress/upload-url', { method: 'POST', body: JSON.stringify(input) }),
+
+  publishProgress: (logId: string, input: { name?: string; description?: string; visibility?: 'public' | 'followers' | 'private'; photoPath?: string }) =>
+    request<ProgressPost>(`/v1/progress/${encodeURIComponent(logId)}`, { method: 'PATCH', body: JSON.stringify(input) }),
+
+  getProgressFeed: (cursor?: string) =>
+    request<{ items: ProgressPost[]; nextCursor: string | null }>(`/v1/progress/feed${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  getProfileProgress: (profileId: string, cursor?: string) =>
+    request<{ items: ProgressPost[]; nextCursor: string | null }>(`/v1/progress/profile/${encodeURIComponent(profileId)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+
+  likeProgress: (logId: string, liked: boolean) =>
+    request<{ liked: boolean }>(`/v1/progress/${encodeURIComponent(logId)}/like`, { method: liked ? 'POST' : 'DELETE' }),
+
+  deleteProgressPhoto: (logId: string) =>
+    request<{ deleted: boolean }>(`/v1/progress/${encodeURIComponent(logId)}/photo`, { method: 'DELETE' }),
+
+  unpublishProgress: (logId: string) =>
+    request<{ unpublished: boolean }>(`/v1/progress/${encodeURIComponent(logId)}`, { method: 'DELETE' }),
+
+  logWorkoutSession: (workoutId: string, sets: WorkoutLogInput[], metadata?: { startedAt: string; durationSeconds: number; name?: string; clientSessionId?: string }) =>
     request<LogWorkoutSessionResponse>('/v1/workouts/log-session', {
       method: 'POST',
       body: JSON.stringify({
         workoutId,
+        ...metadata,
         sets: sets.map((set) => ({
           exerciseId: set.exercise_id,
           weight: set.weight,
           reps: set.reps,
+          kind: set.kind,
+          setIndex: set.setIndex,
         })),
       }),
     }),
@@ -367,9 +414,9 @@ export const rankingUpApiClient = {
       method: 'DELETE',
     }),
 
-  rewardMinigameXp: (reps: number) =>
+  rewardMinigameXp: (reps: number, durationSeconds: number, outcome: 'completed' | 'retired') =>
     request<{ gainedXp: number; totalXp: number }>('/v1/profile/minigame-xp', {
       method: 'POST',
-      body: JSON.stringify({ reps }),
+      body: JSON.stringify({ reps, durationSeconds, outcome }),
     }),
 };

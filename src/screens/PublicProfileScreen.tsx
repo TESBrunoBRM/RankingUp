@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StrengthLevelBadge } from '../components/StrengthLevelBadge';
+import { ProfileProgressGrid } from '../components/ProfileProgressGrid';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import type { AppStackParamList, SocialProfileResponse } from '../types';
 import { getErrorMessage } from '../utils/errors';
@@ -91,6 +92,7 @@ export default function PublicProfileScreen() {
               <StrengthLevelBadge level={strength.level} />
             </View>
           )) : <View style={styles.empty}><Ionicons name="barbell-outline" size={32} color="#444444" /><Text style={styles.emptyText}>Todavia no hay marcas comparables.</Text></View>}
+          <ProfileProgressGrid profileId={profileId} />
         </ScrollView>
       ) : null}
     </SafeAreaView>

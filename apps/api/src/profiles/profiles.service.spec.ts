@@ -19,6 +19,7 @@ describe('ProfilesService', () => {
     followProfile: jest.fn(),
     unfollowProfile: jest.fn(),
     countMinigameSessionsSince: jest.fn(),
+    countRewardedMinigameSessionsSince: jest.fn(),
     insertMinigameSession: jest.fn(),
   };
   let service: ProfilesService;
@@ -163,18 +164,18 @@ describe('ProfilesService', () => {
     await expect(service.followProfile('u1', 'u1')).rejects.toThrow(BadRequestException);
   });
 
-  it('rewards XP only after completing 100 push ups', async () => {
+  it('keeps the legacy 100-rep payload compatible', async () => {
     repositoryMock.awardMinigameXp.mockResolvedValue({
       granted: true,
       totalXp: 170,
       rewardsToday: 1,
     });
 
-    await expect(service.rewardMinigameXp('u1', 99)).rejects.toThrow(BadRequestException);
+    await expect(service.rewardMinigameXp('u1', { reps: 99 })).rejects.toThrow(BadRequestException);
     // Un intento invalido no debe llegar siquiera a la transaccion.
     expect(repositoryMock.awardMinigameXp).not.toHaveBeenCalled();
 
-    await expect(service.rewardMinigameXp('u1', 100)).resolves.toEqual({
+    await expect(service.rewardMinigameXp('u1', { reps: 100 })).resolves.toEqual({
       gainedXp: 50,
       totalXp: 170,
       remainingRewardsToday: 4,
@@ -198,8 +199,48 @@ describe('ProfilesService', () => {
       rewardsToday: 5,
     });
 
-    await expect(service.rewardMinigameXp('u1', 100)).rejects.toMatchObject({
+    await expect(service.rewardMinigameXp('u1', { reps: 100 })).rejects.toMatchObject({
       status: HttpStatus.TOO_MANY_REQUESTS,
     });
+  });
+
+  it('awards proportional XP when retiring and consumes one daily reward', async () => {
+    repositoryMock.awardMinigameXp.mockResolvedValue({ granted: true, totalXp: 120, rewardsToday: 2 });
+
+    await expect(service.rewardMinigameXp('u1', {
+      reps: 25, durationSeconds: 60, outcome: 'retired',
+    })).resolves.toEqual({ gainedXp: 10, totalXp: 120, remainingRewardsToday: 3 });
+    expect(repositoryMock.awardMinigameXp).toHaveBeenCalledWith({
+      userId: 'u1', game: 'push_ups', reps: 25, xp: 10, dailyLimit: 5,
+    });
+  });
+
+  it('records a sub-threshold retirement without consuming a daily reward', async () => {
+    repositoryMock.getProfile.mockResolvedValue({ id: 'u1', xp: 87 });
+    repositoryMock.countRewardedMinigameSessionsSince.mockResolvedValue(5);
+
+    await expect(service.rewardMinigameXp('u1', {
+      reps: 9, durationSeconds: 30, outcome: 'retired',
+    })).resolves.toEqual({ gainedXp: 0, totalXp: 87, remainingRewardsToday: 0 });
+    expect(repositoryMock.insertMinigameSession).toHaveBeenCalledWith({
+      user_id: 'u1', game: 'push_ups', reps: 9, xp_awarded: 0,
+    });
+    expect(repositoryMock.awardMinigameXp).not.toHaveBeenCalled();
+  });
+
+  it('rejects impossible pace before awarding XP', async () => {
+    await expect(service.rewardMinigameXp('u1', {
+      reps: 50, durationSeconds: 3, outcome: 'retired',
+    })).rejects.toThrow(BadRequestException);
+    expect(repositoryMock.awardMinigameXp).not.toHaveBeenCalled();
+  });
+
+  it('rejects contradictory outcomes', async () => {
+    await expect(service.rewardMinigameXp('u1', {
+      reps: 100, durationSeconds: 90, outcome: 'retired',
+    })).rejects.toThrow(BadRequestException);
+    await expect(service.rewardMinigameXp('u1', {
+      reps: 25, durationSeconds: 90, outcome: 'completed',
+    })).rejects.toThrow(BadRequestException);
   });
 });

@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StrengthLevelBadge } from '../components/StrengthLevelBadge';
+import { ProfileProgressGrid } from '../components/ProfileProgressGrid';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { authService } from '../services/auth';
 import type { AppStackParamList, GenderType, GoalType, SocialProfileResponse } from '../types';
@@ -252,6 +253,9 @@ export default function ProfileScreen() {
           )) : (
             <View style={styles.emptyStrength}><Ionicons name="barbell-outline" size={28} color="#555555" /><Text style={styles.emptyText}>Registra entrenamientos para calcular tus rangos.</Text></View>
           )}
+
+          {data?.profile.id ? <ProfileProgressGrid profileId={data.profile.id} /> : null}
+          <Pressable style={styles.primaryButton} onPress={() => navigation.navigate('WorkoutHistory')}><Text style={styles.primaryText}>HISTORIAL DE ENTRENAMIENTOS</Text></Pressable>
 
           <Pressable style={[styles.primaryButton, saving && styles.disabled]} disabled={saving} onPress={() => void handleSave()}>
             {saving ? <ActivityIndicator color="#121212" /> : <Text style={styles.primaryText}>GUARDAR PERFIL</Text>}

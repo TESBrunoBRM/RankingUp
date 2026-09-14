@@ -16,7 +16,12 @@ import CreateWorkoutScreen from '../screens/CreateWorkoutScreen';
 import WorkoutDetailScreen from '../screens/WorkoutDetailScreen';
 import AddExercisesScreen from '../screens/AddExercisesScreen';
 import RankingScreen from '../screens/RankingScreen';
-import LogWorkoutScreen from '../screens/LogWorkoutScreen';
+import ActiveSessionScreen from '../screens/ActiveSessionScreen';
+import SessionSummaryScreen from '../screens/SessionSummaryScreen';
+import WorkoutHistoryScreen from '../screens/WorkoutHistoryScreen';
+import WorkoutHistoryDetailScreen from '../screens/WorkoutHistoryDetailScreen';
+import ExerciseProgressScreen from '../screens/ExerciseProgressScreen';
+import ProgressFeedScreen from '../screens/ProgressFeedScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import NutritionScreen from '../screens/NutritionScreen';
 import SearchFoodScreen from '../screens/SearchFoodScreen';
@@ -134,7 +139,12 @@ function MainNavigator() {
         <AppStack.Screen name="MainTabs" component={MainTabs} />
         <AppStack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
         <AppStack.Screen name="AddExercises" component={AddExercisesScreen} />
-        <AppStack.Screen name="LogWorkout" component={LogWorkoutScreen} />
+        <AppStack.Screen name="LogWorkout" component={ActiveSessionScreen} />
+        <AppStack.Screen name="SessionSummary" component={SessionSummaryScreen} />
+        <AppStack.Screen name="WorkoutHistory" component={WorkoutHistoryScreen} />
+        <AppStack.Screen name="WorkoutHistoryDetail" component={WorkoutHistoryDetailScreen} />
+        <AppStack.Screen name="ExerciseProgress" component={ExerciseProgressScreen} />
+        <AppStack.Screen name="ProgressFeed" component={ProgressFeedScreen} />
         <AppStack.Screen name="Onboarding" component={OnboardingScreen} />
         <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
         <AppStack.Screen name="Profile" component={ProfileScreen} />

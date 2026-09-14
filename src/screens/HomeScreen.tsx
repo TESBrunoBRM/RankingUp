@@ -1,16 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Alert,
   Animated,
   Linking,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  Vibration,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -23,10 +27,15 @@ import type {
   Profile,
   WeekDay,
   Workout,
+  StreakResponse,
+  StreakSummary,
+  ProgressPost,
 } from '../types';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { getCurrentWeekDay } from '../utils/date';
 import { getErrorMessage } from '../utils/errors';
+import { StreakBadge } from '../components/StreakBadge';
+import { ProgressPostCard } from '../components/ProgressPostCard';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -100,6 +109,40 @@ export default function HomeScreen() {
   const [dashboardError, setDashboardError] = useState('');
   const [selectedDay, setSelectedDay] = useState<WeekDay>(() => getCurrentWeekDay());
   const [splashIndex, setSplashIndex] = useState(0);
+  const [streak, setStreak] = useState<StreakSummary>({ current: 0, longest: 0, lastActivityDate: null });
+  const [streakModalOpen, setStreakModalOpen] = useState(false);
+  const [streakDetails, setStreakDetails] = useState<StreakResponse | null>(null);
+  const [streakLoading, setStreakLoading] = useState(false);
+  const [progressPosts, setProgressPosts] = useState<ProgressPost[]>([]);
+
+  const checkInStreak = useCallback(async () => {
+    if (!user) return;
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const now = new Date();
+    const key = `streak:lastCheckIn:${user.id}`;
+    const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const marker = `${timeZone}:${localDate}`;
+    try {
+      if (await AsyncStorage.getItem(key) === marker) return;
+      const result = await rankingUpApiClient.checkInStreak(timeZone);
+      setStreak((previous) => ({
+        current: result.currentStreak,
+        longest: result.longestStreak,
+        lastActivityDate: result.isNewDay ? localDate : previous.lastActivityDate,
+      }));
+      await AsyncStorage.setItem(key, marker);
+      if (result.isNewDay) Vibration.vibrate(75);
+    } catch (error: unknown) {
+      console.warn('Streak:', getErrorMessage(error, 'No se pudo actualizar la racha.'));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void checkInStreak();
+    });
+    return () => subscription.remove();
+  }, [checkInStreak]);
 
   const fetchDashboardData = useCallback(async () => {
     if (!user) return;
@@ -108,7 +151,9 @@ export default function HomeScreen() {
       const dashboard = await rankingUpApiClient.getDashboard();
       setWorkouts(dashboard.workouts);
       setProfile(dashboard.profile);
+      if (dashboard.streak) setStreak(dashboard.streak);
       if (dashboard.requiresOnboarding) navigation.replace('Onboarding');
+      else void checkInStreak();
     } catch (error: unknown) {
       const message = getErrorMessage(error, 'No se pudo cargar tu resumen.');
       setDashboardError(message);
@@ -116,7 +161,20 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [navigation, user]);
+  }, [checkInStreak, navigation, user]);
+
+  const openStreak = useCallback(async () => {
+    setStreakModalOpen(true);
+    setStreakLoading(true);
+    try {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      setStreakDetails(await rankingUpApiClient.getStreak(timeZone));
+    } catch (error: unknown) {
+      console.warn('Streak calendar:', getErrorMessage(error, 'No se pudo cargar el calendario.'));
+    } finally {
+      setStreakLoading(false);
+    }
+  }, []);
 
   const fetchHomeContent = useCallback(async () => {
     try {
@@ -132,6 +190,10 @@ export default function HomeScreen() {
     setLoading(true);
     void fetchDashboardData();
     void fetchHomeContent();
+    const feedTimer = setTimeout(() => {
+      void rankingUpApiClient.getProgressFeed().then((result) => setProgressPosts(result.items.slice(0, 2))).catch(() => undefined);
+    }, 1200);
+    return () => clearTimeout(feedTimer);
   }, [fetchDashboardData, fetchHomeContent]));
 
   const messages = homeContent?.messages ?? [];
@@ -160,7 +222,7 @@ export default function HomeScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.allSettled([fetchDashboardData(), fetchHomeContent()]);
+    await Promise.allSettled([fetchDashboardData(), fetchHomeContent(), rankingUpApiClient.getProgressFeed().then((result) => setProgressPosts(result.items.slice(0, 2)))]);
     setRefreshing(false);
   }, [fetchDashboardData, fetchHomeContent]);
 
@@ -191,6 +253,7 @@ export default function HomeScreen() {
           <Text style={styles.name} numberOfLines={1}>{displayName.toUpperCase()}</Text>
           <Text style={styles.date}>{HOME_DATE_FORMATTER.format(new Date()).toUpperCase()}</Text>
         </View>
+        <StreakBadge count={streak.current} onPress={() => void openStreak()} />
         <Pressable accessibilityLabel="Abrir perfil" style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="person-outline" size={21} color="#CCFF00" />
         </Pressable>
@@ -333,7 +396,37 @@ export default function HomeScreen() {
         ) : (
           <View style={styles.newsLoading}><Text style={styles.newsLoadingText}>Las noticias no estan disponibles por ahora.</Text></View>
         )}
+        <View style={styles.sectionHeaderNews}>
+          <View><Text style={styles.sectionEyebrow}>COMUNIDAD</Text><Text style={styles.sectionTitle}>PROGRESO</Text></View>
+          <Pressable onPress={() => navigation.navigate('ProgressFeed')}><Text style={styles.progressLink}>VER TODO  ›</Text></Pressable>
+        </View>
+        {progressPosts.length ? <View style={styles.progressList}>{progressPosts.map((post) => <ProgressPostCard key={post.id} post={post} onDeleted={(id) => setProgressPosts((current) => current.filter((item) => item.id !== id))} />)}</View>
+          : <Pressable style={styles.progressEmpty} onPress={() => navigation.navigate('ProgressFeed')}><Ionicons name="people-outline" color="#CCFF00" size={23} /><Text style={styles.progressEmptyText}>Aún no hay progreso de tu comunidad.</Text></Pressable>}
       </ScrollView>
+      <Modal visible={streakModalOpen} transparent animationType="fade" onRequestClose={() => setStreakModalOpen(false)}>
+        <View style={styles.streakBackdrop}>
+          <View style={styles.streakPanel}>
+            <View style={styles.streakPanelHeader}>
+              <View>
+                <Text style={styles.streakPanelTitle}>TU RACHA</Text>
+                <Text style={styles.streakPanelSubtitle}>{streak.current} dias actuales · mejor: {streak.longest}</Text>
+              </View>
+              <Pressable onPress={() => setStreakModalOpen(false)} accessibilityRole="button" accessibilityLabel="Cerrar calendario">
+                <Ionicons name="close" size={23} color="#AEB5BF" />
+              </Pressable>
+            </View>
+            {streakLoading ? <ActivityIndicator color="#CCFF00" style={styles.streakSpinner} /> : (
+              <View style={styles.streakCalendar}>
+                {streakDetails?.days.map((day) => (
+                  <View key={day.date} style={[styles.streakDay, day.active && styles.streakDayActive]}>
+                    {day.active ? <Ionicons name="checkmark" size={15} color="#101114" /> : null}
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -346,6 +439,15 @@ const styles = StyleSheet.create({
   name: { color: '#FFFFFF', fontSize: 25, fontWeight: '900', marginTop: 2 },
   date: { color: '#CCFF00', fontSize: 10, fontWeight: '800', marginTop: 4 },
   profileButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1B1D22', borderWidth: 1, borderColor: '#30333A', marginLeft: 14 },
+  streakBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'center', padding: 20 },
+  streakPanel: { width: '100%', maxWidth: 430, alignSelf: 'center', backgroundColor: '#191B20', borderRadius: 8, borderWidth: 1, borderColor: '#30333A', padding: 20 },
+  streakPanelHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 },
+  streakPanelTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  streakPanelSubtitle: { color: '#AAB1BA', fontSize: 12, marginTop: 5 },
+  streakSpinner: { marginVertical: 45 },
+  streakCalendar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
+  streakDay: { width: '12%', aspectRatio: 1, borderRadius: 6, backgroundColor: '#2B2E35', alignItems: 'center', justifyContent: 'center' },
+  streakDayActive: { backgroundColor: '#CCFF00' },
   content: { paddingTop: 18, paddingBottom: 120 },
   summaryBand: { minHeight: 72, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2B2E35' },
   summaryItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -405,4 +507,8 @@ const styles = StyleSheet.create({
   newsLink: { color: '#CCFF00', fontSize: 9, fontWeight: '900' },
   newsLoading: { minHeight: 120, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2B2E35', borderStyle: 'dashed' },
   newsLoadingText: { color: '#7E8792', fontSize: 11 },
+  progressLink: { color: '#CCFF00', fontSize: 10, fontWeight: '900' },
+  progressList: { paddingHorizontal: 20 },
+  progressEmpty: { marginHorizontal: 20, minHeight: 90, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2B2E35', flexDirection: 'row', alignItems: 'center', gap: 12 },
+  progressEmptyText: { color: '#8D96A1', fontSize: 12 },
 });

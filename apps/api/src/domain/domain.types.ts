@@ -61,6 +61,10 @@ export interface ProfileRecord {
   bio?: string | null;
   is_public?: boolean | null;
   created_at?: string;
+  current_streak?: number;
+  longest_streak?: number;
+  last_activity_date?: string | null;
+  streak_timezone?: string | null;
 }
 
 export interface RankRecord {
@@ -86,6 +90,7 @@ export interface WorkoutExerciseRecord {
   sets: number;
   reps: number;
   order: number;
+  rest_seconds?: number;
 }
 
 export interface FoodLogRecord {

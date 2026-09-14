@@ -8,6 +8,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { calculateTargetCalories, assertManualTargetCalories } from '../domain/profile.calculator';
+import {
+  calculateMinigameXp,
+  MINIGAME_DAILY_REWARD_LIMIT,
+  MINIGAME_MAX_REPS_PER_SECOND,
+  MINIGAME_REQUIRED_REPS,
+} from '../domain/minigame.rules';
 import { calculateExerciseStrength, type ExerciseStrengthLevel, type StrengthLevelName } from '../domain/strength.calculator';
 import type { ProfileRecord } from '../domain/domain.types';
 import { SupabaseRepository } from '../supabase/supabase.repository';
@@ -15,12 +21,9 @@ import type { CalculateCalorieTargetDto } from './dto/calculate-calorie-target.d
 import type { CompleteOnboardingDto } from './dto/complete-onboarding.dto';
 import type { UpdateProfileMetricsDto } from './dto/update-profile-metrics.dto';
 import type { UpdateSocialProfileDto } from './dto/update-social-profile.dto';
+import type { RewardMinigameDto } from './dto/reward-minigame.dto';
 
 const MINIGAME_NAME = 'push_ups';
-const MINIGAME_REQUIRED_REPS = 100;
-const MINIGAME_XP_REWARD = 50;
-const MINIGAME_DAILY_REWARD_LIMIT = 5;
-const MINIGAME_REWARD_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 class TooManyRequestsException extends HttpException {
   constructor(message: string) {
@@ -223,9 +226,46 @@ export class ProfilesService {
     };
   }
 
-  async rewardMinigameXp(userId: string, reps: number) {
-    if (reps !== MINIGAME_REQUIRED_REPS) {
-      throw new BadRequestException(`Debes completar ${MINIGAME_REQUIRED_REPS} flexiones para recibir la recompensa.`);
+  async rewardMinigameXp(userId: string, dto: RewardMinigameDto) {
+    const { reps, durationSeconds } = dto;
+    const outcome = dto.outcome ?? 'completed';
+
+    if (!Number.isInteger(reps) || reps < 1 || reps > MINIGAME_REQUIRED_REPS) {
+      throw new BadRequestException('Cantidad de flexiones invalida.');
+    }
+    if (outcome === 'completed' && reps !== MINIGAME_REQUIRED_REPS) {
+      throw new BadRequestException(`Debes completar ${MINIGAME_REQUIRED_REPS} flexiones para declarar victoria.`);
+    }
+    if (outcome === 'retired' && reps >= MINIGAME_REQUIRED_REPS) {
+      throw new BadRequestException('Una partida de 100 flexiones se registra como completada.');
+    }
+    if (outcome === 'retired' && durationSeconds === undefined) {
+      throw new BadRequestException('La duracion es obligatoria al retirarte.');
+    }
+    if (durationSeconds !== undefined && (!Number.isInteger(durationSeconds)
+      || durationSeconds < 3 || durationSeconds > 3600
+      || reps / durationSeconds > MINIGAME_MAX_REPS_PER_SECOND)) {
+      throw new BadRequestException('El ritmo reportado no es posible.');
+    }
+
+    const gainedXp = calculateMinigameXp(reps);
+
+    if (gainedXp === 0) {
+      await this.repository.insertMinigameSession({ user_id: userId, game: MINIGAME_NAME, reps, xp_awarded: 0 });
+      const [profile, rewardsToday] = await Promise.all([
+        this.repository.getProfile(userId),
+        this.repository.countRewardedMinigameSessionsSince(
+          userId,
+          new Date(Date.now() - 24 * 60 * 60 * 1000),
+          MINIGAME_NAME,
+        ),
+      ]);
+      if (!profile) throw new NotFoundException('Perfil no encontrado.');
+      return {
+        gainedXp: 0,
+        totalXp: profile.xp ?? 0,
+        remainingRewardsToday: Math.max(0, MINIGAME_DAILY_REWARD_LIMIT - rewardsToday),
+      };
     }
 
     // El cliente puede repetir la peticion en bucle, y hacerlo en paralelo.
@@ -236,7 +276,7 @@ export class ProfilesService {
       userId,
       game: MINIGAME_NAME,
       reps,
-      xp: MINIGAME_XP_REWARD,
+      xp: gainedXp,
       dailyLimit: MINIGAME_DAILY_REWARD_LIMIT,
     });
 
@@ -247,7 +287,7 @@ export class ProfilesService {
     }
 
     return {
-      gainedXp: MINIGAME_XP_REWARD,
+      gainedXp,
       totalXp,
       remainingRewardsToday: Math.max(0, MINIGAME_DAILY_REWARD_LIMIT - rewardsToday),
     };

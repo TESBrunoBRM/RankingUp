@@ -13,6 +13,8 @@ import { NutritionModule } from './nutrition/nutrition.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { RankingModule } from './ranking/ranking.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { StreakModule } from './streak/streak.module';
+import { ProgressModule } from './progress/progress.module';
 import { WorkoutsModule } from './workouts/workouts.module';
 
 @Module({
@@ -25,6 +27,8 @@ import { WorkoutsModule } from './workouts/workouts.module';
     // llevan ademas su propio @Throttle mas estricto.
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
     SupabaseModule,
+    StreakModule,
+    ProgressModule,
     AuthModule,
     HealthModule,
     HomeContentModule,

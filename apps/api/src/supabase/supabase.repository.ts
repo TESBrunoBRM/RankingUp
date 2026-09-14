@@ -9,10 +9,38 @@ import type {
   WorkoutRecord,
   ExerciseHistoryLog,
 } from '../domain/domain.types';
+import type { SetKind } from '../domain/session.rules';
 import { SupabaseService } from './supabase.service';
 
 interface WorkoutLogRecord {
   id: string;
+}
+
+export interface SessionPerformanceRow {
+  exercise_id: string;
+  last_date: string;
+  sets: Array<{ setIndex: number; weight: number; reps: number }>;
+  best_weight: number;
+  best_reps: number;
+  best_one_rm: number;
+}
+
+export interface RecentExerciseSessionRow {
+  exercise_id: string;
+  session_date: string;
+  sets: Array<{ setIndex: number; weight: number; reps: number }>;
+}
+
+export interface WorkoutSessionRow {
+  id: string;
+  workout_id: string;
+  user_id: string;
+  date: string;
+  name: string | null;
+  duration_seconds: number | null;
+  total_volume: number;
+  xp_awarded: number;
+  exercise_logs?: Array<{ id: string; exercise_id: string; weight: number; reps: number; set_index: number; kind: SetKind; is_pr: boolean }>;
 }
 
 interface InsertFoodLogInput {
@@ -540,6 +568,122 @@ export class SupabaseRepository {
     return count ?? 0;
   }
 
+  async getWorkoutSessionPreview(workoutId: string): Promise<WorkoutExerciseRecord[]> {
+    const { data, error } = await this.db.from('workout_exercises').select('*')
+      .eq('workout_id', workoutId).order('order', { ascending: true });
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as WorkoutExerciseRecord[];
+  }
+
+  async getLastExercisePerformance(userId: string, exerciseIds: string[]): Promise<SessionPerformanceRow[]> {
+    if (!exerciseIds.length) return [];
+    const { data, error } = await this.db.rpc('get_last_exercise_performance', {
+      p_user_id: userId, p_exercise_ids: exerciseIds,
+    });
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as SessionPerformanceRow[];
+  }
+
+  async getRecentExerciseSessions(userId: string, exerciseIds: string[]): Promise<RecentExerciseSessionRow[]> {
+    if (!exerciseIds.length) return [];
+    const { data, error } = await this.db.rpc('get_recent_exercise_sessions', {
+      p_user_id: userId, p_exercise_ids: exerciseIds,
+    });
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as RecentExerciseSessionRow[];
+  }
+
+  async completeWorkoutSession(input: {
+    userId: string; workoutId: string; startedAt: string; durationSeconds: number;
+    name: string; totalVolume: number; xp: number;
+    clientSessionId?: string;
+    sets: Array<{ exercise_id: string; weight: number; reps: number; set_index: number; kind: SetKind; is_pr: boolean }>;
+  }): Promise<{ workoutLogId: string; totalXp: number }> {
+    const { data, error } = await this.db.rpc('complete_workout_session', {
+      p_user_id: input.userId, p_workout_id: input.workoutId,
+      p_started_at: input.startedAt, p_duration_seconds: input.durationSeconds,
+      p_name: input.name, p_total_volume: input.totalVolume, p_xp: input.xp,
+      p_sets: input.sets,
+      p_client_session_id: input.clientSessionId ?? null,
+    });
+    if (error) throw toServerError(error.message);
+    const row = (data as Array<{ workout_log_id: string; total_xp: number }> | null)?.[0];
+    if (!row) throw toServerError('No se pudo guardar la sesion.');
+    return { workoutLogId: row.workout_log_id, totalXp: row.total_xp };
+  }
+
+  async getWorkoutHistory(userId: string, limit: number, before?: string): Promise<WorkoutSessionRow[]> {
+    let query = this.db.from('workout_logs')
+      .select('id, workout_id, user_id, date, name, duration_seconds, total_volume, xp_awarded')
+      .eq('user_id', userId).order('date', { ascending: false }).limit(limit);
+    if (before) query = query.lt('date', before);
+    const { data, error } = await query;
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as WorkoutSessionRow[];
+  }
+
+  async getWorkoutHistoryDetail(userId: string, logId: string): Promise<WorkoutSessionRow | null> {
+    const { data, error } = await this.db.from('workout_logs')
+      .select('id, workout_id, user_id, date, name, duration_seconds, total_volume, xp_awarded, exercise_logs(id, exercise_id, weight, reps, set_index, kind, is_pr)')
+      .eq('user_id', userId).eq('id', logId).maybeSingle();
+    if (error) throw toServerError(error.message);
+    return data as WorkoutSessionRow | null;
+  }
+
+  async getExerciseProgress(userId: string, exerciseName: string): Promise<Array<{ date: string; weight: number; reps: number; kind: SetKind }>> {
+    const { data, error } = await this.db.from('workout_logs')
+      .select('date, exercise_logs!inner(weight, reps, kind, exercise_id)')
+      .eq('user_id', userId).eq('exercise_logs.exercise_id', exerciseName)
+      .order('date', { ascending: true }).limit(200);
+    if (error) throw toServerError(error.message);
+    return ((data ?? []) as Array<{ date: string; exercise_logs: Array<{ weight: number; reps: number; kind: SetKind }> }>).flatMap((row) =>
+      row.exercise_logs.map((set) => ({ date: row.date, ...set })));
+  }
+
+  async recordActivityDay(userId: string, localDate: string): Promise<{ current_streak: number; longest_streak: number; is_new_day: boolean }> {
+    const { data, error } = await this.db.rpc('record_activity_day', {
+      p_user_id: userId,
+      p_local_date: localDate,
+      p_source: 'home',
+    });
+    if (error) throw toServerError(error.message);
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { current_streak: number; longest_streak: number; is_new_day: boolean }
+      | undefined;
+    if (!row) throw toServerError('No se pudo registrar el dia activo.');
+    return row;
+  }
+
+  async getActivityDays(userId: string, since: string): Promise<string[]> {
+    const { data, error } = await this.db.from('user_activity_days')
+      .select('activity_date')
+      .eq('user_id', userId)
+      .gte('activity_date', since)
+      .order('activity_date', { ascending: true });
+    if (error) throw toServerError(error.message);
+    return (data ?? []).map((row) => row.activity_date as string);
+  }
+
+  async updateStreakTimezone(userId: string, timeZone: string): Promise<void> {
+    const { error } = await this.db.from('profiles')
+      .update({ streak_timezone: timeZone })
+      .eq('id', userId);
+    if (error) throw toServerError(error.message);
+  }
+
+  async countRewardedMinigameSessionsSince(userId: string, since: Date, game: string): Promise<number> {
+    const { count, error } = await this.db
+      .from('minigame_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('game', game)
+      .gt('xp_awarded', 0)
+      .gte('created_at', since.toISOString());
+
+    if (error) throw toServerError(error.message);
+    return count ?? 0;
+  }
+
   async insertMinigameSession(input: InsertMinigameSessionInput): Promise<void> {
     const { error } = await this.db.from('minigame_sessions').insert([input]);
     if (error) throw toServerError(error.message);
@@ -697,13 +841,14 @@ export class SupabaseRepository {
       .from('workout_logs')
       .select(`
         id,
-        exercise_logs (
+        exercise_logs!inner (
           exercise_id,
           weight,
           reps
         )
       `)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .in('exercise_logs.kind', ['normal', 'failure']);
 
     if (error) throw toServerError(error.message);
 

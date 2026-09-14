@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -23,6 +23,21 @@ export class WorkoutsController {
   @ApiOperation({ summary: 'Registra un entrenamiento y calcula XP en backend.' })
   logSession(@CurrentUser() user: AuthenticatedUser, @Body() dto: LogWorkoutSessionDto) {
     return this.workoutsService.logSession(user.id, dto);
+  }
+
+  @Get('history')
+  getHistory(@CurrentUser() user: AuthenticatedUser, @Query('cursor') cursor?: string) {
+    return this.workoutsService.getHistory(user.id, cursor);
+  }
+
+  @Get('history/:logId')
+  getHistoryDetail(@CurrentUser() user: AuthenticatedUser, @Param('logId') logId: string) {
+    return this.workoutsService.getHistoryDetail(user.id, logId);
+  }
+
+  @Get(':workoutId/session-preview')
+  getSessionPreview(@CurrentUser() user: AuthenticatedUser, @Param('workoutId') workoutId: string) {
+    return this.workoutsService.getSessionPreview(user.id, workoutId);
   }
 
   @Post('generate-plan')

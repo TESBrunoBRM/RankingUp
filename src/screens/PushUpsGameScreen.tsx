@@ -8,9 +8,11 @@ import {
   Animated,
   Dimensions,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useCameraPermissions } from 'expo-camera';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,11 +22,17 @@ import {
   ALLOWED_WEBVIEW_PERMISSIONS,
   MINIGAME_ORIGIN,
   MINIGAME_URL,
+  MINIGAME_XP_PER_REP,
+  MINIGAME_COMPLETION_BONUS,
+  MINIGAME_MIN_REWARDED_REPS,
   PUSH_UP_MONSTERS,
   PUSH_UP_VICTORY_TARGET,
 } from '../constants/pushUpGame';
 
 const { width, height } = Dimensions.get('window');
+const estimateXp = (reps: number): number => reps < MINIGAME_MIN_REWARDED_REPS
+  ? 0
+  : Math.floor(reps * MINIGAME_XP_PER_REP) + (reps >= PUSH_UP_VICTORY_TARGET ? MINIGAME_COMPLETION_BONUS : 0);
 
 export default function PushUpsGameScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -34,6 +42,8 @@ export default function PushUpsGameScreen() {
   const [monsterHp, setMonsterHp] = useState(PUSH_UP_MONSTERS[0].maxHp);
   const [playerReps, setPlayerReps] = useState(0);
   const [isVictory, setIsVictory] = useState(false);
+  const [outcome, setOutcome] = useState<'completed' | 'retired' | null>(null);
+  const [confirmRetirement, setConfirmRetirement] = useState(false);
   const [gainingXp, setGainingXp] = useState(false);
   const [earnedXp, setEarnedXp] = useState<number | null>(null);
   const [totalXp, setTotalXp] = useState<number | null>(null);
@@ -45,6 +55,9 @@ export default function PushUpsGameScreen() {
   const monsterShake = useRef(new Animated.Value(0)).current;
   const dmgFloat = useRef(new Animated.Value(0)).current;
   const levelUpAnim = useRef(new Animated.Value(0)).current;
+  const repsRef = useRef(0);
+  const startedAtRef = useRef(Date.now());
+  const submittingRef = useRef(false);
 
   // Active monster data
   const currentMonster = PUSH_UP_MONSTERS[currentLevel];
@@ -83,13 +96,42 @@ export default function PushUpsGameScreen() {
     }).start();
   };
 
+  const submitResult = async (reps: number, result: 'completed' | 'retired') => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setOutcome(result);
+    setIsVictory(true);
+    setGainingXp(true);
+    setErrorMessage(null);
+    try {
+      const durationSeconds = Math.max(3, Math.ceil((Date.now() - startedAtRef.current) / 1000));
+      const response = await rankingUpApiClient.rewardMinigameXp(reps, durationSeconds, result);
+      setEarnedXp(response.gainedXp);
+      setTotalXp(response.totalXp);
+    } catch (error: unknown) {
+      setErrorMessage(error instanceof Error ? error.message : 'Error al registrar XP');
+    } finally {
+      setGainingXp(false);
+    }
+  };
+
+  const retire = () => {
+    setConfirmRetirement(false);
+    if (repsRef.current === 0) {
+      navigation.goBack();
+      return;
+    }
+    void submitResult(repsRef.current, 'retired');
+  };
+
   const handlePushUp = async () => {
-    if (isVictory || gainingXp) return;
+    if (isVictory || gainingXp || submittingRef.current || repsRef.current >= PUSH_UP_VICTORY_TARGET) return;
 
     // Vibrate to confirm rep
     Vibration.vibrate(80);
 
-    const nextReps = playerReps + 1;
+    const nextReps = repsRef.current + 1;
+    repsRef.current = nextReps;
     setPlayerReps(nextReps);
 
     const nextHp = Math.max(0, monsterHp - 1);
@@ -116,22 +158,12 @@ export default function PushUpsGameScreen() {
         });
       } else {
         // Defeated the final Dragon -> Victory!
-        setIsVictory(true);
-        setGainingXp(true);
-        try {
-          const res = await rankingUpApiClient.rewardMinigameXp(PUSH_UP_VICTORY_TARGET);
-          setEarnedXp(res.gainedXp);
-          setTotalXp(res.totalXp);
-        } catch (err) {
-          setErrorMessage(err instanceof Error ? err.message : 'Error al registrar XP');
-        } finally {
-          setGainingXp(false);
-        }
+        void submitResult(PUSH_UP_VICTORY_TARGET, 'completed');
       }
     }
   };
 
-  const onWebViewMessage = (event: any) => {
+  const onWebViewMessage = (event: WebViewMessageEvent) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'pushup') {
@@ -211,6 +243,12 @@ export default function PushUpsGameScreen() {
           <Text style={styles.repCountText}>{playerReps}/{PUSH_UP_VICTORY_TARGET}</Text>
         </View>
       </View>
+      {!isVictory ? (
+        <View style={styles.projectedReward}>
+          <Ionicons name="sparkles-outline" size={14} color="#CCFF00" />
+          <Text style={styles.projectedRewardText}>+{estimateXp(playerReps)} XP estimados</Text>
+        </View>
+      ) : null}
 
       <View style={styles.campaignProgress}>
         <View style={styles.campaignProgressHeader}>
@@ -338,6 +376,9 @@ export default function PushUpsGameScreen() {
             <Text style={styles.instructionText}>
               Apoya tu celular frente a ti. Haz flexiones completas subiendo y bajando en el encuadre de la cámara.
             </Text>
+            <Pressable style={styles.retireButton} onPress={() => setConfirmRetirement(true)} accessibilityRole="button">
+              <Text style={styles.retireButtonText}>RETIRARME</Text>
+            </Pressable>
           </View>
         </View>
       ) : (
@@ -346,9 +387,11 @@ export default function PushUpsGameScreen() {
           <View style={styles.victoryIcon}>
             <Ionicons name="trophy" size={54} color="#CCFF00" />
           </View>
-          <Text style={styles.victoryTitle}>¡VICTORIA TOTAL!</Text>
+          <Text style={styles.victoryTitle}>{outcome === 'retired' ? 'TE RETIRASTE' : '¡VICTORIA TOTAL!'}</Text>
           <Text style={styles.victorySubtitle}>
-            Completaste los seis niveles con {playerReps} flexiones y derrotaste al jefe final.
+            {outcome === 'retired'
+              ? `Derrotaste a ${currentLevel} de ${PUSH_UP_MONSTERS.length} monstruos con ${playerReps} flexiones.`
+              : `Completaste los seis niveles con ${playerReps} flexiones y derrotaste al jefe final.`}
           </Text>
 
           <View style={styles.rewardCard}>
@@ -362,11 +405,11 @@ export default function PushUpsGameScreen() {
               <View style={styles.rewardBox}>
                 <View style={styles.rewardRowValue}>
                   <Ionicons name="sparkles" size={24} color="#CCFF00" />
-                  <Text style={styles.rewardValue}>+{earnedXp ?? 50} XP</Text>
+                  <Text style={styles.rewardValue}>+{earnedXp ?? 0} XP</Text>
                 </View>
-                {totalXp && (
+                {totalXp !== null ? (
                   <Text style={styles.totalXpText}>XP Total: {totalXp} puntos</Text>
-                )}
+                ) : null}
               </View>
             )}
           </View>
@@ -397,6 +440,27 @@ export default function PushUpsGameScreen() {
           </Text>
         </Animated.View>
       )}
+      <Modal visible={confirmRetirement} transparent animationType="fade" onRequestClose={() => setConfirmRetirement(false)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>¿Retirarte ahora?</Text>
+            <Text style={styles.confirmText}>
+              Llevas {playerReps} flexiones y has derrotado a {currentLevel} de {PUSH_UP_MONSTERS.length} monstruos.
+            </Text>
+            <Text style={styles.confirmReward}>
+              Recibirás aproximadamente {estimateXp(playerReps)} XP. Si llegas a 100, recibirás 50 XP.
+            </Text>
+            <View style={styles.confirmActions}>
+              <Pressable style={styles.keepGoingButton} onPress={() => setConfirmRetirement(false)} accessibilityRole="button">
+                <Text style={styles.keepGoingText}>SEGUIR</Text>
+              </Pressable>
+              <Pressable style={styles.confirmRetireButton} onPress={retire} accessibilityRole="button">
+                <Text style={styles.confirmRetireText}>RETIRARME</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -501,6 +565,8 @@ const styles = StyleSheet.create({
     color: '#CCFF00',
     marginLeft: 4,
   },
+  projectedReward: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingHorizontal: 16, paddingVertical: 5, backgroundColor: '#111118' },
+  projectedRewardText: { color: '#CCFF00', fontSize: 11, fontWeight: '800' },
   campaignProgress: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#111118', borderBottomWidth: 1, borderBottomColor: '#242432' },
   campaignProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   campaignProgressLabel: { color: '#8E8E9F', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
@@ -633,6 +699,8 @@ const styles = StyleSheet.create({
     width: width - 40,
     alignItems: 'center',
   },
+  retireButton: { minWidth: 160, minHeight: 42, borderRadius: 8, borderWidth: 1, borderColor: '#FF496C', alignItems: 'center', justifyContent: 'center' },
+  retireButtonText: { color: '#FF8FA6', fontSize: 12, fontWeight: '900' },
   instructionText: {
     fontSize: 11,
     color: '#6E6E80',
@@ -771,4 +839,14 @@ const styles = StyleSheet.create({
     color: '#8E8E9F',
     textAlign: 'center',
   },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  confirmCard: { width: '100%', maxWidth: 400, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#353940', borderRadius: 8, padding: 20 },
+  confirmTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginBottom: 10 },
+  confirmText: { color: '#D4D8DE', fontSize: 14, lineHeight: 20 },
+  confirmReward: { color: '#CCFF00', fontSize: 13, lineHeight: 19, marginTop: 12 },
+  confirmActions: { flexDirection: 'row', gap: 10, marginTop: 22 },
+  keepGoingButton: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: '#606871' },
+  keepGoingText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  confirmRetireButton: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#FF496C' },
+  confirmRetireText: { color: '#101114', fontSize: 12, fontWeight: '900' },
 });

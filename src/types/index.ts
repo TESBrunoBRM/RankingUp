@@ -66,12 +66,61 @@ export interface WorkoutLogInput {
   weight: number;
   reps: number;
   muscle?: string;
+  kind?: 'normal' | 'warmup' | 'drop' | 'failure';
+  setIndex?: number;
 }
 
 export interface LogWorkoutSessionResponse {
   workoutLogId: string;
   gainedXp: number;
   totalXp: number;
+  durationSeconds: number;
+  totalVolume: number;
+  setsCompleted: number;
+  personalRecords: Array<{ exerciseId: string; previous: number; current: number }>;
+}
+
+export interface SessionPreview {
+  workout: Workout;
+  exercises: Array<WorkoutExercise & {
+    rest_seconds: number;
+    lastPerformance: {
+      last_date: string;
+      sets: Array<{ setIndex: number; weight: number; reps: number }>;
+      best_weight: number;
+      best_reps: number;
+      best_one_rm: number;
+    } | null;
+    suggestion: { weight: number; reps: number; reason: string } | null;
+  }>;
+}
+
+export interface WorkoutHistoryItem {
+  id: string;
+  workout_id: string;
+  date: string;
+  name: string | null;
+  duration_seconds: number | null;
+  total_volume: number;
+  xp_awarded: number;
+  exercise_logs?: Array<{ id: string; exercise_id: string; weight: number; reps: number; set_index: number; kind: string; is_pr: boolean }>;
+}
+
+export interface ProgressPost {
+  id: string;
+  user_id: string;
+  name: string | null;
+  description: string | null;
+  photo_path: string | null;
+  photoUrl: string | null;
+  visibility: 'public' | 'followers' | 'private';
+  published_at: string;
+  duration_seconds: number | null;
+  total_volume: number;
+  xp_awarded: number;
+  author: { id: string; name: string | null; username: string | null } | null;
+  likeCount: number;
+  likedByMe: boolean;
 }
 
 export interface GeneratedWorkoutPlanResponse {
@@ -124,6 +173,23 @@ export interface DashboardResponse {
   profile: Profile | null;
   workouts: Workout[];
   requiresOnboarding: boolean;
+  streak?: StreakSummary;
+}
+
+export interface StreakSummary {
+  current: number;
+  longest: number;
+  lastActivityDate: string | null;
+}
+
+export interface StreakResponse extends StreakSummary {
+  days: Array<{ date: string; active: boolean }>;
+}
+
+export interface StreakCheckInResponse {
+  currentStreak: number;
+  longestStreak: number;
+  isNewDay: boolean;
 }
 
 export interface HomeMessage {
@@ -244,6 +310,11 @@ export type AppStackParamList = {
   WorkoutDetail: { workoutId: string };
   AddExercises: { workoutId: string };
   LogWorkout: { workoutId: string };
+  SessionSummary: { summary: LogWorkoutSessionResponse; name: string; date: string };
+  WorkoutHistory: undefined;
+  WorkoutHistoryDetail: { logId: string };
+  ExerciseProgress: { name: string };
+  ProgressFeed: undefined;
   Ranking: undefined;
   Onboarding: undefined;
   SearchFood: { initialQuery?: string } | undefined;
@@ -278,6 +349,7 @@ export interface WorkoutExercise {
   sets: number;
   reps: number;
   order: number;
+  rest_seconds?: number;
 }
 
 export interface WorkoutLog {

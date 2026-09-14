@@ -41,14 +41,14 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "La app necesita acceder a tus fotos para escanear alimentos.",
-          "cameraPermission": "La app necesita acceder a tu cámara para analizar tus comidas con Inteligencia Artificial."
+          "photosPermission": "RankingUp necesita acceder a tus fotos para publicar tu progreso o analizar alimentos.",
+          "cameraPermission": "RankingUp necesita acceder a tu cámara para fotos de progreso y escaneo de alimentos."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "RankingUp necesita acceder a tu cámara para escanear alimentos y códigos de barras.",
+          "cameraPermission": "RankingUp necesita acceder a tu cámara para fotos de progreso y escaneo de alimentos.",
           "recordAudioAndroid": false
         }
       ],

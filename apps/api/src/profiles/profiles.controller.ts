@@ -55,10 +55,10 @@ export class ProfilesController {
 
   @Post('minigame-xp')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
-  @ApiOperation({ summary: 'Recompensa 50 XP al usuario por ganar un minijuego.' })
+  @Throttle({ default: { ttl: 60_000, limit: 20 } })
+  @ApiOperation({ summary: 'Registra una partida de flexiones y calcula el XP en el servidor.' })
   rewardMinigameXp(@CurrentUser() user: AuthenticatedUser, @Body() dto: RewardMinigameDto) {
-    return this.profilesService.rewardMinigameXp(user.id, dto.reps);
+    return this.profilesService.rewardMinigameXp(user.id, dto);
   }
 }
 

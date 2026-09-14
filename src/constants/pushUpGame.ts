@@ -16,6 +16,9 @@ export interface PushUpMonster {
 }
 
 export const PUSH_UP_VICTORY_TARGET = 100;
+export const MINIGAME_XP_PER_REP = 0.4;
+export const MINIGAME_COMPLETION_BONUS = 10;
+export const MINIGAME_MIN_REWARDED_REPS = 10;
 
 // Pagina del detector MediaPipe que se carga en el WebView.
 export const MINIGAME_URL = 'https://tesbrunobrm.github.io/RankingUp/apps/api/public/minigame.html';
