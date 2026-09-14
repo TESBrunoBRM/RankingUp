@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -9,6 +9,7 @@ import { useAuthStore } from './src/store/authStore';
 import { rankingUpApiClient } from './src/services/rankingUpApiClient';
 import AppNavigator from './src/navigation/AppNavigator';
 import { getAuthErrorMessage } from './src/utils/errors';
+import { authService } from './src/services/auth';
 
 function ConfiguredApp() {
   const { setSession, setUser, setLoading } = useAuthStore();
@@ -17,6 +18,18 @@ function ConfiguredApp() {
     let isMounted = true;
     const supabase = getSupabaseClient();
     const stopAutoRefreshListener = registerSupabaseAutoRefresh();
+    let lastHandledUrl: string | null = null;
+
+    const handleUrl = async (url: string) => {
+      if (url === lastHandledUrl) return;
+      lastHandledUrl = url;
+      try {
+        await authService.completeAuthCallback(url);
+      } catch (error: unknown) {
+        if (isMounted) Alert.alert('No se pudo confirmar el acceso', getAuthErrorMessage(error, 'Solicita un enlace nuevo.'));
+      }
+    };
+    const linkSubscription = Linking.addEventListener('url', ({ url }) => { void handleUrl(url); });
 
     void rankingUpApiClient.warmUp().catch((error: unknown) => {
       console.warn('No se pudo preparar la API:', getAuthErrorMessage(error, 'Error de conexion.'));
@@ -24,6 +37,8 @@ function ConfiguredApp() {
 
     const restoreSession = async () => {
       try {
+        const initialUrl = await Linking.getInitialURL();
+        if (initialUrl) await handleUrl(initialUrl);
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw error;
         if (!isMounted) return;
@@ -53,6 +68,7 @@ function ConfiguredApp() {
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      linkSubscription.remove();
       stopAutoRefreshListener();
     };
   }, [setLoading, setSession, setUser]);

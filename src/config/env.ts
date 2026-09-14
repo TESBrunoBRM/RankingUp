@@ -48,6 +48,8 @@ export const appEnv = {
   supabaseAnonKey: normalizeEnv(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY),
   apiProxyUrl: resolveApiProxyUrl(),
   enableDemoFallbacks: normalizeEnv(process.env.EXPO_PUBLIC_ENABLE_DEMO_FALLBACKS) !== 'false',
+  googleAuthEnabled: normalizeEnv(process.env.EXPO_PUBLIC_AUTH_GOOGLE_ENABLED) === 'true',
+  facebookAuthEnabled: normalizeEnv(process.env.EXPO_PUBLIC_AUTH_FACEBOOK_ENABLED) === 'true',
 };
 
 const missingKeys = [

@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, Text, KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { authService } from '../services/auth';
+import { authService, type SocialProvider } from '../services/auth';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import type { AuthStackParamList } from '../types';
-import { getAuthErrorMessage } from '../utils/errors';
+import { getAuthErrorMessage, isEmailNotConfirmed } from '../utils/errors';
+import { appEnv } from '../config/env';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -19,7 +21,7 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       setError('Por favor, ingresa correo y contraseña.');
       return;
     }
@@ -28,9 +30,24 @@ export default function LoginScreen() {
     try {
       await authService.login(email, password);
     } catch (err: unknown) {
+      if (isEmailNotConfirmed(err)) {
+        navigation.navigate('VerifyEmail', { email: email.trim().toLowerCase() });
+        return;
+      }
       const message = getAuthErrorMessage(err, 'Error al iniciar sesion');
-      Alert.alert('Error', message);
       setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: SocialProvider) => {
+    setError('');
+    setLoading(true);
+    try {
+      await authService.loginWithProvider(provider);
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, `No se pudo iniciar sesión con ${provider}.`));
     } finally {
       setLoading(false);
     }
@@ -38,12 +55,8 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView 
-          style={styles.keyboardView}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.formContainer}>
+      <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>RANKINGUP</Text>
             <Text style={styles.subtitle}>INICIA SESIÓN PARA CONTINUAR</Text>
 
@@ -52,18 +65,23 @@ export default function LoginScreen() {
               placeholder="tu@email.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
               value={email}
               onChangeText={setEmail}
-              error={error}
             />
 
             <Input
               label="CONTRASEÑA"
               placeholder="********"
               secureTextEntry
+              autoComplete="current-password"
+              textContentType="password"
               value={password}
               onChangeText={setPassword}
             />
+
+            {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
 
             <Button
               title="INICIAR SESIÓN"
@@ -78,9 +96,18 @@ export default function LoginScreen() {
               onPress={() => navigation.navigate('Register')}
               disabled={loading}
             />
-          </View>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+
+            {appEnv.googleAuthEnabled || appEnv.facebookAuthEnabled ? <>
+              <Text style={styles.separator}>O CONTINÚA CON</Text>
+              {appEnv.googleAuthEnabled ? <Pressable style={styles.socialButton} disabled={loading} onPress={() => void handleSocialLogin('google')}>
+                <Ionicons name="logo-google" size={21} color="#FFF" /><Text style={styles.socialText}>CONTINUAR CON GOOGLE</Text>
+              </Pressable> : null}
+              {appEnv.facebookAuthEnabled ? <Pressable style={styles.socialButton} disabled={loading} onPress={() => void handleSocialLogin('facebook')}>
+                <Ionicons name="logo-facebook" size={21} color="#FFF" /><Text style={styles.socialText}>CONTINUAR CON FACEBOOK</Text>
+              </Pressable> : null}
+            </> : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -94,7 +121,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   formContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
   },
@@ -103,7 +130,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#CCFF00',
     marginBottom: 8,
-    letterSpacing: 2,
     fontStyle: 'italic',
   },
   subtitle: {
@@ -111,10 +137,13 @@ const styles = StyleSheet.create({
     color: '#A0A0A0',
     marginBottom: 40,
     fontWeight: '700',
-    letterSpacing: 1,
   },
   button: {
     marginTop: 24,
     marginBottom: 12,
   },
+  error: { color: '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
+  separator: { color: '#8C929A', textAlign: 'center', fontSize: 11, fontWeight: '800', marginTop: 25, marginBottom: 14 },
+  socialButton: { height: 52, borderWidth: 1, borderColor: '#3D424A', borderRadius: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 10 },
+  socialText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
 });

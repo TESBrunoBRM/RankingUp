@@ -10,6 +10,7 @@
   "exclude": [
     "apps/api",
     "artifacts",
+    "tests",
     "node_modules"
   ]
 }

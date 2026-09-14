@@ -2,6 +2,7 @@
   "expo": {
     "name": "RankingUp",
     "slug": "rankingup",
+    "scheme": "rankingup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -52,7 +53,8 @@
           "recordAudioAndroid": false
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "owner": "brunobrm",
     "extra": {

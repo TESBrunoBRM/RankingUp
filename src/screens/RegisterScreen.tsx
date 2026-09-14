@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -15,23 +15,35 @@ export default function RegisterScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleRegister = async () => {
-    if (!email || !password) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password || !confirmPassword) {
       setError('Por favor, completa todos los campos.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError('Ingresa un correo electrónico válido.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      await authService.register(email, password);
-      Alert.alert('Registro exitoso', 'Por favor revisa tu correo o inicia sesión.');
-      navigation.navigate('Login');
+      const result = await authService.register(normalizedEmail, password);
+      if (!result.session) navigation.replace('VerifyEmail', { email: normalizedEmail });
     } catch (err: unknown) {
       const message = getAuthErrorMessage(err, 'Error al registrarse');
-      Alert.alert('Error', message);
       setError(message);
     } finally {
       setLoading(false);
@@ -40,12 +52,8 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <KeyboardAvoidingView 
-          style={styles.keyboardView}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.formContainer}>
+      <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>CREAR CUENTA</Text>
             <Text style={styles.subtitle}>REGÍSTRATE PARA COMENZAR</Text>
 
@@ -54,18 +62,33 @@ export default function RegisterScreen() {
               placeholder="tu@email.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
               value={email}
               onChangeText={setEmail}
-              error={error}
             />
 
             <Input
               label="CONTRASEÑA"
               placeholder="********"
               secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
               value={password}
               onChangeText={setPassword}
             />
+
+            <Input
+              label="CONFIRMAR CONTRASEÑA"
+              placeholder="********"
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+
+            {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
 
             <Button
               title="REGISTRARSE"
@@ -80,9 +103,8 @@ export default function RegisterScreen() {
               onPress={() => navigation.navigate('Login')}
               disabled={loading}
             />
-          </View>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -96,7 +118,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   formContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
   },
@@ -105,17 +127,16 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#CCFF00',
     marginBottom: 8,
-    letterSpacing: 1,
   },
   subtitle: {
     fontSize: 14,
     color: '#A0A0A0',
     marginBottom: 40,
     fontWeight: '700',
-    letterSpacing: 1,
   },
   button: {
     marginTop: 24,
     marginBottom: 12,
   },
+  error: { color: '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
 });
