@@ -19,10 +19,14 @@ Migraciones aplicadas en Supabase: `20260914051808_activity_streak`,
 `20260914230105_recent_exercise_sessions`.
 La CLI local no está vinculada al proyecto (`npx supabase migration list` falla);
 el historial remoto fue comprobado mediante el conector de Supabase.
-Tests unitarios: 20 suites / 101 tests. Typecheck móvil/API, build API y Expo Doctor: verdes
-en la validación anterior; repetir build y doctor tras los últimos cambios.
-El APK preview v3 se compiló y descargó, pero no contiene estos últimos ajustes.
-La prueba física del APK y el despliegue de la nueva API siguen pendientes.
+Tests unitarios: 20 suites / 101 tests. Typecheck móvil/API, build API y Expo Doctor
+(18/18): verdes tras los últimos cambios. APK preview v4 compilado en EAS y descargado
+en `artifacts/RankingUp-preview-v4.apk`; instalación y arranque sin excepción en
+emulador Android API 35. Render sirve el commit `6d3e402` y las rutas nuevas
+responden 401 sin token (no 404). Las capturas del emulador salen negras incluso
+en Home de Android, por lo que la revisión visual y los flujos autenticados siguen
+pendientes de un dispositivo físico/cuentas de prueba. Reporte, bloqueo y términos
+deben completarse antes de publicar en tienda.
 
 ---
 
