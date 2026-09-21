@@ -4,6 +4,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { CreateFoodLogDto } from './dto/create-food-log.dto';
+import { CreateWaterLogDto } from './dto/create-water-log.dto';
 import { GetNutritionLogsDto } from './dto/get-nutrition-logs.dto';
 import { NutritionService } from './nutrition.service';
 
@@ -32,5 +33,19 @@ export class NutritionController {
   @ApiOperation({ summary: 'Elimina un log validando ownership.' })
   deleteLog(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.nutritionService.deleteFoodLog(user.id, id);
+  }
+
+  @Post('water')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Registra un vaso de agua para el dia indicado.' })
+  createWaterLog(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateWaterLogDto) {
+    return this.nutritionService.createWaterLog(user.id, dto);
+  }
+
+  @Delete('water/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Elimina un vaso de agua validando ownership.' })
+  deleteWaterLog(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.nutritionService.deleteWaterLog(user.id, id);
   }
 }

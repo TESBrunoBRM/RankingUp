@@ -13,11 +13,13 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test:auth": "node --experimental-strip-types --test tests/authCallback.test.ts",
+    "test": "pnpm run test:auth && pnpm run test:api",
     "doctor": "npx --yes expo-doctor",
     "build:android:preview": "eas build --platform android --profile preview",
     "test:api": "pnpm --filter @rankingup/api test",
     "typecheck:api": "pnpm --filter @rankingup/api typecheck",
-    "build:api": "pnpm --filter @rankingup/api build"
+    "build:api": "pnpm --filter @rankingup/api build",
+    "verify": "pnpm run test && pnpm run typecheck && pnpm run typecheck:api && pnpm run doctor"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

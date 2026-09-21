@@ -26,6 +26,7 @@ import ProgressFeedScreen from '../screens/ProgressFeedScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import NutritionScreen from '../screens/NutritionScreen';
 import SearchFoodScreen from '../screens/SearchFoodScreen';
+import FoodSubmissionScreen from '../screens/FoodSubmissionScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import DiscoverProfilesScreen from '../screens/DiscoverProfilesScreen';
 import PublicProfileScreen from '../screens/PublicProfileScreen';
@@ -149,6 +150,7 @@ function MainNavigator() {
         <AppStack.Screen name="ProgressFeed" component={ProgressFeedScreen} />
         <AppStack.Screen name="Onboarding" component={OnboardingScreen} />
         <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
+        <AppStack.Screen name="FoodSubmission" component={FoodSubmissionScreen} />
         <AppStack.Screen name="Profile" component={ProfileScreen} />
         <AppStack.Screen name="DiscoverProfiles" component={DiscoverProfilesScreen} />
         <AppStack.Screen name="PublicProfile" component={PublicProfileScreen} />

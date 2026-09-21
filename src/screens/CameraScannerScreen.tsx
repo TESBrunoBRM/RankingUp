@@ -5,8 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../types';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { aiAnalyzerService } from '../services/aiAnalyzerService';
+import { foodImageService } from '../services/foodImageService';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'CameraScanner'>;
 
@@ -40,27 +39,15 @@ export default function CameraScannerScreen() {
         base64: false,
       });
 
-      const manipResult = await ImageManipulator.manipulateAsync(
-        photo.uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.7, base64: true }
+      const result = await foodImageService.uploadAndAnalyze(
+        { uri: photo.uri, width: photo.width, height: photo.height },
+        'meal',
       );
-
-      if (!manipResult.base64) throw new Error("No se pudo codificar la imagen");
-
-      const predictedFoods = await aiAnalyzerService.analyzeImageB64(manipResult.base64);
-      
-      if (predictedFoods.length > 0) {
-        const topFood = predictedFoods[0];
-        setIsProcessing(false);
-        navigation.navigate('SearchFood', { initialQuery: topFood.food_name });
-      } else {
-        Alert.alert('Modo demo', 'No hay IA externa configurada. Puedes buscar alimentos manualmente con el catálogo del backend.');
-        setIsProcessing(false);
-      }
+      navigation.navigate('SearchFood', { scannedFood: result.food });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Falló el análisis';
       Alert.alert('Error IA', message);
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -94,7 +81,7 @@ export default function CameraScannerScreen() {
 
           {/* Controls */}
           <View style={styles.controls}>
-            <Text style={styles.hint}>Encuadra el plato y pulsa para analizarlo</Text>
+            <Text style={styles.hint}>Encuadra el plato completo. La estimacion podra revisarse antes de guardarla.</Text>
             <TouchableOpacity
               style={[styles.captureBtn, isProcessing && styles.captureBtnDisabled]}
               onPress={handleCapture}

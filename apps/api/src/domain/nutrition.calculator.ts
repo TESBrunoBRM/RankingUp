@@ -1,4 +1,7 @@
-import type { FoodLogRecord, FoodSearchResult, GoalType, MacroTotals, NutritionUnit, ProfileRecord } from './domain.types';
+import type { FoodLogRecord, FoodSearchResult, GoalType, MacroTotals, NutritionUnit, ProfileRecord, WaterLogRecord } from './domain.types';
+
+export const DEFAULT_WATER_TARGET_ML = 2750;
+export const DEFAULT_GLASS_ML = 250;
 
 export interface CalculatedFoodLog {
   foodName: string;
@@ -16,6 +19,14 @@ export interface NutritionSummary {
   totals: MacroTotals;
   targets: NutritionTargets;
   remainingCalories: number;
+}
+
+export interface HydrationSummary {
+  totalMl: number;
+  targetMl: number;
+  glassMl: number;
+  glasses: number;
+  progressPercent: number;
 }
 
 const roundMacro = (value: number): number => Math.round(value * 10) / 10;
@@ -98,5 +109,20 @@ export const calculateNutritionSummary = (
     totals,
     targets,
     remainingCalories: targetCalories - totals.calories,
+  };
+};
+
+export const calculateHydrationSummary = (
+  logs: WaterLogRecord[],
+  targetMl = DEFAULT_WATER_TARGET_ML,
+  glassMl = DEFAULT_GLASS_ML,
+): HydrationSummary => {
+  const totalMl = logs.reduce((total, log) => total + Number(log.amount_ml || 0), 0);
+  return {
+    totalMl,
+    targetMl,
+    glassMl,
+    glasses: Math.round((totalMl / glassMl) * 10) / 10,
+    progressPercent: Math.min(100, Math.round((totalMl / targetMl) * 100)),
   };
 };

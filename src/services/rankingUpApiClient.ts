@@ -5,6 +5,8 @@ import type {
   CompleteOnboardingRequest,
   DashboardResponse,
   FoodSearchResult,
+  FoodImageAnalysisResponse,
+  FoodSubmission,
   HomeContentResponse,
   GeneratedWorkoutPlanResponse,
   LogWorkoutSessionResponse,
@@ -156,6 +158,7 @@ interface RequestOptions {
   /** Los duelos se consultan en bucle mientras hay una partida viva: ahi la
    *  cache de 15 s deja el marcador desfasado, asi que se salta. */
   skipCache?: boolean;
+  timeoutMs?: number;
 }
 
 const request = async <T>(path: string, init: RequestInit = {}, options: RequestOptions = {}): Promise<T> => {
@@ -179,7 +182,7 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
     const timeoutId = setTimeout(() => {
       didTimeout = true;
       controller.abort();
-    }, API_TIMEOUT_MS);
+    }, options.timeoutMs ?? API_TIMEOUT_MS);
 
     try {
       const response = await fetch(`${getApiBaseUrl()}${path}`, {
@@ -400,6 +403,28 @@ export const rankingUpApiClient = {
   getFood: (foodId: string) =>
     request<FoodSearchResult>(`/v1/foods/${encodeURIComponent(foodId)}`),
 
+  createFoodImageUploadUrl: (input: { contentType: string; sizeBytes: number }) =>
+    request<{ uploadUrl: string; path: string; token: string }>('/v1/foods/image-upload-url', {
+      method: 'POST', body: JSON.stringify(input),
+    }),
+
+  analyzeFoodImage: (input: { imagePath: string; mode: 'meal' | 'nutrition_label' }) =>
+    request<FoodImageAnalysisResponse>('/v1/foods/analyze-image', {
+      method: 'POST', body: JSON.stringify(input),
+    }, { timeoutMs: 30_000 }),
+
+  createFoodSubmission: (input: {
+    foodName: string; brandName?: string; barcode?: string;
+    servingAmount: number; servingUnit: NutritionUnit;
+    calories: number; protein: number; carbs: number; fat: number;
+    imagePath: string; sourceMode: 'nutrition_label' | 'ai_estimate';
+    scanAnalysisId?: string; submitterNotes?: string;
+  }) => request<{ submission: FoodSubmission }>('/v1/foods/submissions', {
+    method: 'POST', body: JSON.stringify(input),
+  }),
+
+  getOwnFoodSubmissions: () => request<FoodSubmission[]>('/v1/foods/submissions/mine'),
+
   getNutritionLogs: (date: string) =>
     request<NutritionSummaryResponse>(`/v1/nutrition/logs?date=${encodeURIComponent(date)}`),
 
@@ -419,4 +444,12 @@ export const rankingUpApiClient = {
       method: 'POST',
       body: JSON.stringify({ reps, durationSeconds, outcome }),
     }),
+
+  addWaterLog: (input: { date: string; amountMl: number }) =>
+    request<{ log: NutritionSummaryResponse['water']['logs'][number] }>('/v1/nutrition/water', {
+      method: 'POST', body: JSON.stringify(input),
+    }),
+
+  deleteWaterLog: (id: string) =>
+    request<{ deleted: boolean }>(`/v1/nutrition/water/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 };

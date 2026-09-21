@@ -1,5 +1,5 @@
 import { getFoodById } from './foods.catalog';
-import { calculateFoodLog, calculateNutritionSummary } from './nutrition.calculator';
+import { calculateFoodLog, calculateHydrationSummary, calculateNutritionSummary } from './nutrition.calculator';
 
 describe('nutrition calculator', () => {
   it('calculates macros for per-100g food', () => {
@@ -37,5 +37,17 @@ describe('nutrition calculator', () => {
     expect(summary.totals.calories).toBe(104);
     expect(summary.targets.protein).toBe(176);
     expect(summary.remainingCalories).toBe(2396);
+  });
+
+  it('calculates glasses and caps hydration progress at 100 percent', () => {
+    const summary = calculateHydrationSummary([
+      { id: '1', user_id: 'u1', log_date: '2026-09-21', amount_ml: 2500, created_at: '' },
+      { id: '2', user_id: 'u1', log_date: '2026-09-21', amount_ml: 500, created_at: '' },
+    ]);
+
+    expect(summary.totalMl).toBe(3000);
+    expect(summary.glasses).toBe(12);
+    expect(summary.targetMl).toBe(2750);
+    expect(summary.progressPercent).toBe(100);
   });
 });

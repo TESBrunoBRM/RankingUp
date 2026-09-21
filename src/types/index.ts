@@ -25,7 +25,53 @@ export interface FoodSearchResult {
   food_description: string;
   brand_name?: string;
   serving: NutritionServing;
-  source?: 'demo' | 'proxy' | 'local';
+  source?: 'demo' | 'proxy' | 'local' | 'community' | 'ai';
+}
+
+export interface WaterLog {
+  id: string;
+  user_id: string;
+  log_date: string;
+  amount_ml: number;
+  created_at: string;
+}
+
+export interface HydrationSummary {
+  logs: WaterLog[];
+  totalMl: number;
+  targetMl: number;
+  glassMl: number;
+  glasses: number;
+  progressPercent: number;
+}
+
+export interface FoodImageAnalysisResponse {
+  analysisId: string;
+  imagePath: string;
+  confidence: number;
+  notes: string | null;
+  disclaimer: string;
+  food: FoodSearchResult;
+}
+
+export type FoodSubmissionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface FoodSubmission {
+  id: string;
+  status: FoodSubmissionStatus;
+  food_name: string;
+  brand_name: string | null;
+  barcode: string | null;
+  serving_amount: number;
+  serving_unit: NutritionUnit;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  image_path: string;
+  source_mode: 'nutrition_label' | 'ai_estimate';
+  review_note: string | null;
+  created_at: string;
 }
 
 export type BodySlug =
@@ -142,6 +188,7 @@ export interface NutritionSummaryResponse {
   totals: MacroTotals;
   targets: MacroTotals;
   remainingCalories: number;
+  water: HydrationSummary;
 }
 
 export interface BodyPartRank {
@@ -318,7 +365,8 @@ export type AppStackParamList = {
   ProgressFeed: undefined;
   Ranking: undefined;
   Onboarding: undefined;
-  SearchFood: { initialQuery?: string } | undefined;
+  SearchFood: { initialQuery?: string; scannedFood?: FoodSearchResult } | undefined;
+  FoodSubmission: undefined;
   Profile: undefined;
   DiscoverProfiles: undefined;
   PublicProfile: { profileId: string };

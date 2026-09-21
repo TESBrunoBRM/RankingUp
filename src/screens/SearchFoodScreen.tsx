@@ -68,12 +68,17 @@ export default function SearchFoodScreen() {
   };
 
   useEffect(() => {
+    if (route.params?.scannedFood) {
+      selectFood(route.params.scannedFood);
+      navigation.setParams({ scannedFood: undefined });
+      return;
+    }
     if (route.params?.initialQuery) {
       setQuery(route.params.initialQuery);
       handleSearch(route.params.initialQuery);
       navigation.setParams({ initialQuery: undefined });
     }
-  }, [route.params]);
+  }, [route.params?.initialQuery, route.params?.scannedFood]);
 
   const totals = useMemo(() => {
     if (!selectedFood) return { multiplier: 0, calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -112,7 +117,9 @@ export default function SearchFoodScreen() {
     <TouchableOpacity style={styles.foodCard} onPress={() => selectFood(item)}>
       <View style={styles.foodHeader}>
         <Text style={styles.foodName}>{item.food_name}</Text>
-        {item.source && <Text style={styles.sourcePill}>{item.source === 'proxy' ? 'API' : 'BACKEND'}</Text>}
+        {item.source && <Text style={styles.sourcePill}>
+          {item.source === 'ai' ? 'IA' : item.source === 'community' ? 'COMUNIDAD' : item.source === 'proxy' ? 'API' : 'BACKEND'}
+        </Text>}
       </View>
       <Text style={styles.foodDesc} numberOfLines={2}>{item.food_description}</Text>
       {item.brand_name ? <Text style={styles.foodBrand}>{item.brand_name}</Text> : null}
@@ -138,6 +145,13 @@ export default function SearchFoodScreen() {
         <Text style={styles.foodSubtitleText}>
           {selectedFood.serving.description} - valores base por {selectedFood.serving.amount} {baseUnitLabel}
         </Text>
+
+        {selectedFood.source === 'ai' ? (
+          <View style={styles.aiNotice}>
+            <Ionicons name="sparkles-outline" size={18} color="#FFB020" />
+            <Text style={styles.aiNoticeText}>Estimacion de IA. Revisa la porcion y los macros antes de guardar.</Text>
+          </View>
+        ) : null}
 
         <View style={styles.macroGrid}>
           <View style={styles.macroBox}>
@@ -277,6 +291,15 @@ export default function SearchFoodScreen() {
             </TouchableOpacity>
           </View>
 
+          <TouchableOpacity style={styles.contributeButton} onPress={() => navigation.navigate('FoodSubmission')}>
+            <Ionicons name="add-circle-outline" size={20} color="#CCFF00" />
+            <View style={styles.contributeTextWrap}>
+              <Text style={styles.contributeTitle}>¿NO ENCUENTRAS EL ALIMENTO?</Text>
+              <Text style={styles.contributeText}>Aporta su etiqueta o una foto para revision.</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#777" />
+          </TouchableOpacity>
+
           <FlatList
             data={foods}
             keyExtractor={(item) => item.food_id}
@@ -307,6 +330,10 @@ const styles = StyleSheet.create({
   foodBrand: { color: '#CCFF00', fontSize: 10, fontWeight: 'bold', marginTop: 8 },
   sourcePill: { color: '#121212', backgroundColor: '#CCFF00', overflow: 'hidden', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, fontSize: 10, fontWeight: '900' },
   emptyText: { color: '#666', textAlign: 'center', marginTop: 40 },
+  contributeButton: { marginHorizontal: 20, marginBottom: 4, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: '#333', backgroundColor: '#1A1A1A', flexDirection: 'row', alignItems: 'center', gap: 12 },
+  contributeTextWrap: { flex: 1 },
+  contributeTitle: { color: '#FFF', fontSize: 11, fontWeight: '900' },
+  contributeText: { color: '#888', fontSize: 11, marginTop: 2 },
 
   detailContainer: { flex: 1, padding: 24, paddingTop: 10 },
   detailHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 24, paddingVertical: 12 },
@@ -314,6 +341,8 @@ const styles = StyleSheet.create({
   detailTitle: { fontSize: 18, color: '#FFF', fontWeight: 'bold' },
   foodTitle: { fontSize: 26, fontWeight: '900', color: '#CCFF00', marginBottom: 4 },
   foodSubtitleText: { fontSize: 14, color: '#888', marginBottom: 32 },
+  aiNotice: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#211D14', borderRadius: 8, borderWidth: 1, borderColor: '#594719', padding: 12, marginTop: -20, marginBottom: 24 },
+  aiNoticeText: { color: '#E6D7AC', fontSize: 12, lineHeight: 17, flex: 1 },
 
   macroGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   macroBox: { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12, alignItems: 'center', marginHorizontal: 4 },

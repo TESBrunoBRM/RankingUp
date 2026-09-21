@@ -1,6 +1,8 @@
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import type {
   FoodLogRecord,
+  FoodScanAnalysisRecord,
+  FoodSubmissionRecord,
   MealType,
   ProfileRecord,
   RankRecord,
@@ -8,6 +10,10 @@ import type {
   WorkoutExerciseRecord,
   WorkoutRecord,
   ExerciseHistoryLog,
+  WaterLogRecord,
+  FoodAnalysisMode,
+  FoodSubmissionStatus,
+  NutritionUnit,
 } from '../domain/domain.types';
 import type { SetKind } from '../domain/session.rules';
 import { SupabaseService } from './supabase.service';
@@ -54,6 +60,39 @@ interface InsertFoodLogInput {
   carbs: number;
   fat: number;
   servings: number;
+}
+
+interface InsertFoodScanAnalysisInput {
+  user_id: string;
+  image_path: string;
+  mode: FoodAnalysisMode;
+  food_name: string;
+  brand_name: string | null;
+  serving_amount: number;
+  serving_unit: NutritionUnit;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  confidence: number;
+  notes: string | null;
+}
+
+interface InsertFoodSubmissionInput {
+  submitted_by: string;
+  scan_analysis_id: string | null;
+  food_name: string;
+  brand_name: string | null;
+  barcode: string | null;
+  serving_amount: number;
+  serving_unit: NutritionUnit;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  image_path: string;
+  source_mode: 'nutrition_label' | 'ai_estimate';
+  submitter_notes: string | null;
 }
 
 interface InsertWorkoutInput {
@@ -890,5 +929,129 @@ export class SupabaseRepository {
 
     if (error) throw toServerError(error.message);
     return Array.isArray(data) && data.length > 0;
+  }
+
+  async getWaterLogs(userId: string, date: string): Promise<WaterLogRecord[]> {
+    const { data, error } = await this.db
+      .from('water_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('log_date', date)
+      .order('created_at', { ascending: true });
+
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as WaterLogRecord[];
+  }
+
+  async insertWaterLog(userId: string, date: string, amountMl: number): Promise<WaterLogRecord> {
+    const { data, error } = await this.db
+      .from('water_logs')
+      .insert([{ user_id: userId, log_date: date, amount_ml: amountMl }])
+      .select()
+      .single();
+
+    if (error) throw toServerError(error.message);
+    return data as WaterLogRecord;
+  }
+
+  async deleteWaterLogForUser(id: string, userId: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from('water_logs')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select('id');
+
+    if (error) throw toServerError(error.message);
+    return Array.isArray(data) && data.length > 0;
+  }
+
+  async insertFoodScanAnalysis(input: InsertFoodScanAnalysisInput): Promise<FoodScanAnalysisRecord> {
+    const { data, error } = await this.db
+      .from('food_scan_analyses')
+      .upsert([input], { onConflict: 'image_path' })
+      .select()
+      .single();
+
+    if (error) throw toServerError(error.message);
+    return data as FoodScanAnalysisRecord;
+  }
+
+  async getFoodScanAnalysisForUser(id: string, userId: string): Promise<FoodScanAnalysisRecord | null> {
+    const { data, error } = await this.db
+      .from('food_scan_analyses')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) throw toServerError(error.message);
+    return data as FoodScanAnalysisRecord | null;
+  }
+
+  async searchApprovedFoodSubmissions(query: string): Promise<FoodSubmissionRecord[]> {
+    const select = '*';
+    if (!query.trim()) {
+      const { data, error } = await this.db.from('food_submissions').select(select)
+        .eq('status', 'approved').order('reviewed_at', { ascending: false }).limit(30);
+      if (error) throw toServerError(error.message);
+      return (data ?? []) as FoodSubmissionRecord[];
+    }
+
+    const pattern = `%${escapeLikePattern(query.trim())}%`;
+    const [byName, byBrand] = await Promise.all([
+      this.db.from('food_submissions').select(select).eq('status', 'approved').ilike('food_name', pattern).limit(20),
+      this.db.from('food_submissions').select(select).eq('status', 'approved').ilike('brand_name', pattern).limit(20),
+    ]);
+    if (byName.error) throw toServerError(byName.error.message);
+    if (byBrand.error) throw toServerError(byBrand.error.message);
+    const unique = new Map<string, FoodSubmissionRecord>();
+    [...(byName.data ?? []), ...(byBrand.data ?? [])].forEach((row) => unique.set(row.id, row as FoodSubmissionRecord));
+    return [...unique.values()].slice(0, 20);
+  }
+
+  async getApprovedFoodSubmission(id: string): Promise<FoodSubmissionRecord | null> {
+    const { data, error } = await this.db.from('food_submissions').select('*')
+      .eq('id', id).eq('status', 'approved').maybeSingle();
+    if (error) throw toServerError(error.message);
+    return data as FoodSubmissionRecord | null;
+  }
+
+  async insertFoodSubmission(input: InsertFoodSubmissionInput): Promise<FoodSubmissionRecord> {
+    const { data, error } = await this.db.from('food_submissions').insert([input]).select().single();
+    if (error) throw toServerError(error.message);
+    return data as FoodSubmissionRecord;
+  }
+
+  async getFoodSubmissionsForUser(userId: string): Promise<FoodSubmissionRecord[]> {
+    const { data, error } = await this.db.from('food_submissions').select('*')
+      .eq('submitted_by', userId).order('created_at', { ascending: false }).limit(50);
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as FoodSubmissionRecord[];
+  }
+
+  async getFoodSubmissionsByStatus(status: FoodSubmissionStatus): Promise<FoodSubmissionRecord[]> {
+    const { data, error } = await this.db.from('food_submissions').select('*')
+      .eq('status', status).order('created_at', { ascending: true }).limit(100);
+    if (error) throw toServerError(error.message);
+    return (data ?? []) as FoodSubmissionRecord[];
+  }
+
+  async reviewFoodSubmission(
+    id: string,
+    reviewerId: string,
+    status: Extract<FoodSubmissionStatus, 'approved' | 'rejected'>,
+    reviewNote: string | null,
+  ): Promise<FoodSubmissionRecord | null> {
+    const now = new Date().toISOString();
+    const { data, error } = await this.db.from('food_submissions').update({
+      status,
+      review_note: reviewNote,
+      reviewed_by: reviewerId,
+      reviewed_at: now,
+      updated_at: now,
+    }).eq('id', id).eq('status', 'pending').select().maybeSingle();
+    if (error) throw toServerError(error.message);
+    return data as FoodSubmissionRecord | null;
   }
 }

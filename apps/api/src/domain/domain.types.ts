@@ -34,7 +34,60 @@ export interface FoodSearchResult {
   food_description: string;
   brand_name?: string;
   serving: NutritionServing;
-  source?: 'demo' | 'proxy' | 'local';
+  source?: 'demo' | 'proxy' | 'local' | 'community' | 'ai';
+}
+
+export interface WaterLogRecord {
+  id: string;
+  user_id: string;
+  log_date: string;
+  amount_ml: number;
+  created_at: string;
+}
+
+export type FoodAnalysisMode = 'meal' | 'nutrition_label';
+export type FoodSubmissionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface FoodScanAnalysisRecord {
+  id: string;
+  user_id: string;
+  image_path: string;
+  mode: FoodAnalysisMode;
+  food_name: string;
+  brand_name: string | null;
+  serving_amount: number;
+  serving_unit: NutritionUnit;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  confidence: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface FoodSubmissionRecord {
+  id: string;
+  submitted_by: string;
+  scan_analysis_id: string | null;
+  status: FoodSubmissionStatus;
+  food_name: string;
+  brand_name: string | null;
+  barcode: string | null;
+  serving_amount: number;
+  serving_unit: NutritionUnit;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  image_path: string;
+  source_mode: 'nutrition_label' | 'ai_estimate';
+  submitter_notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ExerciseRecord {

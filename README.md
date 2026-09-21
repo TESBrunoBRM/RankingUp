@@ -23,8 +23,10 @@
 - 🤖 **Planificador de Entrenamiento Demo:** Genera rutinas a medida basándose en equipo, grupo muscular, duración y frecuencia sin exponer claves externas en el APK.
 - 🥘 **Seguimiento de Nutrición Inteligente:**
   - Calcula automáticamente tus objetivos calóricos diarios y distribución de macronutrientes.
+  - Registra hidratación en vasos de 250 ml con una meta diaria visible de 2,75 L.
   - Catálogo de alimentos servido desde backend y soporte opcional de proxy externo.
-  - 📸 **Escáner de Alimentos:** Flujo de cámara preparado para demo con fallback seguro hacia búsqueda backend.
+  - 📸 **Escáner de Alimentos:** analiza platos o tablas nutricionales en el backend y devuelve porción, calorías, proteína, carbohidratos y grasa para revisión antes de guardar.
+  - Los usuarios pueden aportar alimentos con evidencia fotográfica; solo un administrador puede aprobarlos e incorporarlos al catálogo comunitario.
 - 📚 **Catálogo de 1.324 ejercicios:** Buscador con filtros por zona, equipamiento y músculo, GIF animado y pasos en español para cada ejercicio.
 - ⚔️ **Duelo 1v1 de flexiones:** Reta a otro atleta y competid a la vez con marcador en vivo (Supabase Realtime). El ganador lo decide el backend.
 - 🔒 **Seguridad y Sincronización:** Autenticación fluida y sincronización en tiempo real potenciada por **Supabase** y políticas RLS.
@@ -37,7 +39,7 @@
 - **Gestión de Estados:** Zustand.
 - **Navegación:** React Navigation (Native Stack, Bottom Tabs).
 - **Backend API:** NestJS en `apps/api` para lógica crítica de XP, ranking, nutrición y generación de rutinas.
-- **Endpoints principales:** `/health`, `/v1/profile/onboarding`, `/v1/profile/metrics`, `/v1/workouts/log-session`, `/v1/workouts/generate-plan`, `/v1/nutrition/logs`, `/v1/ranking` y `/v1/dashboard`.
+- **Endpoints principales:** `/health`, `/v1/profile/onboarding`, `/v1/workouts/log-session`, `/v1/nutrition/logs`, `/v1/nutrition/water`, `/v1/foods/analyze-image`, `/v1/foods/submissions`, `/v1/ranking` y `/v1/dashboard`.
 - **Autenticación y datos:** Supabase Auth + PostgreSQL. El backend usa service role solo del lado servidor.
 - **APIs externas:** Opcionales mediante proxy/backend propio. El APK no incluye secretos de FatSecret, Gemini ni API Ninjas.
 
@@ -101,6 +103,8 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    PORT=3001
    CORS_ORIGIN=http://localhost:8081
    NODE_ENV=development
+   GEMINI_API_KEY=clave_opcional_solo_backend
+   GEMINI_MODEL=gemini-2.5-flash
    ```
 
    > ⚠️ `SUPABASE_SERVICE_ROLE_KEY` ignora RLS por completo. Va **solo** en el
@@ -129,6 +133,13 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    pnpm run typecheck:api
    pnpm run build:api
    ```
+
+   Para validar todo el repositorio antes de generar un APK:
+   ```bash
+   pnpm run verify
+   ```
+
+   No ejecutes `build:android:preview` si `verify` no termina correctamente.
 
 6. **Iniciar la API local:**
    ```bash
@@ -189,6 +200,26 @@ cuando Render despierta una instancia inactiva.
    El primer endpoint debe responder 200 y `/docs` debe responder 404 en
    producción. No construyas el APK mientras la URL de EAS apunte a `localhost`
    o a una IP privada.
+
+---
+
+## Nutricion, IA y aportes comunitarios
+
+- Cada toque en `+` registra un vaso de 250 ml en `water_logs`; el resumen diario calcula el avance contra 2,75 L en el backend.
+- Las fotos se suben al bucket privado `food-evidence` mediante una URL firmada y rutas con prefijo del usuario. El APK nunca recibe `SUPABASE_SERVICE_ROLE_KEY` ni `GEMINI_API_KEY`.
+- `GEMINI_API_KEY` es opcional. Sin ella, una etiqueta puede transcribirse manualmente; un alimento sin etiqueta no puede enviarse como estimación hasta completar un análisis válido.
+- Los resultados de IA son orientativos y siempre se muestran para revisión del usuario antes de registrar o aportar el alimento.
+- Los aportes quedan en estado `pending`. Un usuario es administrador solo si Supabase Auth entrega `app_metadata.role = "admin"`; `user_metadata` no se usa para autorización.
+
+Endpoints de moderación:
+
+```text
+GET   /v1/foods/admin/submissions?status=pending
+PATCH /v1/foods/admin/submissions/:id
+      { "status": "approved" | "rejected", "reviewNote": "..." }
+```
+
+Al aprobar, el registro queda disponible en `GET /v1/foods/search`. Las tablas `water_logs`, `food_scan_analyses` y `food_submissions` tienen RLS habilitado y acceso directo revocado para `anon` y `authenticated`.
 
 ---
 

@@ -17,6 +17,7 @@ export default function NutritionScreen() {
   const [logs, setLogs] = useState<FoodLog[]>([]);
   const [summary, setSummary] = useState<NutritionSummaryResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [waterSaving, setWaterSaving] = useState(false);
 
   const fetchNutritionData = useCallback(async () => {
     if (!user) {
@@ -58,6 +59,33 @@ export default function NutritionScreen() {
 
   const navToSearch = () => {
     navigation.navigate('SearchFood');
+  };
+
+  const handleAddWater = async () => {
+    if (waterSaving) return;
+    setWaterSaving(true);
+    try {
+      await nutritionLogService.addWater(getLocalDateString(), summary?.water.glassMl ?? 250);
+      await fetchNutritionData();
+    } catch (error: unknown) {
+      Alert.alert('No se pudo registrar', getErrorMessage(error, 'Intenta nuevamente.'));
+    } finally {
+      setWaterSaving(false);
+    }
+  };
+
+  const handleRemoveWater = async () => {
+    const lastLog = summary?.water.logs.at(-1);
+    if (!lastLog || waterSaving) return;
+    setWaterSaving(true);
+    try {
+      await nutritionLogService.deleteWater(lastLog.id);
+      await fetchNutritionData();
+    } catch (error: unknown) {
+      Alert.alert('No se pudo actualizar', getErrorMessage(error, 'Intenta nuevamente.'));
+    } finally {
+      setWaterSaving(false);
+    }
   };
 
   const totalCals = summary?.totals.calories ?? 0;
@@ -138,6 +166,57 @@ export default function NutritionScreen() {
           </View>
         </View> : null}
 
+        {summary ? (
+          <View style={styles.waterCard}>
+            <View style={styles.waterHeader}>
+              <View style={styles.waterTitleRow}>
+                <View style={styles.waterIconWrap}>
+                  <Ionicons name="water" size={20} color="#57C7FF" />
+                </View>
+                <View>
+                  <Text style={styles.waterTitle}>AGUA</Text>
+                  <Text style={styles.waterSubtitle}>VASOS DE {summary.water.glassMl} ML</Text>
+                </View>
+              </View>
+              <Text style={styles.waterValue}>
+                {(summary.water.totalMl / 1000).toFixed(2)} / {(summary.water.targetMl / 1000).toFixed(2)} L
+              </Text>
+            </View>
+            <View style={styles.waterProgressTrack}>
+              <View style={[styles.waterProgressFill, { width: `${summary.water.progressPercent}%` }]} />
+            </View>
+            <View style={styles.waterGlasses}>
+              {Array.from({ length: Math.ceil(summary.water.targetMl / summary.water.glassMl) }, (_, index) => (
+                <Ionicons
+                  key={index}
+                  name={index < Math.floor(summary.water.glasses) ? 'water' : 'water-outline'}
+                  size={20}
+                  color={index < Math.floor(summary.water.glasses) ? '#57C7FF' : '#4A4F55'}
+                />
+              ))}
+            </View>
+            <View style={styles.waterActions}>
+              <TouchableOpacity
+                accessibilityLabel="Quitar el ultimo vaso de agua"
+                style={[styles.waterActionButton, (!summary.water.logs.length || waterSaving) && styles.waterActionDisabled]}
+                onPress={() => void handleRemoveWater()}
+                disabled={!summary.water.logs.length || waterSaving}
+              >
+                <Ionicons name="remove" size={22} color="#FFF" />
+              </TouchableOpacity>
+              <Text style={styles.waterGlassesCount}>{summary.water.glasses} vasos</Text>
+              <TouchableOpacity
+                accessibilityLabel="Agregar un vaso de agua"
+                style={[styles.waterActionButton, styles.waterAddButton, waterSaving && styles.waterActionDisabled]}
+                onPress={() => void handleAddWater()}
+                disabled={waterSaving}
+              >
+                {waterSaving ? <ActivityIndicator size="small" color="#101114" /> : <Ionicons name="add" size={22} color="#101114" />}
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>ALIMENTOS DE HOY</Text>
           <TouchableOpacity style={styles.addBtnSmall} onPress={navToSearch}>
@@ -208,6 +287,22 @@ const styles = StyleSheet.create({
   macroItem: { alignItems: 'center' },
   macroValue: { fontSize: 16, fontWeight: '800', color: '#E0E0E0' },
   macroLabel: { fontSize: 10, color: '#888', fontWeight: '800', letterSpacing: 1, marginTop: 4 },
+
+  waterCard: { backgroundColor: '#1A1A1A', borderRadius: 8, padding: 18, borderWidth: 1, borderColor: '#2E4A58', marginTop: -16, marginBottom: 32 },
+  waterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  waterTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  waterIconWrap: { width: 38, height: 38, borderRadius: 8, backgroundColor: '#172A33', alignItems: 'center', justifyContent: 'center' },
+  waterTitle: { color: '#FFF', fontSize: 14, fontWeight: '900' },
+  waterSubtitle: { color: '#77858D', fontSize: 9, fontWeight: '800', marginTop: 2 },
+  waterValue: { color: '#57C7FF', fontSize: 17, fontWeight: '900' },
+  waterProgressTrack: { height: 8, borderRadius: 4, backgroundColor: '#293038', overflow: 'hidden', marginTop: 18 },
+  waterProgressFill: { height: '100%', borderRadius: 4, backgroundColor: '#57C7FF' },
+  waterGlasses: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 },
+  waterActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 18 },
+  waterActionButton: { width: 42, height: 42, borderRadius: 8, borderWidth: 1, borderColor: '#444', alignItems: 'center', justifyContent: 'center' },
+  waterAddButton: { backgroundColor: '#57C7FF', borderColor: '#57C7FF' },
+  waterActionDisabled: { opacity: 0.4 },
+  waterGlassesCount: { color: '#DCE7EC', fontSize: 13, fontWeight: '800', minWidth: 70, textAlign: 'center' },
   
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   sectionTitle: { fontSize: 16, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 },

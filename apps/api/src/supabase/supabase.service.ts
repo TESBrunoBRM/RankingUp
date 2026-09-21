@@ -28,6 +28,11 @@ export class SupabaseService {
   async getUserFromToken(token: string): Promise<AuthenticatedUser | null> {
     const { data, error } = await this.anonClient.auth.getUser(token);
     if (error || !data.user) return null;
-    return { id: data.user.id, email: data.user.email ?? null };
+    const appRole = data.user.app_metadata?.role;
+    return {
+      id: data.user.id,
+      email: data.user.email ?? null,
+      role: typeof appRole === 'string' ? appRole : null,
+    };
   }
 }

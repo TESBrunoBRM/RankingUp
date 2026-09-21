@@ -32,4 +32,13 @@ export const nutritionLogService = {
     const result = await rankingUpApiClient.deleteFoodLog(id);
     return result.deleted;
   },
+
+  async addWater(date: string, amountMl = 250) {
+    return rankingUpApiClient.addWaterLog({ date, amountMl });
+  },
+
+  async deleteWater(id: string): Promise<boolean> {
+    const result = await rankingUpApiClient.deleteWaterLog(id);
+    return result.deleted;
+  },
 };
