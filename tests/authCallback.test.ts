@@ -22,6 +22,7 @@ test('parses a PKCE callback code', () => {
 
 test('surfaces expired and incomplete links without authenticating', () => {
   assert.deepEqual(parseAuthCallback(`${AUTH_CALLBACK_URL}?error_code=otp_expired`), { kind: 'error', code: 'otp_expired' });
+  assert.match(getAuthErrorMessage({ code: 'otp_expired' }, 'fallback'), /enlace expiró/);
   assert.deepEqual(parseAuthCallback(AUTH_CALLBACK_URL), { kind: 'error', code: 'missing_credentials' });
 });
 

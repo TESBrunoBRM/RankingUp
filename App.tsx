@@ -24,9 +24,8 @@ function ConfiguredApp() {
 
     const handleUrl = async (url: string) => {
       if (url === lastHandledUrl) return;
-      lastHandledUrl = url;
       try {
-        await authService.completeAuthCallback(url);
+        if (await authService.completeAuthCallback(url)) lastHandledUrl = url;
       } catch (error: unknown) {
         if (isMounted) Alert.alert('No se pudo confirmar el acceso', getAuthErrorMessage(error, 'Solicita un enlace nuevo.'));
       }

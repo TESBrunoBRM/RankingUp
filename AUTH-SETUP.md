@@ -6,17 +6,22 @@ los secretos de Google, Meta y SMTP se configuran solo en sus consolas y en Supa
 ## Confirmación por correo
 
 1. En el proyecto Supabase `mpshqfizadislsqjispd`, abre **Authentication > URL Configuration**.
-2. Añade `rankingup://auth/callback` a **Redirect URLs**. El registro y el reenvío
-   usan exactamente esa URL. Conserva las URLs ya existentes.
+2. Configura **Site URL** como `rankingup://auth/callback` para que el destino
+   predeterminado nunca sea `localhost`. Añade también esa dirección exacta a
+   **Redirect URLs**. El registro y el reenvío la usan explícitamente; conserva
+   las demás URLs permitidas que sigan en uso.
 3. En **Authentication > Email > SMTP Settings**, configura un SMTP propio antes de
    probar con correos externos. El SMTP predeterminado de Supabase solo envía a
    direcciones autorizadas del equipo y tiene un límite muy bajo.
-4. Mantén **Confirm email** habilitado. El template de confirmación debe conservar
-   `{{ .ConfirmationURL }}`; no hace falta cambiarlo para el enlace nativo.
+4. Mantén **Confirm email** habilitado. En **Authentication > Emails > Confirm sign up**,
+   el enlace debe usar `{{ .ConfirmationURL }}`; elimina enlaces basados en
+   `{{ .SiteURL }}` o `localhost` que sustituyan la redirección nativa.
 5. Genera e instala un APK nuevo después de añadir el esquema `rankingup` al app config.
 
-El enlace abre el APK; la app intercambia el código o guarda los tokens recibidos y
-Supabase actualiza la sesión. Si el correo no llega, consulta **Authentication > Logs**
+El enlace confirma el correo y abre el APK cuando Android permite la redirección.
+Si Gmail deja el navegador abierto, vuelve a la app, pulsa **Ya confirmé mi correo**
+e inicia sesión con la contraseña; el correo estará precargado. Si el correo no
+llega, consulta **Authentication > Logs**
 para distinguir `email_address_not_authorized`, límite de envío y fallos del SMTP.
 
 ## Google y Facebook

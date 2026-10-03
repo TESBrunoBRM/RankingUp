@@ -17,6 +17,10 @@ export default function VerifyEmailScreen() {
   const [sending, setSending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState('');
+  const continueToLogin = () => navigation.navigate('Login', {
+    email,
+    notice: 'Si ya confirmaste tu correo, ingresa tu contraseña para continuar.',
+  });
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -40,7 +44,7 @@ export default function VerifyEmailScreen() {
   };
 
   return <SafeAreaView style={styles.page} edges={['top', 'bottom']}>
-    <Pressable onPress={() => navigation.navigate('Login')} style={styles.back} accessibilityLabel="Volver a iniciar sesión">
+    <Pressable onPress={() => navigation.navigate('Login', { email })} style={styles.back} accessibilityLabel="Volver a iniciar sesión">
       <Ionicons name="arrow-back" size={24} color={theme.text} />
     </Pressable>
     <View style={styles.content}>
@@ -48,14 +52,15 @@ export default function VerifyEmailScreen() {
       <Text style={styles.title}>REVISA TU CORREO</Text>
       <Text style={styles.description}>Abre el enlace de confirmación enviado a:</Text>
       <Text style={styles.email}>{email}</Text>
-      <Text style={styles.description}>Al tocar el enlace, RankingUp se abrirá automáticamente.</Text>
+      <Text style={styles.description}>Al tocar el enlace debería abrirse RankingUp. Si Gmail deja el navegador abierto, vuelve aquí.</Text>
       {message ? <Text style={styles.message}>{message}</Text> : null}
+      <Pressable onPress={continueToLogin} style={styles.confirmed} accessibilityRole="button" accessibilityLabel="Ya confirmé mi correo">
+        <Text style={styles.confirmedText}>YA CONFIRMÉ MI CORREO</Text>
+      </Pressable>
       <Pressable onPress={() => void resend()} disabled={sending || cooldown > 0} style={[styles.resend, (sending || cooldown > 0) && styles.disabled]}>
         <Text style={styles.resendText}>{sending ? 'ENVIANDO...' : cooldown > 0 ? `REENVIAR EN ${cooldown} S` : 'REENVIAR ENLACE'}</Text>
       </Pressable>
-      <Pressable onPress={() => navigation.navigate('Login')} style={styles.login}>
-        <Text style={styles.loginText}>VOLVER A INICIAR SESIÓN</Text>
-      </Pressable>
+      <Text style={styles.hint}>Si el enlace venció, solicita uno nuevo.</Text>
     </View>
   </SafeAreaView>;
 }
@@ -68,9 +73,10 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
   description: { color: theme.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 14 },
   email: { color: theme.accent, fontSize: 16, fontWeight: '800', textAlign: 'center', marginTop: 12 },
   message: { color: theme.text, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 18 },
-  resend: { alignSelf: 'stretch', backgroundColor: theme.accentFill, borderRadius: 6, height: 52, alignItems: 'center', justifyContent: 'center', marginTop: 30 },
+  confirmed: { alignSelf: 'stretch', backgroundColor: theme.accentFill, borderRadius: 6, minHeight: 52, alignItems: 'center', justifyContent: 'center', marginTop: 30, paddingHorizontal: 12 },
+  confirmedText: { color: '#101114', fontSize: 13, fontWeight: '900' },
+  resend: { alignSelf: 'stretch', backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1, borderRadius: 6, height: 52, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
   disabled: { opacity: 0.5 },
-  resendText: { color: '#101114', fontSize: 13, fontWeight: '900' },
-  login: { paddingVertical: 18, marginTop: 12 },
-  loginText: { color: theme.muted, fontSize: 12, fontWeight: '800' },
+  resendText: { color: theme.text, fontSize: 13, fontWeight: '900' },
+  hint: { color: theme.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 16 },
 });

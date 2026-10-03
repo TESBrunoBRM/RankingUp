@@ -339,7 +339,7 @@ export interface ProfileComparisonResponse {
 
 // Navigation Types
 export type AuthStackParamList = {
-  Login: undefined;
+  Login: { email: string; notice?: string } | undefined;
   Register: undefined;
   Terms: undefined;
   VerifyEmail: { email: string };

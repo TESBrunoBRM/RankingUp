@@ -1,10 +1,10 @@
 import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { authService, type SocialProvider } from '../services/auth';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
@@ -18,10 +18,17 @@ export default function LoginScreen() {
   const theme = useThemePalette();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
-  const [email, setEmail] = useState('');
+  const route = useRoute<RouteProp<AuthStackParamList, 'Login'>>();
+  const [email, setEmail] = useState(route.params?.email ?? '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState(route.params?.notice ?? '');
+
+  useEffect(() => {
+    if (route.params?.email) setEmail(route.params.email);
+    setNotice(route.params?.notice ?? '');
+  }, [route.params?.email, route.params?.notice]);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -29,6 +36,7 @@ export default function LoginScreen() {
       return;
     }
     setError('');
+    setNotice('');
     setLoading(true);
     try {
       await authService.login(email, password);
@@ -62,6 +70,8 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>RANKINGUP</Text>
             <Text style={styles.subtitle}>INICIA SESIÓN PARA CONTINUAR</Text>
+
+            {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
             <Input
               label="CORREO ELECTRÓNICO"
@@ -146,6 +156,7 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
     marginBottom: 12,
   },
   error: { color: theme.mode === 'light' ? '#B42318' : '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
+  notice: { color: theme.text, backgroundColor: theme.surface, borderColor: theme.border, borderWidth: 1, borderRadius: 6, padding: 12, fontSize: 13, lineHeight: 19, marginBottom: 18 },
   separator: { color: theme.muted, textAlign: 'center', fontSize: 11, fontWeight: '800', marginTop: 25, marginBottom: 14 },
   socialButton: { height: 52, borderWidth: 1, borderColor: '#3D424A', borderRadius: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 10 },
   socialText: { color: theme.text, fontSize: 12, fontWeight: '800' },
