@@ -23,6 +23,22 @@ const nutrient = (food: FdcFood, id: number): number | null => {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 };
 
+const words = (value: string): string[] => normalizeLabel(value).replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+
+const relevance = (food: FoodSearchResult, searchTerm: string): number => {
+  const queryWords = words(searchTerm);
+  const nameWords = words(food.food_name);
+  const matched = queryWords.filter((queryWord) => nameWords.some((nameWord) =>
+    nameWord === queryWord || nameWord === `${queryWord}s` || queryWord === `${nameWord}s`)).length;
+  let score = matched * 10 + (matched === queryWords.length ? 30 : 0);
+  if (nameWords[0] === queryWords[0] || nameWords[0] === `${queryWords[0]}s`) score += 5;
+  if (queryWords.length === 1) {
+    if (nameWords.includes('raw')) score += 10;
+    if (nameWords.some((word) => ['dehydrated', 'dried', 'powder', 'chips', 'flour', 'pudding', 'nectar', 'cake'].includes(word))) score -= 10;
+  }
+  return score - Math.max(0, nameWords.length - queryWords.length) / 10;
+};
+
 const toFood = (food: FdcFood): FoodSearchResult | null => {
   if (!Number.isSafeInteger(food.fdcId) || !food.description || food.dataType === 'Branded') return null;
   const calories = nutrient(food, 1008) ?? nutrient(food, 2047) ?? nutrient(food, 2048);
@@ -67,7 +83,8 @@ export class FoodDataCentralService {
       });
       if (!response.ok) return [];
       const payload = await response.json() as { foods?: FdcFood[] };
-      const foods = (payload.foods ?? []).map(toFood).filter((food): food is FoodSearchResult => food !== null);
+      const foods = (payload.foods ?? []).map(toFood).filter((food): food is FoodSearchResult => food !== null)
+        .sort((left, right) => relevance(right, searchTerm) - relevance(left, searchTerm));
       this.cache.set(term.toLowerCase(), { foods, expires: Date.now() + 10 * 60_000 });
       for (const food of foods) this.foodCache.set(food.food_id, { food, expires: Date.now() + 10 * 60_000 });
       if (this.cache.size > 200) this.cache.delete(this.cache.keys().next().value!);

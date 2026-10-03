@@ -29,4 +29,18 @@ describe('FoodDataCentralService', () => {
     await expect(service.search('quinoa')).resolves.toEqual([]);
     expect(global.fetch).not.toHaveBeenCalled();
   });
+
+  it('prioritizes the plain raw food over a processed variant for a generic query', async () => {
+    const nutrients = [
+      { nutrientId: 1008, value: 100 }, { nutrientId: 1003, value: 1 },
+      { nutrientId: 1005, value: 20 }, { nutrientId: 1004, value: 1 },
+    ];
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ foods: [
+      { fdcId: 1, description: 'Bananas, dehydrated, or banana powder', foodNutrients: nutrients },
+      { fdcId: 2, description: 'Bananas, raw', foodNutrients: nutrients },
+    ] }) } as Response);
+    const service = new FoodDataCentralService({ get: () => 'test-key' } as unknown as ConfigService);
+    const foods = await service.search('banana');
+    expect(foods.map((food) => food.food_id)).toEqual(['fdc-2', 'fdc-1']);
+  });
 });
