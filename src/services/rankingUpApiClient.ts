@@ -53,6 +53,7 @@ interface CreateFoodLogRequest {
   foodId: string;
   amount: number;
   unit: NutritionUnit;
+  correction?: { foodName: string; calories: number; protein: number; carbs: number; fat: number };
 }
 
 interface CachedResponse {
@@ -236,6 +237,9 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
 export const rankingUpApiClient = {
   warmUp: warmUpApi,
 
+  getLegalAcceptance: () => request<{ version: string; accepted: boolean; acceptedAt: string | null }>('/v1/legal/acceptance'),
+  acceptLegalTerms: () => request<{ version: string; accepted: boolean; acceptedAt: string }>('/v1/legal/acceptance', { method: 'POST' }),
+
   getDashboard: () => request<DashboardResponse>('/v1/dashboard'),
 
   checkInStreak: (timeZone: string) => request<StreakCheckInResponse>('/v1/streak/check-in', {
@@ -411,7 +415,7 @@ export const rankingUpApiClient = {
   analyzeFoodImage: (input: { imagePath: string; mode: 'meal' | 'nutrition_label' }) =>
     request<FoodImageAnalysisResponse>('/v1/foods/analyze-image', {
       method: 'POST', body: JSON.stringify(input),
-    }, { timeoutMs: 30_000 }),
+      }, { timeoutMs: 65_000 }),
 
   createFoodSubmission: (input: {
     foodName: string; brandName?: string; barcode?: string;

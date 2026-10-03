@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +15,8 @@ type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'PublicProfil
 type ScreenRoute = RouteProp<AppStackParamList, 'PublicProfile'>;
 
 export default function PublicProfileScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const { profileId } = useRoute<ScreenRoute>().params;
   const [data, setData] = useState<SocialProfileResponse | null>(null);
@@ -52,12 +55,12 @@ export default function PublicProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable style={styles.iconButton} onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={22} color="#FFFFFF" /></Pressable>
+        <Pressable style={styles.iconButton} onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={22} color={theme.text} /></Pressable>
         <Text style={styles.headerTitle}>{data ? `@${data.profile.username}` : 'PERFIL'}</Text>
         <View style={styles.iconButton} />
       </View>
 
-      {loading && !data ? <View style={styles.center}><ActivityIndicator size="large" color="#CCFF00" /></View> : errorMessage && !data ? (
+      {loading && !data ? <View style={styles.center}><ActivityIndicator size="large" color={theme.accent} /></View> : errorMessage && !data ? (
         <View style={styles.center}><Ionicons name="warning-outline" size={38} color="#FFB020" /><Text style={styles.error}>{errorMessage}</Text><Pressable style={styles.retry} onPress={() => void load()}><Text style={styles.retryText}>REINTENTAR</Text></Pressable></View>
       ) : data ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -80,7 +83,7 @@ export default function PublicProfileScreen() {
               {actionLoading ? <ActivityIndicator color={data.isFollowing ? '#FFFFFF' : '#121212'} /> : <Text style={[styles.followText, data.isFollowing && styles.followingText]}>{data.isFollowing ? 'SIGUIENDO' : 'SEGUIR'}</Text>}
             </Pressable>
             <Pressable style={styles.compareButton} onPress={() => navigation.navigate('ProfileComparison', { profileId })}>
-              <Ionicons name="git-compare-outline" size={18} color="#CCFF00" /><Text style={styles.compareText}>COMPARAR</Text>
+              <Ionicons name="git-compare-outline" size={18} color={theme.accent} /><Text style={styles.compareText}>COMPARAR</Text>
             </Pressable>
           </View>
 
@@ -99,39 +102,39 @@ export default function PublicProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
-  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#242424' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
+  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border },
   iconButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  headerTitle: { color: theme.text, fontSize: 14, fontWeight: '900' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
   content: { padding: 20, paddingBottom: 50 },
   identity: { alignItems: 'center' },
-  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: '#CCFF00', alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: theme.accentFill, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: '#121212', fontSize: 38, fontWeight: '900' },
-  name: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', marginTop: 12 },
-  username: { color: '#CCFF00', fontSize: 13, fontWeight: '800', marginTop: 3 },
-  bio: { color: '#A0A0A0', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 10, maxWidth: 300 },
-  statsRow: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2A2A2A', paddingVertical: 16, marginTop: 22 },
+  name: { color: theme.text, fontSize: 23, fontWeight: '900', marginTop: 12 },
+  username: { color: theme.accent, fontSize: 13, fontWeight: '800', marginTop: 3 },
+  bio: { color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 10, maxWidth: 300 },
+  statsRow: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16, marginTop: 22 },
   stat: { flex: 1, alignItems: 'center' },
-  statValue: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
-  statLabel: { color: '#777777', fontSize: 8, fontWeight: '900', marginTop: 4 },
+  statValue: { color: theme.text, fontSize: 17, fontWeight: '900' },
+  statLabel: { color: theme.muted, fontSize: 8, fontWeight: '900', marginTop: 4 },
   actions: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  followButton: { flex: 1, height: 46, borderRadius: 8, backgroundColor: '#CCFF00', alignItems: 'center', justifyContent: 'center' },
-  followingButton: { backgroundColor: '#242424', borderWidth: 1, borderColor: '#444444' },
+  followButton: { flex: 1, height: 46, borderRadius: 8, backgroundColor: theme.accentFill, alignItems: 'center', justifyContent: 'center' },
+  followingButton: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
   followText: { color: '#121212', fontSize: 12, fontWeight: '900' },
-  followingText: { color: '#FFFFFF' },
-  compareButton: { flex: 1, height: 46, borderRadius: 8, borderWidth: 1, borderColor: '#CCFF00', flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center' },
-  compareText: { color: '#CCFF00', fontSize: 12, fontWeight: '900' },
+  followingText: { color: theme.text },
+  compareButton: { flex: 1, height: 46, borderRadius: 8, borderWidth: 1, borderColor: theme.accent, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center' },
+  compareText: { color: theme.accent, fontSize: 12, fontWeight: '900' },
   inlineError: { color: '#FFB020', fontSize: 11, marginTop: 12 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', marginTop: 28, marginBottom: 8 },
-  strengthRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#292929', paddingVertical: 12, gap: 12 },
+  sectionTitle: { color: theme.text, fontSize: 14, fontWeight: '900', marginTop: 28, marginBottom: 8 },
+  strengthRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.border, paddingVertical: 12, gap: 12 },
   strengthCopy: { flex: 1 },
-  strengthName: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
-  strengthMeta: { color: '#777777', fontSize: 11, marginTop: 5 },
+  strengthName: { color: theme.text, fontSize: 14, fontWeight: '800' },
+  strengthMeta: { color: theme.muted, fontSize: 11, marginTop: 5 },
   empty: { minHeight: 150, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { color: '#777777', fontSize: 12, marginTop: 9 },
-  error: { color: '#E3E3E3', textAlign: 'center', lineHeight: 19, marginTop: 12 },
-  retry: { height: 42, paddingHorizontal: 20, borderRadius: 8, backgroundColor: '#CCFF00', justifyContent: 'center', marginTop: 18 },
+  emptyText: { color: theme.muted, fontSize: 12, marginTop: 9 },
+  error: { color: theme.text, textAlign: 'center', lineHeight: 19, marginTop: 12 },
+  retry: { height: 42, paddingHorizontal: 20, borderRadius: 8, backgroundColor: theme.accentFill, justifyContent: 'center', marginTop: 18 },
   retryText: { color: '#121212', fontSize: 11, fontWeight: '900' },
 });

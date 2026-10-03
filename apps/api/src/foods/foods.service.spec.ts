@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { SupabaseRepository } from '../supabase/supabase.repository';
 import { SupabaseService } from '../supabase/supabase.service';
 import { FoodVisionService } from './food-vision.service';
+import { FoodDataCentralService } from './food-data-central.service';
 import { FoodsService } from './foods.service';
 
 const approvedFood = {
@@ -23,15 +24,18 @@ describe('FoodsService', () => {
   const storage = { createSignedUploadUrl: jest.fn(), download: jest.fn(), info: jest.fn() };
   const supabase = { serviceClient: { storage: { from: jest.fn(() => storage) } } };
   const vision = { analyze: jest.fn() };
+  const foodDataCentral = { search: jest.fn(), getFood: jest.fn() };
   let service: FoodsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     repository.searchApprovedFoodSubmissions.mockResolvedValue([]);
+    foodDataCentral.search.mockResolvedValue([]);
     service = new FoodsService(
       repository as unknown as SupabaseRepository,
       supabase as unknown as SupabaseService,
       vision as unknown as FoodVisionService,
+      foodDataCentral as unknown as FoodDataCentralService,
     );
   });
 
@@ -51,7 +55,7 @@ describe('FoodsService', () => {
     storage.download.mockResolvedValue({ data: new Blob([Buffer.from('image')]), error: null });
     vision.analyze.mockResolvedValue({
       foodName: 'Arroz con pollo', brandName: null, servingAmount: 350, servingUnit: 'g',
-      calories: 540, protein: 32, carbs: 65, fat: 16, confidence: 0.8, notes: 'Estimado',
+      calories: 540, protein: 32, carbs: 65, fat: 16, confidence: 0.8, notes: 'Estimado', visibleFoods: ['Arroz', 'Pollo'],
     });
     repository.insertFoodScanAnalysis.mockImplementation(async (input) => ({
       id: 'scan1', created_at: '', ...input,

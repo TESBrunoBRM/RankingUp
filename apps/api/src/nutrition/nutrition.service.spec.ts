@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { FoodsService } from '../foods/foods.service';
 import { SupabaseRepository } from '../supabase/supabase.repository';
@@ -64,6 +64,26 @@ describe('NutritionService', () => {
       calories: 52,
     }));
     expect(result.log.id).toBe('log1');
+  });
+
+  it('uses user-corrected scan macros when saving the log', async () => {
+    foodsServiceMock.getFood.mockResolvedValue({
+      food_id: 'scan-own', food_name: 'Plato', food_description: '', source: 'ai',
+      serving: { amount: 250, unit: 'g', calories: 400, protein: 20, carbs: 40, fat: 15, description: 'Escaneado', isPer100: false },
+    });
+    repositoryMock.insertFoodLog.mockImplementation((input) => Promise.resolve(input));
+    await service.createFoodLog('u1', { date: '2026-10-02', mealType: 'almuerzo', foodId: 'scan-own', amount: 250, unit: 'g',
+      correction: { foodName: 'Guiso de lentejas', calories: 360, protein: 24, carbs: 50, fat: 9 },
+    });
+    expect(foodsServiceMock.getFood).toHaveBeenCalledWith('scan-own', 'u1');
+    expect(repositoryMock.insertFoodLog).toHaveBeenCalledWith(expect.objectContaining({ food_name: 'Guiso de lentejas', calories: 360 }));
+  });
+
+  it('does not allow nutrition overrides for shared catalog foods', async () => {
+    foodsServiceMock.getFood.mockResolvedValue({ food_id: 'demo-apple', source: 'local' });
+    await expect(service.createFoodLog('u1', { date: '2026-10-02', mealType: 'snack', foodId: 'demo-apple', amount: 100, unit: 'g',
+      correction: { foodName: 'Alterado', calories: 1, protein: 0, carbs: 0, fat: 0 },
+    })).rejects.toThrow(BadRequestException);
   });
 
   it('rejects deleting another user log', async () => {

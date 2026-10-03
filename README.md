@@ -96,6 +96,8 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    EXPO_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anonima_publica
    EXPO_PUBLIC_ENABLE_DEMO_FALLBACKS=true
    EXPO_PUBLIC_RANKINGUP_API_URL=https://tu-api-rankingup.example.com
+   EXPO_PUBLIC_LEGAL_ENTITY_NAME=nombre_legal_del_responsable
+   EXPO_PUBLIC_LEGAL_CONTACT_EMAIL=contacto@tu-dominio.com
 
    SUPABASE_URL=tu_url_de_proyecto_supabase
    SUPABASE_ANON_KEY=tu_clave_anonima_publica
@@ -105,12 +107,19 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    NODE_ENV=development
    GEMINI_API_KEY=clave_opcional_solo_backend
    GEMINI_MODEL=gemini-2.5-flash
+   USDA_FDC_API_KEY=clave_privada_de_fooddata_central
    ```
 
    > ⚠️ `SUPABASE_SERVICE_ROLE_KEY` ignora RLS por completo. Va **solo** en el
    > entorno del servidor, nunca en `.env.example` ni en variables `EXPO_PUBLIC_*`
    > (esas se empaquetan en el APK). En producción `CORS_ORIGIN` no puede ser `*`:
    > la API se niega a arrancar.
+
+   `USDA_FDC_API_KEY` amplía la búsqueda con USDA FoodData Central. Sin ella,
+   el catálogo local y los aportes aprobados siguen disponibles. La clave se
+   configura solo en el backend. La app exige la aceptación de la versión vigente
+   de Términos y privacidad; configura el nombre legal y el correo de contacto
+   antes de publicar una nueva compilación.
 
 4. **Configuración de la Base de Datos (Supabase):**
    El proyecto de desarrollo actual usa las migraciones de `supabase/migrations`.
@@ -125,6 +134,10 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    > `npx supabase db pull`. Hasta completar ese paso, no uses estas migraciones
    > incrementales para inicializar un proyecto Supabase vacío ni ejecutes SQL a
    > mano en producción.
+
+   La migración `20261003014411_legal_acceptances.sql` está aplicada en el
+   proyecto de desarrollo actual. Registra la versión y fecha de aceptación;
+   debe acompañar al nuevo endpoint de la API antes de distribuir la app.
 
 5. **Instalar y validar el backend NestJS:**
    (Nota: `pnpm install` en la raíz ya instala las dependencias de la API automáticamente debido a los workspaces)
@@ -180,7 +193,10 @@ cuando Render despierta una instancia inactiva.
 2. **Crear la API en Render:** el servicio actual usa el runtime Node sobre la
    rama `codex/prototype-deploy`. El Blueprint `render.yaml` conserva la
    alternativa Docker reproducible. Configura `SUPABASE_URL`,
-   `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` y `CORS_ORIGIN` en Render.
+   `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGIN` y
+   `USDA_FDC_API_KEY` en las variables de entorno del servicio de Render.
+   El campo `sync: false` del Blueprint solo solicita la clave al crear un
+   servicio nuevo; para el servicio existente hay que configurarla en Render.
    La clave `service_role` nunca debe entrar al APK ni al repo.
 
 3. **Configurar el entorno EAS `preview`:**

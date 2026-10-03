@@ -41,6 +41,8 @@ export const calculateServingMultiplier = (
   }
 
   const serving = food.serving;
+  if (unit === 'oz' && serving.unit === 'g') return amount * 28.3495 / serving.amount;
+  if (unit !== serving.unit) throw new Error('La unidad no corresponde a este alimento.');
   if (serving.isPer100 && unit === serving.unit) {
     return amount / 100;
   }

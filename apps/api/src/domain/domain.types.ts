@@ -34,7 +34,7 @@ export interface FoodSearchResult {
   food_description: string;
   brand_name?: string;
   serving: NutritionServing;
-  source?: 'demo' | 'proxy' | 'local' | 'community' | 'ai';
+  source?: 'demo' | 'proxy' | 'local' | 'community' | 'ai' | 'usda';
 }
 
 export interface WaterLogRecord {

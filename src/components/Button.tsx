@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, TouchableOpacityProps } from 'react-native';
 
@@ -8,6 +9,8 @@ interface ButtonProps extends TouchableOpacityProps {
 }
 
 export const Button: React.FC<ButtonProps> = ({ title, loading, variant = 'primary', style, ...props }) => {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const getButtonStyle = () => {
     switch (variant) {
       case 'secondary':
@@ -47,7 +50,7 @@ export const Button: React.FC<ButtonProps> = ({ title, loading, variant = 'prima
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   button: {
     height: 56,
     borderRadius: 12,
@@ -57,17 +60,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primaryButton: {
-    backgroundColor: '#CCFF00', // Neon Yellow
+    backgroundColor: theme.accentFill, // Neon Yellow
   },
   secondaryButton: {
-    backgroundColor: '#1A1A1A', // Dark Gray
+    backgroundColor: theme.surface, // Dark Gray
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: theme.border,
   },
   outlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#CCFF00',
+    borderColor: theme.accent,
   },
   disabled: {
     opacity: 0.5,
@@ -82,9 +85,9 @@ const styles = StyleSheet.create({
     color: '#1A1A1A', // Dark text on Neon
   },
   secondaryText: {
-    color: '#FFFFFF', // White text on Dark
+    color: theme.text, // White text on Dark
   },
   outlineText: {
-    color: '#CCFF00', // Neon text on dark bg
+    color: theme.accent, // Neon text on dark bg
   },
 });

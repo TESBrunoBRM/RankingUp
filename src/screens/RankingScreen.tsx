@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -55,6 +56,7 @@ interface RankEmblemProps {
 }
 
 function RankEmblem({ rankName, color, compact = false }: RankEmblemProps) {
+  const styles = useThemedStyles(createStyles);
   const size = compact ? 26 : 54;
   const imageSize = compact ? 38 : 84;
   const normalized = rankName.toUpperCase();
@@ -75,6 +77,8 @@ function RankEmblem({ rankName, color, compact = false }: RankEmblemProps) {
 }
 
 export default function RankingScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const { user } = useAuthStore();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [xp, setXp] = useState(0);
@@ -132,7 +136,7 @@ export default function RankingScreen() {
           </View>
         </View>
         <View style={styles.centerState}>
-          <ActivityIndicator size="large" color="#CCFF00" />
+          <ActivityIndicator size="large" color={theme.accent} />
           <Text style={styles.stateText}>Cargando progreso...</Text>
         </View>
       </SafeAreaView>
@@ -172,8 +176,8 @@ export default function RankingScreen() {
         </View>
         <Pressable style={styles.refreshButton} onPress={() => void loadRanking()} disabled={loading}>
           {loading
-            ? <ActivityIndicator size="small" color="#CCFF00" />
-            : <Ionicons name="refresh" size={20} color="#CCFF00" />}
+            ? <ActivityIndicator size="small" color={theme.accent} />
+            : <Ionicons name="refresh" size={20} color={theme.accent} />}
         </Pressable>
       </View>
 
@@ -297,66 +301,66 @@ export default function RankingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   header: { minHeight: 82, paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#24262B' },
-  eyebrow: { color: '#7E8792', fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 3 },
-  mainTitle: { color: '#FFFFFF', fontSize: 28, fontWeight: '900', letterSpacing: 0 },
-  refreshButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1B1D22', borderWidth: 1, borderColor: '#30333A' },
+  eyebrow: { color: theme.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 3 },
+  mainTitle: { color: theme.text, fontSize: 28, fontWeight: '900', letterSpacing: 0 },
+  refreshButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
   content: { padding: 20, paddingBottom: 110 },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
-  stateText: { color: '#8D96A1', fontSize: 13, marginTop: 14 },
+  stateText: { color: theme.muted, fontSize: 13, marginTop: 14 },
   errorIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,159,10,0.1)', marginBottom: 16 },
-  errorTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', marginBottom: 8, textAlign: 'center' },
-  errorText: { color: '#9AA3AD', fontSize: 13, lineHeight: 19, textAlign: 'center', marginBottom: 20 },
-  retryButton: { minHeight: 44, paddingHorizontal: 18, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#CCFF00' },
+  errorTitle: { color: theme.text, fontSize: 16, fontWeight: '900', marginBottom: 8, textAlign: 'center' },
+  errorText: { color: theme.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginBottom: 20 },
+  retryButton: { minHeight: 44, paddingHorizontal: 18, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: theme.accentFill },
   retryButtonText: { color: '#111', fontSize: 12, fontWeight: '900' },
   inlineNotice: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 8, backgroundColor: 'rgba(255,159,10,0.08)', borderWidth: 1, borderColor: 'rgba(255,159,10,0.25)', marginBottom: 16 },
-  inlineNoticeText: { flex: 1, color: '#D7DCE2', fontSize: 12, lineHeight: 17 },
-  rankHero: { minHeight: 120, flexDirection: 'row', alignItems: 'center', gap: 18, padding: 18, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, marginBottom: 18 },
+  inlineNoticeText: { flex: 1, color: theme.muted, fontSize: 12, lineHeight: 17 },
+  rankHero: { minHeight: 120, flexDirection: 'row', alignItems: 'center', gap: 18, padding: 18, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, marginBottom: 18 },
   rankHeroContent: { flex: 1 },
-  currentLabel: { color: '#7E8792', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginBottom: 5 },
+  currentLabel: { color: theme.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginBottom: 5 },
   rankName: { fontSize: 26, fontWeight: '900', letterSpacing: 0, marginBottom: 4 },
-  totalXp: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  totalXp: { color: theme.text, fontSize: 16, fontWeight: '800' },
   vectorEmblem: { width: 84, height: 84, borderRadius: 42, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   vectorEmblemCompact: { width: 38, height: 38, borderRadius: 19, borderWidth: 1 },
   progressBlock: { marginBottom: 30 },
   progressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  sectionLabel: { color: '#C5CBD2', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  sectionLabel: { color: theme.muted, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
   progressValue: { fontSize: 12, fontWeight: '900' },
-  progressTrack: { height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#24272D' },
+  progressTrack: { height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: theme.surface },
   progressFill: { height: '100%', borderRadius: 5 },
-  progressCaption: { color: '#7E8792', fontSize: 11, marginTop: 8, textAlign: 'right' },
+  progressCaption: { color: theme.muted, fontSize: 11, marginTop: 8, textAlign: 'right' },
   sectionHeader: { minHeight: 42, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4, marginBottom: 12 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900', letterSpacing: 0 },
-  sectionDescription: { color: '#7E8792', fontSize: 11, marginTop: 4 },
-  sectionMeta: { color: '#7E8792', fontSize: 10, fontWeight: '800' },
+  sectionTitle: { color: theme.text, fontSize: 16, fontWeight: '900', letterSpacing: 0 },
+  sectionDescription: { color: theme.muted, fontSize: 11, marginTop: 4 },
+  sectionMeta: { color: theme.muted, fontSize: 10, fontWeight: '800' },
   rankPath: { gap: 10, paddingBottom: 26 },
-  rankStep: { width: 112, minHeight: 132, padding: 12, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35' },
+  rankStep: { width: 112, minHeight: 132, padding: 12, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
   rankStepIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#30343B', marginBottom: 10 },
-  rankStepName: { color: '#C5CBD2', fontSize: 11, fontWeight: '900', marginBottom: 4 },
-  rankStepXp: { color: '#707984', fontSize: 9, fontWeight: '700' },
+  rankStepName: { color: theme.muted, fontSize: 11, fontWeight: '900', marginBottom: 4 },
+  rankStepXp: { color: theme.muted, fontSize: 9, fontWeight: '700' },
   currentStep: { fontSize: 9, fontWeight: '900', marginTop: 9 },
-  segmentControl: { alignSelf: 'center', width: 230, flexDirection: 'row', padding: 3, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35', marginBottom: 8 },
+  segmentControl: { alignSelf: 'center', width: 230, flexDirection: 'row', padding: 3, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, marginBottom: 8 },
   segmentButton: { flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
-  segmentButtonActive: { backgroundColor: '#CCFF00' },
-  segmentText: { color: '#7E8792', fontSize: 11, fontWeight: '900' },
+  segmentButtonActive: { backgroundColor: theme.accentFill },
+  segmentText: { color: theme.muted, fontSize: 11, fontWeight: '900' },
   segmentTextActive: { color: '#111' },
   bodyViewport: { height: 340, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   bodyEmpty: { alignItems: 'center', maxWidth: 260 },
-  bodyEmptyTitle: { color: '#C5CBD2', fontSize: 12, fontWeight: '900', marginTop: 12, marginBottom: 6 },
-  bodyEmptyText: { color: '#707984', fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  bodyEmptyTitle: { color: theme.muted, fontSize: 12, fontWeight: '900', marginTop: 12, marginBottom: 6 },
+  bodyEmptyText: { color: theme.muted, fontSize: 11, lineHeight: 17, textAlign: 'center' },
   leaderboardList: { gap: 8, marginBottom: 20 },
-  leaderboardRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#292C32' },
-  leaderboardRowMe: { borderColor: '#CCFF00', backgroundColor: 'rgba(204,255,0,0.05)' },
-  positionBadge: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#24272D', marginRight: 11 },
-  positionBadgePodium: { backgroundColor: '#292B31' },
-  positionText: { color: '#9AA3AD', fontSize: 12, fontWeight: '900' },
+  leaderboardRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: '#292C32' },
+  leaderboardRowMe: { borderColor: theme.accent, backgroundColor: 'rgba(204,255,0,0.05)' },
+  positionBadge: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface, marginRight: 11 },
+  positionBadgePodium: { backgroundColor: theme.surface },
+  positionText: { color: theme.muted, fontSize: 12, fontWeight: '900' },
   athleteContent: { flex: 1, minWidth: 0 },
-  athleteName: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  athleteNameMe: { color: '#CCFF00' },
-  youLabel: { color: '#7E8792', fontSize: 8, fontWeight: '900', marginTop: 2 },
-  athleteXp: { color: '#C5CBD2', fontSize: 12, fontWeight: '900', marginLeft: 10 },
+  athleteName: { color: theme.text, fontSize: 13, fontWeight: '800' },
+  athleteNameMe: { color: theme.accent },
+  youLabel: { color: theme.muted, fontSize: 8, fontWeight: '900', marginTop: 2 },
+  athleteXp: { color: theme.muted, fontSize: 12, fontWeight: '900', marginLeft: 10 },
   leaderboardEmpty: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: '#292C32', borderStyle: 'dashed', borderRadius: 8 },
-  profileNote: { color: '#616A75', fontSize: 10, textAlign: 'center', marginTop: 4 },
+  profileNote: { color: theme.muted, fontSize: 10, textAlign: 'center', marginTop: 4 },
 });

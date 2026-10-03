@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
-import { View, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text, Pressable } from 'react-native';
 import { useUIStore } from '../store/uiStore';
 import { PlanningMenuModal } from '../components/PlanningMenuModal';
+import { useThemePalette } from '../theme';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import LegalTermsScreen, { LEGAL_VERSION, LegalTermsContent } from '../screens/LegalTermsScreen';
+import { authService } from '../services/auth';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -65,25 +69,27 @@ function AuthNavigator() {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Login" component={LoginScreen} />
       <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="Terms" component={LegalTermsScreen} />
       <AuthStack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
     </AuthStack.Navigator>
   );
 }
 
 function MainTabs() {
+  const theme = useThemePalette();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#101114',
-          borderTopColor: '#1A1A1A',
+          backgroundColor: theme.background,
+          borderTopColor: theme.border,
           height: 80,
           paddingBottom: 25,
           paddingTop: 10,
         },
-        tabBarActiveTintColor: '#CCFF00',
-        tabBarInactiveTintColor: '#666666',
+        tabBarActiveTintColor: theme.accent,
+        tabBarInactiveTintColor: theme.muted,
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '900',
@@ -152,6 +158,7 @@ function MainNavigator() {
         <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
         <AppStack.Screen name="FoodSubmission" component={FoodSubmissionScreen} />
         <AppStack.Screen name="Profile" component={ProfileScreen} />
+        <AppStack.Screen name="LegalTerms" component={LegalTermsScreen} />
         <AppStack.Screen name="DiscoverProfiles" component={DiscoverProfilesScreen} />
         <AppStack.Screen name="PublicProfile" component={PublicProfileScreen} />
         <AppStack.Screen name="ProfileComparison" component={ProfileComparisonScreen} />
@@ -169,14 +176,42 @@ function MainNavigator() {
 
 export default function AppNavigator() {
   const { session, isLoading } = useAuthStore();
+  const theme = useThemePalette();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#101114' }}>
-        <ActivityIndicator size="large" color="#CCFF00" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+        <ActivityIndicator size="large" color={theme.accent} />
       </View>
     );
   }
 
-  return session && session.user ? <MainNavigator /> : <AuthNavigator />;
+  return session && session.user ? <LegalGate userId={session.user.id} /> : <AuthNavigator />;
+}
+
+function LegalGate({ userId }: { userId: string }) {
+  const theme = useThemePalette();
+  const [accepted, setAccepted] = useState<boolean | null>(null);
+  const [error, setError] = useState('');
+  const check = async () => {
+    setError('');
+    try {
+      const result = await rankingUpApiClient.getLegalAcceptance();
+      if (result.version !== LEGAL_VERSION) throw new Error('Esta versión de RankingUp necesita actualizarse para mostrar los términos vigentes.');
+      setAccepted(result.accepted);
+    }
+    catch (err) { setError(err instanceof Error ? err.message : 'No se pudo comprobar la aceptación.'); }
+  };
+  useEffect(() => { setAccepted(null); void check(); }, [userId]);
+  if (accepted === true) return <MainNavigator />;
+  if (accepted === false) return <LegalTermsContent closeLabel="Cerrar sesión" onClose={() => void authService.logout()} onAccept={async () => {
+    const result = await rankingUpApiClient.acceptLegalTerms();
+    if (result.version !== LEGAL_VERSION) throw new Error('Los términos cambiaron. Actualiza la aplicación.');
+    setAccepted(true);
+  }} />;
+  return <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: theme.background }}>
+    {error ? <><Text style={{ color: theme.text, textAlign: 'center', marginBottom: 20 }}>{error}</Text>
+      <Pressable onPress={() => void check()}><Text style={{ color: theme.accent, fontWeight: '800' }}>REINTENTAR</Text></Pressable></>
+      : <ActivityIndicator color={theme.accent} size="large" />}
+  </View>;
 }

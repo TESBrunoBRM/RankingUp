@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -27,6 +28,8 @@ const TARGET_OPTIONS = [15, 30, 50];
 const EMPTY_DUELS: OpenDuelsResponse = { incoming: [], outgoing: [], active: [] };
 
 export default function DuelLobbyScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<Navigation>();
 
   const [duels, setDuels] = useState<OpenDuelsResponse>(EMPTY_DUELS);
@@ -141,7 +144,7 @@ export default function DuelLobbyScreen() {
           {duel.targetReps} flexiones
         </Text>
       </View>
-      {busyDuelId === duel.id ? <ActivityIndicator color="#CCFF00" /> : <View style={styles.duelActions}>{actions}</View>}
+      {busyDuelId === duel.id ? <ActivityIndicator color={theme.accent} /> : <View style={styles.duelActions}>{actions}</View>}
     </View>
   );
 
@@ -193,7 +196,7 @@ export default function DuelLobbyScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color="#CCFF00" size="large" style={styles.loader} />
+          <ActivityIndicator color={theme.accent} size="large" style={styles.loader} />
         ) : (
           <>
             {duels.active.length > 0 && (
@@ -271,13 +274,13 @@ export default function DuelLobbyScreen() {
             <TextInput
               style={styles.searchInput}
               placeholder="Nombre o @usuario"
-              placeholderTextColor="#666"
+              placeholderTextColor={theme.muted}
               value={searchInput}
               onChangeText={setSearchInput}
               autoCapitalize="none"
               autoCorrect={false}
             />
-            {searching && <ActivityIndicator color="#CCFF00" size="small" />}
+            {searching && <ActivityIndicator color={theme.accent} size="small" />}
           </View>
 
           {results.map((profile) => (
@@ -287,7 +290,7 @@ export default function DuelLobbyScreen() {
                 <Text style={styles.duelMeta}>@{profile.username} • {profile.xp} XP</Text>
               </View>
               {challengingId === profile.id ? (
-                <ActivityIndicator color="#CCFF00" />
+                <ActivityIndicator color={theme.accent} />
               ) : (
                 pill('RETAR', '#CCFF00', () => handleChallenge(profile))
               )}
@@ -303,37 +306,37 @@ export default function DuelLobbyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   header: { paddingHorizontal: 20, paddingTop: 10 },
   backButton: { paddingVertical: 8 },
-  backButtonText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
+  backButtonText: { color: theme.muted, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
   scroll: { paddingHorizontal: 24, paddingBottom: 40 },
   mainTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.text,
     marginBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  lead: { color: '#A0A0A0', fontSize: 13, lineHeight: 18, marginBottom: 20 },
+  lead: { color: theme.muted, fontSize: 13, lineHeight: 18, marginBottom: 20 },
   recordRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   recordBox: {
     flex: 1,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
     paddingVertical: 14,
     alignItems: 'center',
   },
   recordValue: { fontSize: 26, fontWeight: '900' },
-  recordLabel: { color: '#666', fontSize: 10, fontWeight: '800', letterSpacing: 1, marginTop: 2 },
+  recordLabel: { color: theme.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1, marginTop: 2 },
   loader: { marginVertical: 30 },
   section: { marginBottom: 24 },
   sectionTitle: {
-    color: '#666',
+    color: theme.muted,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 1,
@@ -343,16 +346,16 @@ const styles = StyleSheet.create({
   duelCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
     padding: 14,
     marginBottom: 10,
   },
   duelInfo: { flex: 1 },
-  duelRival: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', textTransform: 'uppercase' },
-  duelMeta: { color: '#A0A0A0', fontSize: 12, marginTop: 3 },
+  duelRival: { color: theme.text, fontSize: 15, fontWeight: '800', textTransform: 'uppercase' },
+  duelMeta: { color: theme.muted, fontSize: 12, marginTop: 3 },
   duelActions: { flexDirection: 'row', gap: 8 },
   pill: {
     paddingVertical: 8,
@@ -366,26 +369,26 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
     alignItems: 'center',
   },
-  targetChipActive: { borderColor: '#CCFF00', backgroundColor: '#CCFF00' },
-  targetText: { color: '#A0A0A0', fontSize: 18, fontWeight: '900' },
+  targetChipActive: { borderColor: theme.accent, backgroundColor: theme.accentFill },
+  targetText: { color: theme.muted, fontSize: 18, fontWeight: '900' },
   targetTextActive: { color: '#121212' },
   searchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 48,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
     marginBottom: 12,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, color: '#FFFFFF', fontSize: 15 },
-  emptyText: { color: '#666', fontSize: 13, textAlign: 'center', paddingVertical: 12 },
+  searchInput: { flex: 1, color: theme.text, fontSize: 15 },
+  emptyText: { color: theme.muted, fontSize: 13, textAlign: 'center', paddingVertical: 12 },
 });

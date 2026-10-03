@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +14,8 @@ type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'ProfileCompa
 type ScreenRoute = RouteProp<AppStackParamList, 'ProfileComparison'>;
 
 export default function ProfileComparisonScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const { profileId } = useRoute<ScreenRoute>().params;
   const [data, setData] = useState<ProfileComparisonResponse | null>(null);
@@ -32,11 +35,11 @@ export default function ProfileComparisonScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable style={styles.iconButton} onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={22} color="#FFFFFF" /></Pressable>
+        <Pressable style={styles.iconButton} onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={22} color={theme.text} /></Pressable>
         <Text style={styles.title}>COMPARACION</Text>
         <View style={styles.iconButton} />
       </View>
-      {!data && !errorMessage ? <View style={styles.center}><ActivityIndicator size="large" color="#CCFF00" /></View> : errorMessage ? (
+      {!data && !errorMessage ? <View style={styles.center}><ActivityIndicator size="large" color={theme.accent} /></View> : errorMessage ? (
         <View style={styles.center}><Ionicons name="warning-outline" size={36} color="#FFB020" /><Text style={styles.error}>{errorMessage}</Text><Pressable style={styles.retry} onPress={() => void load()}><Text style={styles.retryText}>REINTENTAR</Text></Pressable></View>
       ) : data ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -67,35 +70,35 @@ export default function ProfileComparisonScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
-  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#242424' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
+  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border },
   iconButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  title: { color: theme.text, fontSize: 15, fontWeight: '900' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
   content: { padding: 20, paddingBottom: 50 },
   versusHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 28 },
   person: { flex: 1, alignItems: 'center', minWidth: 0 },
-  avatar: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CCFF00' },
-  otherAvatar: { backgroundColor: '#FFFFFF' },
+  avatar: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentFill },
+  otherAvatar: { backgroundColor: theme.surface },
   avatarText: { color: '#121212', fontSize: 27, fontWeight: '900' },
   otherAvatarText: { color: '#121212' },
-  personName: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', marginTop: 9, maxWidth: 120 },
-  handle: { color: '#777777', fontSize: 10, marginTop: 2 },
-  vs: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: '#444444', alignItems: 'center', justifyContent: 'center' },
-  vsText: { color: '#CCFF00', fontSize: 13, fontWeight: '900' },
-  sectionTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', marginBottom: 6 },
-  comparisonRow: { borderBottomWidth: 1, borderBottomColor: '#2A2A2A', paddingVertical: 16 },
-  exerciseName: { color: '#FFFFFF', fontSize: 13, fontWeight: '900', textAlign: 'center', marginBottom: 12 },
+  personName: { color: theme.text, fontSize: 13, fontWeight: '900', marginTop: 9, maxWidth: 120 },
+  handle: { color: theme.muted, fontSize: 10, marginTop: 2 },
+  vs: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' },
+  vsText: { color: theme.accent, fontSize: 13, fontWeight: '900' },
+  sectionTitle: { color: theme.text, fontSize: 14, fontWeight: '900', marginBottom: 6 },
+  comparisonRow: { borderBottomWidth: 1, borderBottomColor: theme.border, paddingVertical: 16 },
+  exerciseName: { color: theme.text, fontSize: 13, fontWeight: '900', textAlign: 'center', marginBottom: 12 },
   valuesRow: { flexDirection: 'row', gap: 10 },
-  valueSide: { flex: 1, minHeight: 82, borderRadius: 8, borderWidth: 1, borderColor: '#333333', alignItems: 'center', justifyContent: 'center', padding: 8 },
-  winner: { borderColor: '#CCFF00', backgroundColor: '#1C220F' },
-  oneRm: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', marginTop: 7 },
-  ratio: { color: '#777777', fontSize: 10, marginTop: 2 },
-  noData: { color: '#666666', fontSize: 9, fontWeight: '900', textAlign: 'center' },
+  valueSide: { flex: 1, minHeight: 82, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center', padding: 8 },
+  winner: { borderColor: theme.accent, backgroundColor: theme.mode === 'light' ? '#E9F5DA' : '#1C220F' },
+  oneRm: { color: theme.text, fontSize: 14, fontWeight: '900', marginTop: 7 },
+  ratio: { color: theme.muted, fontSize: 10, marginTop: 2 },
+  noData: { color: theme.muted, fontSize: 9, fontWeight: '900', textAlign: 'center' },
   empty: { minHeight: 160, alignItems: 'center', justifyContent: 'center' },
-  footnote: { color: '#666666', fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 20 },
-  error: { color: '#E3E3E3', textAlign: 'center', marginTop: 12 },
-  retry: { height: 42, borderRadius: 8, backgroundColor: '#CCFF00', paddingHorizontal: 20, justifyContent: 'center', marginTop: 18 },
+  footnote: { color: theme.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 20 },
+  error: { color: theme.text, textAlign: 'center', marginTop: 12 },
+  retry: { height: 42, borderRadius: 8, backgroundColor: theme.accentFill, paddingHorizontal: 20, justifyContent: 'center', marginTop: 18 },
   retryText: { color: '#121212', fontSize: 11, fontWeight: '900' },
 });

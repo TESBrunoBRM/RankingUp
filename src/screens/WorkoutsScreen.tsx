@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +14,8 @@ import { getErrorMessage } from '../utils/errors';
 type WorkoutsScreenNavigationProp = NativeStackNavigationProp<AppStackParamList, 'Workouts'>;
 
 export default function WorkoutsScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<WorkoutsScreenNavigationProp>();
   const { user } = useAuthStore();
   const setPlanningMenuOpen = useUIStore(s => s.setPlanningMenuOpen);
@@ -102,7 +105,7 @@ export default function WorkoutsScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#CCFF00" />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       ) : (
         <FlatList
@@ -122,10 +125,10 @@ export default function WorkoutsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
   },
   header: {
     flexDirection: 'row',
@@ -140,13 +143,13 @@ const styles = StyleSheet.create({
     marginLeft: -8,
   },
   backButtonText: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1,
   },
   createButton: {
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -160,7 +163,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.text,
     paddingHorizontal: 20,
     marginBottom: 10,
     textTransform: 'uppercase',
@@ -171,12 +174,12 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: theme.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -187,14 +190,14 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.text,
     textTransform: 'uppercase',
     flex: 1,
   },
   deleteButton: {
     padding: 4,
     marginLeft: 10,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     width: 30,
     height: 30,
@@ -208,7 +211,7 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 15,
-    color: '#A0A0A0',
+    color: theme.muted,
     marginBottom: 16,
   },
   cardFooter: {
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: '#666666',
+    color: theme.muted,
     fontWeight: '600',
   },
   enterBadge: {
@@ -228,7 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   enterBadgeText: {
-    color: '#CCFF00',
+    color: theme.accent,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1,
@@ -244,7 +247,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#666666',
+    color: theme.muted,
     fontWeight: '800',
     letterSpacing: 2,
   },

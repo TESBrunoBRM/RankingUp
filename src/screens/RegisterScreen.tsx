@@ -1,5 +1,6 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
-import { StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, Pressable, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -12,12 +13,15 @@ import { getAuthErrorMessage } from '../utils/errors';
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
 export default function RegisterScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const handleRegister = async () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -35,6 +39,10 @@ export default function RegisterScreen() {
     }
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden.');
+      return;
+    }
+    if (!acceptedTerms) {
+      setError('Debes leer y aceptar los Términos y la información de privacidad.');
       return;
     }
     setError('');
@@ -90,6 +98,15 @@ export default function RegisterScreen() {
 
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
 
+            <View style={styles.termsRow}>
+              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: acceptedTerms }} onPress={() => setAcceptedTerms(!acceptedTerms)} style={styles.termsCheck}>
+                <Text style={styles.termsCheckText}>{acceptedTerms ? '✓' : ''}</Text>
+              </Pressable>
+              <Pressable accessibilityRole="link" onPress={() => navigation.navigate('Terms')} style={styles.termsLink}>
+                <Text style={styles.termsText}>He leído y acepto los Términos y la información de privacidad. Leer documento</Text>
+              </Pressable>
+            </View>
+
             <Button
               title="REGISTRARSE"
               onPress={handleRegister}
@@ -109,10 +126,10 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
   },
   keyboardView: {
     flex: 1,
@@ -125,12 +142,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 36,
     fontWeight: '900',
-    color: '#CCFF00',
+    color: theme.accent,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#A0A0A0',
+    color: theme.muted,
     marginBottom: 40,
     fontWeight: '700',
   },
@@ -138,5 +155,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
   },
-  error: { color: '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
+  error: { color: theme.mode === 'light' ? '#B42318' : '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
+  termsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, marginBottom: 8 },
+  termsCheck: { width: 26, height: 26, borderRadius: 5, borderWidth: 2, borderColor: theme.accent, alignItems: 'center', justifyContent: 'center' },
+  termsCheckText: { color: theme.accent, fontWeight: '900' },
+  termsLink: { flex: 1 },
+  termsText: { color: theme.text, fontSize: 12, lineHeight: 18, textDecorationLine: 'underline' },
 });

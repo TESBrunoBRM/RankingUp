@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { calculateFoodLog, calculateHydrationSummary, calculateNutritionSummary } from '../domain/nutrition.calculator';
 import { SupabaseRepository } from '../supabase/supabase.repository';
 import { FoodsService } from '../foods/foods.service';
@@ -37,7 +37,16 @@ export class NutritionService {
       throw new NotFoundException('Alimento no encontrado.');
     }
 
-    const calculated = calculateFoodLog(food, dto.amount, dto.unit);
+    if (dto.correction && food.source !== 'ai') {
+      throw new BadRequestException('Solo se pueden corregir registros de un analisis de IA propio.');
+    }
+    const corrected = dto.correction ? {
+      ...food,
+      food_name: dto.correction.foodName.trim(),
+      serving: { ...food.serving, calories: dto.correction.calories, protein: dto.correction.protein,
+        carbs: dto.correction.carbs, fat: dto.correction.fat },
+    } : food;
+    const calculated = calculateFoodLog(corrected, dto.amount, dto.unit);
     const log = await this.repository.insertFoodLog({
       user_id: userId,
       date: dto.date,

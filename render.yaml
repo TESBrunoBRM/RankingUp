@@ -21,3 +21,5 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
+      - key: USDA_FDC_API_KEY
+        sync: false

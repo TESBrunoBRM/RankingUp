@@ -43,7 +43,7 @@ export default function CameraScannerScreen() {
         { uri: photo.uri, width: photo.width, height: photo.height },
         'meal',
       );
-      navigation.navigate('SearchFood', { scannedFood: result.food });
+      navigation.navigate('SearchFood', { scannedFood: result.food, scannedAnalysis: result, photoUri: photo.uri });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Falló el análisis';
       Alert.alert('Error IA', message);

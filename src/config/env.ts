@@ -50,12 +50,16 @@ export const appEnv = {
   enableDemoFallbacks: normalizeEnv(process.env.EXPO_PUBLIC_ENABLE_DEMO_FALLBACKS) !== 'false',
   googleAuthEnabled: normalizeEnv(process.env.EXPO_PUBLIC_AUTH_GOOGLE_ENABLED) === 'true',
   facebookAuthEnabled: normalizeEnv(process.env.EXPO_PUBLIC_AUTH_FACEBOOK_ENABLED) === 'true',
+  legalEntityName: normalizeEnv(process.env.EXPO_PUBLIC_LEGAL_ENTITY_NAME),
+  legalContactEmail: normalizeEnv(process.env.EXPO_PUBLIC_LEGAL_CONTACT_EMAIL),
 };
 
 const missingKeys = [
   !appEnv.supabaseUrl ? 'EXPO_PUBLIC_SUPABASE_URL' : null,
   !appEnv.supabaseAnonKey ? 'EXPO_PUBLIC_SUPABASE_ANON_KEY' : null,
   !appEnv.apiProxyUrl ? 'EXPO_PUBLIC_RANKINGUP_API_URL' : null,
+  !__DEV__ && !appEnv.legalEntityName ? 'EXPO_PUBLIC_LEGAL_ENTITY_NAME' : null,
+  !__DEV__ && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(appEnv.legalContactEmail) ? 'EXPO_PUBLIC_LEGAL_CONTACT_EMAIL' : null,
 ].filter((key): key is string => key !== null);
 
 export const envStatus: EnvStatus = {

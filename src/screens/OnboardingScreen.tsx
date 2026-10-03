@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, KeyboardAvoidingView, Platform, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +10,8 @@ import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { AppStackParamList, GenderType, GoalType } from '../types';
 
 export default function OnboardingScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList, 'Onboarding'>>();
   
   const [weight, setWeight] = useState('');
@@ -114,17 +117,17 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   scrollContent: { padding: 24, paddingBottom: 40 },
-  title: { fontSize: 32, fontWeight: '900', color: '#CCFF00', marginBottom: 8, fontStyle: 'italic', letterSpacing: 1 },
-  subtitle: { fontSize: 14, color: '#A0A0A0', marginBottom: 32, lineHeight: 20 },
+  title: { fontSize: 32, fontWeight: '900', color: theme.accent, marginBottom: 8, fontStyle: 'italic', letterSpacing: 1 },
+  subtitle: { fontSize: 14, color: theme.muted, marginBottom: 32, lineHeight: 20 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   flex1: { flex: 1 },
-  sectionLabel: { fontSize: 12, color: '#FFFFFF', fontWeight: '800', marginTop: 24, marginBottom: 12, letterSpacing: 1 },
+  sectionLabel: { fontSize: 12, color: theme.text, fontWeight: '800', marginTop: 24, marginBottom: 12, letterSpacing: 1 },
   optionsRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  optionCard: { flex: 1, minWidth: '30%', backgroundColor: '#1A1A1A', paddingVertical: 12, paddingHorizontal: 4, borderRadius: 12, borderWidth: 1, borderColor: '#333', alignItems: 'center' },
-  optionCardSelected: { backgroundColor: '#CCFF00', borderColor: '#CCFF00' },
-  optionText: { color: '#A0A0A0', fontSize: 12, fontWeight: '800' },
+  optionCard: { flex: 1, minWidth: '30%', backgroundColor: theme.surface, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 12, borderWidth: 1, borderColor: theme.border, alignItems: 'center' },
+  optionCardSelected: { backgroundColor: theme.accentFill, borderColor: theme.accent },
+  optionText: { color: theme.muted, fontSize: 12, fontWeight: '800' },
   optionTextSelected: { color: '#121212' }
 });

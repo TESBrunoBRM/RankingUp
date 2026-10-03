@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { foodImageService, type FoodPhoto } from '../services/foodImageService';
@@ -15,7 +16,10 @@ type SourceMode = 'nutrition_label' | 'ai_estimate';
 const UNITS: NutritionUnit[] = ['g', 'ml', 'unidad', 'porcion'];
 
 export default function FoodSubmissionScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProp<AppStackParamList, 'FoodSubmission'>>();
   const [sourceMode, setSourceMode] = useState<SourceMode>('nutrition_label');
   const [photo, setPhoto] = useState<FoodPhoto | null>(null);
   const [analysis, setAnalysis] = useState<FoodImageAnalysisResponse | null>(null);
@@ -43,6 +47,17 @@ export default function FoodSubmissionScreen() {
     setCarbs(String(result.food.serving.carbs));
     setFat(String(result.food.serving.fat));
   };
+
+  useEffect(() => {
+    const initial = route.params?.initialAnalysis;
+    if (!initial) return;
+    setSourceMode('ai_estimate');
+    setAnalysis(initial);
+    setImagePath(initial.imagePath);
+    setPhoto(route.params?.photoUri ? { uri: route.params.photoUri } : null);
+    fillFromAnalysis(initial);
+    navigation.setParams({ initialAnalysis: undefined, photoUri: undefined });
+  }, [route.params?.initialAnalysis]);
 
   const handlePhoto = async (source: 'camera' | 'gallery') => {
     setProcessing(true);
@@ -76,7 +91,8 @@ export default function FoodSubmissionScreen() {
 
   const handleSubmit = async () => {
     const values = [servingAmount, calories, protein, carbs, fat].map(Number);
-    if (!imagePath || !foodName.trim() || values.some((value) => !Number.isFinite(value) || value < 0) || values[0] <= 0) {
+    if (!imagePath || !foodName.trim() || [servingAmount, calories, protein, carbs, fat].some((value) => !value.trim())
+      || values.some((value) => !Number.isFinite(value) || value < 0) || values[0] <= 0) {
       Alert.alert('Faltan datos', 'Agrega una foto y completa nombre, porcion y macronutrientes.');
       return;
     }
@@ -106,7 +122,7 @@ export default function FoodSubmissionScreen() {
   const numericField = (label: string, value: string, onChangeText: (value: string) => void) => (
     <View style={styles.numericField}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput style={styles.input} value={value} onChangeText={onChangeText} keyboardType="decimal-pad" placeholder="0" placeholderTextColor="#666" />
+      <TextInput style={styles.input} value={value} onChangeText={onChangeText} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={theme.muted} />
     </View>
   );
 
@@ -114,7 +130,7 @@ export default function FoodSubmissionScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity accessibilityLabel="Volver" style={styles.iconButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color="#FFF" />
+          <Ionicons name="arrow-back" size={22} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerCopy}>
           <Text style={styles.title}>APORTAR ALIMENTO</Text>
@@ -140,21 +156,21 @@ export default function FoodSubmissionScreen() {
             <Text style={styles.photoHelp}>{sourceMode === 'nutrition_label' ? 'La foto es obligatoria; puedes corregir los valores detectados.' : 'La IA estimara porcion, calorias y macronutrientes.'}</Text>
             <View style={styles.photoActions}>
               <TouchableOpacity style={styles.photoButton} onPress={() => void handlePhoto('camera')} disabled={processing}>
-                <Ionicons name="camera-outline" size={20} color="#FFF" />
+                <Ionicons name="camera-outline" size={20} color={theme.text} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.photoButton} onPress={() => void handlePhoto('gallery')} disabled={processing}>
-                <Ionicons name="images-outline" size={20} color="#FFF" />
+                <Ionicons name="images-outline" size={20} color={theme.text} />
               </TouchableOpacity>
             </View>
-            {processing ? <View style={styles.processing}><ActivityIndicator color="#CCFF00" /><Text style={styles.processingText}>SUBIENDO Y ANALIZANDO</Text></View> : null}
-            {analysis ? <Text style={styles.confidence}>Confianza estimada: {Math.round(analysis.confidence * 100)}%</Text> : null}
+            {processing ? <View style={styles.processing}><ActivityIndicator color={theme.accent} /><Text style={styles.processingText}>SUBIENDO Y ANALIZANDO</Text></View> : null}
+            {analysis ? <Text style={styles.confidence}>Detectado: {analysis.visibleFoods.join(', ')}. Confianza orientativa: {Math.round(analysis.confidence * 100)}%. Revisa todos los valores antes de aportar.</Text> : null}
           </View>
 
           <Text style={styles.label}>Nombre del alimento</Text>
-          <TextInput style={styles.input} value={foodName} onChangeText={setFoodName} placeholder="Ej: Yogur natural" placeholderTextColor="#666" />
+          <TextInput style={styles.input} value={foodName} onChangeText={setFoodName} placeholder="Ej: Yogur natural" placeholderTextColor={theme.muted} />
           <View style={styles.twoColumns}>
-            <View style={styles.column}><Text style={styles.label}>Marca</Text><TextInput style={styles.input} value={brandName} onChangeText={setBrandName} placeholder="Opcional" placeholderTextColor="#666" /></View>
-            <View style={styles.column}><Text style={styles.label}>Codigo de barras</Text><TextInput style={styles.input} value={barcode} onChangeText={setBarcode} keyboardType="number-pad" placeholder="Opcional" placeholderTextColor="#666" /></View>
+            <View style={styles.column}><Text style={styles.label}>Marca</Text><TextInput style={styles.input} value={brandName} onChangeText={setBrandName} placeholder="Opcional" placeholderTextColor={theme.muted} /></View>
+            <View style={styles.column}><Text style={styles.label}>Codigo de barras</Text><TextInput style={styles.input} value={barcode} onChangeText={setBarcode} keyboardType="number-pad" placeholder="Opcional" placeholderTextColor={theme.muted} /></View>
           </View>
 
           <View style={styles.twoColumns}>
@@ -171,7 +187,7 @@ export default function FoodSubmissionScreen() {
             {numericField('Grasa g', fat, setFat)}
           </View>
           <Text style={styles.label}>Notas para el administrador</Text>
-          <TextInput style={[styles.input, styles.notes]} value={notes} onChangeText={setNotes} multiline maxLength={1000} placeholder="Origen, sabor, tamaño u otra aclaracion" placeholderTextColor="#666" />
+          <TextInput style={[styles.input, styles.notes]} value={notes} onChangeText={setNotes} multiline maxLength={1000} placeholder="Origen, sabor, tamaño u otra aclaracion" placeholderTextColor={theme.muted} />
           <TouchableOpacity style={[styles.submitButton, (saving || processing) && styles.disabled]} onPress={() => void handleSubmit()} disabled={saving || processing}>
             {saving ? <ActivityIndicator color="#101114" /> : <><Ionicons name="send" size={18} color="#101114" /><Text style={styles.submitText}>ENVIAR A REVISION</Text></>}
           </TouchableOpacity>
@@ -181,22 +197,22 @@ export default function FoodSubmissionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 }, container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  flex: { flex: 1 }, container: { flex: 1, backgroundColor: theme.background },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#24262A' },
-  iconButton: { width: 42, height: 42, borderRadius: 8, borderWidth: 1, borderColor: '#333', alignItems: 'center', justifyContent: 'center' },
-  headerCopy: { marginLeft: 14 }, title: { color: '#FFF', fontSize: 16, fontWeight: '900' }, subtitle: { color: '#777', fontSize: 9, fontWeight: '800', marginTop: 2 },
+  iconButton: { width: 42, height: 42, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' },
+  headerCopy: { marginLeft: 14 }, title: { color: theme.text, fontSize: 16, fontWeight: '900' }, subtitle: { color: theme.muted, fontSize: 9, fontWeight: '800', marginTop: 2 },
   content: { padding: 20, paddingBottom: 48, gap: 12 },
-  segmented: { flexDirection: 'row', backgroundColor: '#1A1A1A', padding: 4, borderRadius: 8, borderWidth: 1, borderColor: '#333' },
+  segmented: { flexDirection: 'row', backgroundColor: theme.surface, padding: 4, borderRadius: 8, borderWidth: 1, borderColor: theme.border },
   segment: { flex: 1, minHeight: 44, borderRadius: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  segmentActive: { backgroundColor: '#CCFF00' }, segmentText: { color: '#AAA', fontSize: 12, fontWeight: '800' }, segmentTextActive: { color: '#101114' },
-  photoPanel: { alignItems: 'center', backgroundColor: '#1A1A1A', borderRadius: 8, borderWidth: 1, borderColor: '#333', padding: 16, marginTop: 4 },
-  photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 6, marginBottom: 14 }, photoTitle: { color: '#FFF', fontSize: 12, fontWeight: '900', marginTop: 10 },
-  photoHelp: { color: '#888', fontSize: 11, textAlign: 'center', lineHeight: 16, marginTop: 5 }, photoActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  photoButton: { width: 48, height: 42, borderRadius: 8, borderWidth: 1, borderColor: '#444', alignItems: 'center', justifyContent: 'center' },
-  processing: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }, processingText: { color: '#CCFF00', fontSize: 10, fontWeight: '900' }, confidence: { color: '#57C7FF', fontSize: 11, fontWeight: '800', marginTop: 10 },
-  label: { color: '#A0A0A0', fontSize: 10, fontWeight: '900', marginTop: 6 }, input: { minHeight: 46, borderRadius: 8, borderWidth: 1, borderColor: '#333', backgroundColor: '#1A1A1A', color: '#FFF', paddingHorizontal: 13 },
+  segmentActive: { backgroundColor: theme.accentFill }, segmentText: { color: theme.muted, fontSize: 12, fontWeight: '800' }, segmentTextActive: { color: '#101114' },
+  photoPanel: { alignItems: 'center', backgroundColor: theme.surface, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 16, marginTop: 4 },
+  photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 6, marginBottom: 14 }, photoTitle: { color: theme.text, fontSize: 12, fontWeight: '900', marginTop: 10 },
+  photoHelp: { color: theme.muted, fontSize: 11, textAlign: 'center', lineHeight: 16, marginTop: 5 }, photoActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  photoButton: { width: 48, height: 42, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' },
+  processing: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 }, processingText: { color: theme.accent, fontSize: 10, fontWeight: '900' }, confidence: { color: theme.mode === 'light' ? '#07557B' : '#57C7FF', fontSize: 11, fontWeight: '800', marginTop: 10 },
+  label: { color: theme.muted, fontSize: 10, fontWeight: '900', marginTop: 6 }, input: { minHeight: 46, borderRadius: 8, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, color: theme.text, paddingHorizontal: 13 },
   twoColumns: { flexDirection: 'row', gap: 10 }, column: { flex: 1 }, macroFields: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, numericField: { flexGrow: 1, flexBasis: 130 },
-  unitRow: { flexDirection: 'row', gap: 4, minHeight: 46, alignItems: 'center' }, unit: { flex: 1, height: 36, borderRadius: 6, borderWidth: 1, borderColor: '#333', alignItems: 'center', justifyContent: 'center' }, unitActive: { backgroundColor: '#333', borderColor: '#CCFF00' }, unitText: { color: '#777', fontSize: 9, fontWeight: '800' }, unitTextActive: { color: '#FFF' },
-  notes: { minHeight: 92, paddingTop: 12, textAlignVertical: 'top' }, submitButton: { minHeight: 52, borderRadius: 8, backgroundColor: '#CCFF00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 10 }, submitText: { color: '#101114', fontSize: 12, fontWeight: '900' }, disabled: { opacity: 0.45 },
+  unitRow: { flexDirection: 'row', gap: 4, minHeight: 46, alignItems: 'center' }, unit: { flex: 1, height: 36, borderRadius: 6, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' }, unitActive: { backgroundColor: theme.surface, borderColor: theme.accent }, unitText: { color: theme.muted, fontSize: 9, fontWeight: '800' }, unitTextActive: { color: theme.text },
+  notes: { minHeight: 92, paddingTop: 12, textAlignVertical: 'top' }, submitButton: { minHeight: 52, borderRadius: 8, backgroundColor: theme.accentFill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 10 }, submitText: { color: '#101114', fontSize: 12, fontWeight: '900' }, disabled: { opacity: 0.45 },
 });

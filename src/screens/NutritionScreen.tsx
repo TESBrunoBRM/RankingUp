@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +12,8 @@ import { getLocalDateString } from '../utils/date';
 import { getErrorMessage } from '../utils/errors';
 
 export default function NutritionScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const { user } = useAuthStore();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList, 'MainTabs'>>();
   const [loading, setLoading] = useState(true);
@@ -125,7 +128,7 @@ export default function NutritionScreen() {
 
         {loading && !summary ? (
           <View style={styles.loadingPanel}>
-            <ActivityIndicator color="#CCFF00" />
+            <ActivityIndicator color={theme.accent} />
             <Text style={styles.loadingText}>CARGANDO RESUMEN</Text>
           </View>
         ) : null}
@@ -202,7 +205,7 @@ export default function NutritionScreen() {
                 onPress={() => void handleRemoveWater()}
                 disabled={!summary.water.logs.length || waterSaving}
               >
-                <Ionicons name="remove" size={22} color="#FFF" />
+                <Ionicons name="remove" size={22} color={theme.text} />
               </TouchableOpacity>
               <Text style={styles.waterGlassesCount}>{summary.water.glasses} vasos</Text>
               <TouchableOpacity
@@ -225,7 +228,7 @@ export default function NutritionScreen() {
         </View>
 
         {loading && summary ? (
-          <ActivityIndicator color="#CCFF00" style={{ marginTop: 40 }} />
+          <ActivityIndicator color={theme.accent} style={{ marginTop: 40 }} />
         ) : errorMessage && !summary ? (
           <View style={styles.emptyCard}>
             <Ionicons name="warning-outline" size={44} color="#FFB020" />
@@ -261,62 +264,62 @@ export default function NutritionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   header: { padding: 24, paddingBottom: 10 },
-  mainTitle: { fontSize: 32, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 },
-  subtitle: { fontSize: 10, color: '#A0A0A0', letterSpacing: 2, fontWeight: '700' },
+  mainTitle: { fontSize: 32, fontWeight: '900', color: theme.text, letterSpacing: 1 },
+  subtitle: { fontSize: 10, color: theme.muted, letterSpacing: 2, fontWeight: '700' },
   scrollContent: { padding: 24, paddingBottom: 60 },
   
-  errorNotice: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#211D14', borderRadius: 8, padding: 14, borderWidth: 1, borderColor: '#594719', marginBottom: 16 },
+  errorNotice: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: theme.warningSurface, borderRadius: 8, padding: 14, borderWidth: 1, borderColor: '#594719', marginBottom: 16 },
   errorContent: { flex: 1 },
   errorTitle: { color: '#FFB020', fontSize: 11, fontWeight: '900' },
   errorText: { color: '#D6D6D6', fontSize: 12, lineHeight: 17, marginTop: 3 },
-  retryButton: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CCFF00' },
-  loadingPanel: { minHeight: 150, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#1A1A1A', borderRadius: 8, borderWidth: 1, borderColor: '#333', marginBottom: 24 },
-  loadingText: { color: '#A0A0A0', fontSize: 11, fontWeight: '800' },
+  retryButton: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentFill },
+  loadingPanel: { minHeight: 150, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: theme.surface, borderRadius: 8, borderWidth: 1, borderColor: theme.border, marginBottom: 24 },
+  loadingText: { color: theme.muted, fontSize: 11, fontWeight: '800' },
 
-  summaryCard: { backgroundColor: '#1A1A1A', borderRadius: 8, padding: 20, borderWidth: 1, borderColor: '#333', marginBottom: 32 },
-  caloriesRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottomWidth: 1, borderBottomColor: '#2A2A2A', paddingBottom: 20 },
+  summaryCard: { backgroundColor: theme.surface, borderRadius: 8, padding: 20, borderWidth: 1, borderColor: theme.border, marginBottom: 32 },
+  caloriesRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottomWidth: 1, borderBottomColor: theme.border, paddingBottom: 20 },
   calCol: { alignItems: 'center' },
-  calValue: { fontSize: 28, fontWeight: '900', color: '#FFF' },
-  calLabel: { fontSize: 10, color: '#A0A0A0', fontWeight: '800', letterSpacing: 1, marginTop: 4 },
-  calOperator: { fontSize: 24, color: '#666', fontWeight: '400' },
+  calValue: { fontSize: 28, fontWeight: '900', color: theme.text },
+  calLabel: { fontSize: 10, color: theme.muted, fontWeight: '800', letterSpacing: 1, marginTop: 4 },
+  calOperator: { fontSize: 24, color: theme.muted, fontWeight: '400' },
   
   macrosRow: { flexDirection: 'row', justifyContent: 'space-around' },
   macroItem: { alignItems: 'center' },
   macroValue: { fontSize: 16, fontWeight: '800', color: '#E0E0E0' },
-  macroLabel: { fontSize: 10, color: '#888', fontWeight: '800', letterSpacing: 1, marginTop: 4 },
+  macroLabel: { fontSize: 10, color: theme.muted, fontWeight: '800', letterSpacing: 1, marginTop: 4 },
 
-  waterCard: { backgroundColor: '#1A1A1A', borderRadius: 8, padding: 18, borderWidth: 1, borderColor: '#2E4A58', marginTop: -16, marginBottom: 32 },
+  waterCard: { backgroundColor: theme.surface, borderRadius: 8, padding: 18, borderWidth: 1, borderColor: '#2E4A58', marginTop: -16, marginBottom: 32 },
   waterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   waterTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   waterIconWrap: { width: 38, height: 38, borderRadius: 8, backgroundColor: '#172A33', alignItems: 'center', justifyContent: 'center' },
-  waterTitle: { color: '#FFF', fontSize: 14, fontWeight: '900' },
+  waterTitle: { color: theme.text, fontSize: 14, fontWeight: '900' },
   waterSubtitle: { color: '#77858D', fontSize: 9, fontWeight: '800', marginTop: 2 },
   waterValue: { color: '#57C7FF', fontSize: 17, fontWeight: '900' },
   waterProgressTrack: { height: 8, borderRadius: 4, backgroundColor: '#293038', overflow: 'hidden', marginTop: 18 },
   waterProgressFill: { height: '100%', borderRadius: 4, backgroundColor: '#57C7FF' },
   waterGlasses: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 },
   waterActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 18 },
-  waterActionButton: { width: 42, height: 42, borderRadius: 8, borderWidth: 1, borderColor: '#444', alignItems: 'center', justifyContent: 'center' },
+  waterActionButton: { width: 42, height: 42, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' },
   waterAddButton: { backgroundColor: '#57C7FF', borderColor: '#57C7FF' },
   waterActionDisabled: { opacity: 0.4 },
   waterGlassesCount: { color: '#DCE7EC', fontSize: 13, fontWeight: '800', minWidth: 70, textAlign: 'center' },
   
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 },
-  addBtnSmall: { backgroundColor: '#CCFF00', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  sectionTitle: { fontSize: 16, fontWeight: '900', color: theme.text, letterSpacing: 1 },
+  addBtnSmall: { backgroundColor: theme.accentFill, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   
-  logCard: { backgroundColor: '#1A1A1A', padding: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#2A2A2A' },
+  logCard: { backgroundColor: theme.surface, padding: 16, borderRadius: 8, flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: theme.border },
   logContent: { flex: 1 },
-  logName: { color: '#FFF', fontSize: 16, fontWeight: '800', marginBottom: 4 },
-  logMacros: { color: '#A0A0A0', fontSize: 12, fontWeight: '600' },
+  logName: { color: theme.text, fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  logMacros: { color: theme.muted, fontSize: 12, fontWeight: '600' },
   deleteBtn: { padding: 8 },
   
-  emptyCard: { alignItems: 'center', padding: 40, backgroundColor: '#1A1A1A', borderRadius: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: '#333', marginTop: 12 },
-  emptyTitle: { color: '#FFF', fontSize: 16, fontWeight: '900', marginTop: 16, marginBottom: 8, letterSpacing: 1 },
-  emptyText: { color: '#888', textAlign: 'center', fontSize: 12, marginBottom: 24, lineHeight: 18 },
-  addBtn: { backgroundColor: '#2A2A2A', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
-  addBtnText: { color: '#CCFF00', fontWeight: '900', fontSize: 12, letterSpacing: 1 }
+  emptyCard: { alignItems: 'center', padding: 40, backgroundColor: theme.surface, borderRadius: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: theme.border, marginTop: 12 },
+  emptyTitle: { color: theme.text, fontSize: 16, fontWeight: '900', marginTop: 16, marginBottom: 8, letterSpacing: 1 },
+  emptyText: { color: theme.muted, textAlign: 'center', fontSize: 12, marginBottom: 24, lineHeight: 18 },
+  addBtn: { backgroundColor: theme.surface, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
+  addBtnText: { color: theme.accent, fontWeight: '900', fontSize: 12, letterSpacing: 1 }
 });

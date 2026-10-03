@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -31,6 +32,8 @@ const PROGRESS_BROADCAST_THROTTLE_MS = 250;
 type ConnectionStatus = 'connecting' | 'connected' | 'error';
 
 export default function DuelScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const route = useRoute<DuelRouteProp>();
   const navigation = useNavigation<Navigation>();
   const { duelId } = route.params;
@@ -214,7 +217,7 @@ export default function DuelScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#CCFF00" />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       </SafeAreaView>
     );
@@ -256,7 +259,7 @@ export default function DuelScreen() {
 
       {isWaitingAccept && (
         <View style={styles.center}>
-          <ActivityIndicator color="#CCFF00" size="large" />
+          <ActivityIndicator color={theme.accent} size="large" />
           <Text style={styles.stateTitle}>ESPERANDO A {duel.rival.name.toUpperCase()}</Text>
           <Text style={styles.stateSubtitle}>
             El reto caduca automáticamente si no responde a tiempo.
@@ -307,7 +310,7 @@ export default function DuelScreen() {
         <>
           {duel.iFinished || reportedRef.current ? (
             <View style={styles.center}>
-              {reporting ? <ActivityIndicator color="#CCFF00" size="large" /> : null}
+              {reporting ? <ActivityIndicator color={theme.accent} size="large" /> : null}
               <Text style={styles.stateTitle}>RESULTADO ENVIADO</Text>
               <Text style={styles.stateSubtitle}>
                 {rivalFinished
@@ -394,8 +397,8 @@ export default function DuelScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -404,7 +407,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   backButton: { paddingVertical: 8 },
-  backButtonText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
+  backButtonText: { color: theme.muted, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
   forfeitText: { color: '#FF007F', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
   scoreboard: {
     flexDirection: 'row',
@@ -412,14 +415,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginVertical: 12,
     padding: 16,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   scoreSide: { flex: 1, alignItems: 'center' },
   scoreLabel: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
@@ -427,8 +430,8 @@ const styles = StyleSheet.create({
   },
   scoreValue: { fontSize: 40, fontWeight: '900' },
   scoreMiddle: { paddingHorizontal: 12, alignItems: 'center' },
-  targetLabel: { color: '#666', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  targetValue: { color: '#FFFFFF', fontSize: 20, fontWeight: '900' },
+  targetLabel: { color: theme.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  targetValue: { color: theme.text, fontSize: 20, fontWeight: '900' },
   cameraFrame: {
     flex: 1,
     marginHorizontal: 20,
@@ -436,7 +439,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#000',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   camera: { flex: 1 },
   detectorStatus: {
@@ -453,10 +456,10 @@ const styles = StyleSheet.create({
   footer: { paddingHorizontal: 20, paddingVertical: 16 },
   connectionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   connectionDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  connectionText: { color: '#666', fontSize: 10, fontWeight: '800', letterSpacing: 1, flex: 1 },
+  connectionText: { color: theme.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1, flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
   stateTitle: {
-    color: '#FFFFFF',
+    color: theme.text,
     fontSize: 16,
     fontWeight: '900',
     letterSpacing: 1,
@@ -464,26 +467,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   stateSubtitle: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 13,
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 18,
   },
   resultTitle: {
-    color: '#FFFFFF',
+    color: theme.text,
     fontSize: 30,
     fontWeight: '900',
     letterSpacing: 2,
     marginTop: 16,
   },
-  xpText: { color: '#CCFF00', fontSize: 14, fontWeight: '800', marginTop: 12, textAlign: 'center' },
+  xpText: { color: theme.accent, fontSize: 14, fontWeight: '800', marginTop: 12, textAlign: 'center' },
   primaryButton: {
     marginTop: 28,
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 12,
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
   },
   primaryButtonText: { color: '#121212', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
   secondaryButton: {

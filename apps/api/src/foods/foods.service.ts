@@ -6,6 +6,7 @@ import { SupabaseRepository } from '../supabase/supabase.repository';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { AnalyzeFoodImageDto, CreateFoodSubmissionDto, FoodImageUploadDto, ReviewFoodSubmissionDto } from './dto/foods.dto';
 import { FoodVisionService } from './food-vision.service';
+import { FoodDataCentralService } from './food-data-central.service';
 
 const mimeFromPath = (path: string): string => path.endsWith('.png')
   ? 'image/png'
@@ -42,19 +43,22 @@ export class FoodsService {
     private readonly repository: SupabaseRepository,
     private readonly supabase: SupabaseService,
     private readonly vision: FoodVisionService,
+    private readonly foodDataCentral: FoodDataCentralService,
   ) {}
 
   async search(query: string): Promise<FoodSearchResult[]> {
-    const [local, community] = await Promise.all([
+    const [local, community, external] = await Promise.all([
       Promise.resolve(searchFoods(query)),
       this.repository.searchApprovedFoodSubmissions(query),
+      this.foodDataCentral.search(query),
     ]);
-    return [...community.map(submissionToFood), ...local];
+    return [...community.map(submissionToFood), ...local, ...external];
   }
 
   async getFood(foodId: string, userId?: string): Promise<FoodSearchResult | null> {
     const local = getFoodById(foodId);
     if (local) return local;
+    if (foodId.startsWith('fdc-')) return this.foodDataCentral.getFood(foodId);
     if (foodId.startsWith('community-')) {
       const row = await this.repository.getApprovedFoodSubmission(foodId.slice('community-'.length));
       return row ? submissionToFood(row) : null;
@@ -94,6 +98,7 @@ export class FoodsService {
       imagePath: row.image_path,
       confidence: Number(row.confidence),
       notes: row.notes,
+      visibleFoods: analyzed.visibleFoods,
       disclaimer: 'Estimacion orientativa. Revisa la porcion y la etiqueta antes de guardar.',
       food: analysisToFood(row),
     };

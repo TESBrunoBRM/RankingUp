@@ -28,6 +28,12 @@ describe('nutrition calculator', () => {
     expect(() => calculateFoodLog(apple!, 0, 'g')).toThrow('mayor a 0');
   });
 
+  it('converts ounces using the actual base serving amount', () => {
+    const food = getFoodById('curated-fdc-172421');
+    expect(calculateFoodLog(food!, 3.5274, 'oz').calories).toBeCloseTo(116, 0);
+    expect(() => calculateFoodLog(food!, 1, 'ml')).toThrow('unidad');
+  });
+
   it('summarizes targets and remaining calories', () => {
     const summary = calculateNutritionSummary(
       [{ id: '1', user_id: 'u1', date: '2026-06-04', meal_type: 'snack', food_name: 'Manzana', fatsecret_food_id: 'demo-apple', calories: 104, protein: 0.6, carbs: 28, fat: 0.4, servings: 2 }],

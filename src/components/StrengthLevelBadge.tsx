@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { StrengthLevelName } from '../types';
@@ -25,6 +26,8 @@ interface StrengthLevelBadgeProps {
 }
 
 export function StrengthLevelBadge({ level }: StrengthLevelBadgeProps) {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const color = LEVEL_COLORS[level];
   return (
     <View style={[styles.badge, { borderColor: color, backgroundColor: `${color}18` }]}>
@@ -33,7 +36,7 @@ export function StrengthLevelBadge({ level }: StrengthLevelBadgeProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
     borderRadius: 6,

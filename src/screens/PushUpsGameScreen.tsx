@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -35,6 +36,8 @@ const estimateXp = (reps: number): number => reps < MINIGAME_MIN_REWARDED_REPS
   : Math.floor(reps * MINIGAME_XP_PER_REP) + (reps >= PUSH_UP_VICTORY_TARGET ? MINIGAME_COMPLETION_BONUS : 0);
 
 export default function PushUpsGameScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -181,7 +184,7 @@ export default function PushUpsGameScreen() {
   if (!permission) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#CCFF00" />
+        <ActivityIndicator size="large" color={theme.accent} />
         <Text style={styles.loadingText}>Cargando cámara...</Text>
       </View>
     );
@@ -235,17 +238,17 @@ export default function PushUpsGameScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color="#FFF" />
+          <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PUSH UPS VS MONSTERS</Text>
         <View style={styles.repCounter}>
-          <Ionicons name="fitness" size={16} color="#CCFF00" />
+          <Ionicons name="fitness" size={16} color={theme.accent} />
           <Text style={styles.repCountText}>{playerReps}/{PUSH_UP_VICTORY_TARGET}</Text>
         </View>
       </View>
       {!isVictory ? (
         <View style={styles.projectedReward}>
-          <Ionicons name="sparkles-outline" size={14} color="#CCFF00" />
+          <Ionicons name="sparkles-outline" size={14} color={theme.accent} />
           <Text style={styles.projectedRewardText}>+{estimateXp(playerReps)} XP estimados</Text>
         </View>
       ) : null}
@@ -385,7 +388,7 @@ export default function PushUpsGameScreen() {
         /* Victory Screen */
         <View style={styles.victoryContainer}>
           <View style={styles.victoryIcon}>
-            <Ionicons name="trophy" size={54} color="#CCFF00" />
+            <Ionicons name="trophy" size={54} color={theme.accent} />
           </View>
           <Text style={styles.victoryTitle}>{outcome === 'retired' ? 'TE RETIRASTE' : '¡VICTORIA TOTAL!'}</Text>
           <Text style={styles.victorySubtitle}>
@@ -398,13 +401,13 @@ export default function PushUpsGameScreen() {
             <Text style={styles.rewardCardTitle}>RECOMPENSA DE ENTRENAMIENTO</Text>
             
             {gainingXp ? (
-              <ActivityIndicator size="small" color="#CCFF00" style={{ marginVertical: 10 }} />
+              <ActivityIndicator size="small" color={theme.accent} style={{ marginVertical: 10 }} />
             ) : errorMessage ? (
               <Text style={styles.errorText}>Error al guardar: {errorMessage}</Text>
             ) : (
               <View style={styles.rewardBox}>
                 <View style={styles.rewardRowValue}>
-                  <Ionicons name="sparkles" size={24} color="#CCFF00" />
+                  <Ionicons name="sparkles" size={24} color={theme.accent} />
                   <Text style={styles.rewardValue}>+{earnedXp ?? 0} XP</Text>
                 </View>
                 {totalXp !== null ? (
@@ -465,25 +468,25 @@ export default function PushUpsGameScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F14',
+    backgroundColor: theme.surface,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0F0F14',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: '#888',
+    color: theme.muted,
     marginTop: 10,
     fontWeight: '600',
   },
   permissionContainer: {
     flex: 1,
-    backgroundColor: '#0F0F14',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -491,19 +494,19 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 20,
     fontWeight: '900',
-    color: '#FFF',
+    color: theme.text,
     marginTop: 20,
     letterSpacing: 0.5,
   },
   permissionDesc: {
     fontSize: 14,
-    color: '#888',
+    color: theme.muted,
     textAlign: 'center',
     lineHeight: 20,
     marginVertical: 20,
   },
   permissionBtn: {
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 16,
@@ -521,7 +524,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   backLinkText: {
-    color: '#888',
+    color: theme.muted,
     fontWeight: '600',
     fontSize: 14,
   },
@@ -539,14 +542,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#1C1C24',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 13,
     fontWeight: '900',
-    color: '#FFF',
+    color: theme.text,
     letterSpacing: 1.5,
   },
   repCounter: {
@@ -554,7 +557,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(204,255,0,0.1)',
     borderWidth: 1,
-    borderColor: '#CCFF00',
+    borderColor: theme.accent,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
@@ -562,17 +565,17 @@ const styles = StyleSheet.create({
   repCountText: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#CCFF00',
+    color: theme.accent,
     marginLeft: 4,
   },
-  projectedReward: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingHorizontal: 16, paddingVertical: 5, backgroundColor: '#111118' },
-  projectedRewardText: { color: '#CCFF00', fontSize: 11, fontWeight: '800' },
-  campaignProgress: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#111118', borderBottomWidth: 1, borderBottomColor: '#242432' },
+  projectedReward: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 5, paddingHorizontal: 16, paddingVertical: 5, backgroundColor: theme.surface },
+  projectedRewardText: { color: theme.accent, fontSize: 11, fontWeight: '800' },
+  campaignProgress: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: theme.surface, borderBottomWidth: 1, borderBottomColor: theme.border },
   campaignProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  campaignProgressLabel: { color: '#8E8E9F', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  campaignProgressValue: { color: '#CCFF00', fontSize: 9, fontWeight: '900' },
+  campaignProgressLabel: { color: theme.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  campaignProgressValue: { color: theme.accent, fontSize: 9, fontWeight: '900' },
   campaignTrack: { height: 5, backgroundColor: '#252532', borderRadius: 3, overflow: 'hidden' },
-  campaignFill: { height: '100%', backgroundColor: '#CCFF00', borderRadius: 3 },
+  campaignFill: { height: '100%', backgroundColor: theme.accentFill, borderRadius: 3 },
   playArea: {
     flex: 1,
     alignItems: 'center',
@@ -584,7 +587,7 @@ const styles = StyleSheet.create({
     height: height * 0.45,
     backgroundColor: '#000',
     borderBottomWidth: 2,
-    borderColor: '#CCFF00',
+    borderColor: theme.accent,
     position: 'relative',
   },
   camera: {
@@ -607,15 +610,15 @@ const styles = StyleSheet.create({
   },
   monsterCard: {
     width: width - 40,
-    backgroundColor: '#15151F',
+    backgroundColor: theme.surface,
     borderRadius: 24,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#232333',
+    borderColor: theme.border,
     marginTop: 10,
   },
   levelIndicator: {
-    backgroundColor: '#20202F',
+    backgroundColor: theme.surface,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 8,
@@ -625,7 +628,7 @@ const styles = StyleSheet.create({
   levelText: {
     fontSize: 9,
     fontWeight: '900',
-    color: '#A0A0B3',
+    color: theme.muted,
     letterSpacing: 1,
   },
   monsterProfile: {
@@ -638,7 +641,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     borderWidth: 2,
-    backgroundColor: '#101018',
+    backgroundColor: theme.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
@@ -649,11 +652,11 @@ const styles = StyleSheet.create({
   monsterName: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#FFF',
+    color: theme.text,
   },
   monsterHpVal: {
     fontSize: 12,
-    color: '#8E8E9F',
+    color: theme.muted,
     fontWeight: '700',
     marginTop: 2,
   },
@@ -662,7 +665,7 @@ const styles = StyleSheet.create({
   },
   hpProgressBg: {
     height: 8,
-    backgroundColor: '#0F0F14',
+    backgroundColor: theme.surface,
     borderRadius: 4,
     overflow: 'hidden',
   },
@@ -703,7 +706,7 @@ const styles = StyleSheet.create({
   retireButtonText: { color: '#FF8FA6', fontSize: 12, fontWeight: '900' },
   instructionText: {
     fontSize: 11,
-    color: '#6E6E80',
+    color: theme.muted,
     textAlign: 'center',
     lineHeight: 16,
     fontWeight: '500',
@@ -720,7 +723,7 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 44,
     borderWidth: 2,
-    borderColor: '#CCFF00',
+    borderColor: theme.accent,
     backgroundColor: 'rgba(204,255,0,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -729,13 +732,13 @@ const styles = StyleSheet.create({
   victoryTitle: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#CCFF00',
+    color: theme.accent,
     marginBottom: 12,
     letterSpacing: 0.5,
   },
   victorySubtitle: {
     fontSize: 14,
-    color: '#8E8E9F',
+    color: theme.muted,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 30,
@@ -743,18 +746,18 @@ const styles = StyleSheet.create({
   },
   rewardCard: {
     width: '100%',
-    backgroundColor: '#15151F',
+    backgroundColor: theme.surface,
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#232333',
+    borderColor: theme.border,
     alignItems: 'center',
     marginBottom: 30,
   },
   rewardCardTitle: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#6E6E80',
+    color: theme.muted,
     letterSpacing: 1.5,
     marginBottom: 12,
   },
@@ -768,12 +771,12 @@ const styles = StyleSheet.create({
   rewardValue: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#CCFF00',
+    color: theme.accent,
     marginLeft: 8,
   },
   totalXpText: {
     fontSize: 11,
-    color: '#8E8E9F',
+    color: theme.muted,
     marginTop: 6,
     fontWeight: '600',
   },
@@ -783,7 +786,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   finishBtn: {
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
     width: '100%',
     paddingVertical: 16,
     borderRadius: 16,
@@ -805,7 +808,7 @@ const styles = StyleSheet.create({
     top: height / 2 - 120,
     left: 40,
     right: 40,
-    backgroundColor: '#1E1E30',
+    backgroundColor: theme.surface,
     borderWidth: 2,
     borderColor: '#FF2D55',
     borderRadius: 24,
@@ -830,23 +833,23 @@ const styles = StyleSheet.create({
   levelUpTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#FFF',
+    color: theme.text,
     marginBottom: 6,
     textAlign: 'center',
   },
   levelUpSubtitle: {
     fontSize: 12,
-    color: '#8E8E9F',
+    color: theme.muted,
     textAlign: 'center',
   },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  confirmCard: { width: '100%', maxWidth: 400, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#353940', borderRadius: 8, padding: 20 },
-  confirmTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginBottom: 10 },
-  confirmText: { color: '#D4D8DE', fontSize: 14, lineHeight: 20 },
-  confirmReward: { color: '#CCFF00', fontSize: 13, lineHeight: 19, marginTop: 12 },
+  confirmCard: { width: '100%', maxWidth: 400, backgroundColor: theme.surface, borderWidth: 1, borderColor: '#353940', borderRadius: 8, padding: 20 },
+  confirmTitle: { color: theme.text, fontSize: 20, fontWeight: '900', marginBottom: 10 },
+  confirmText: { color: theme.text, fontSize: 14, lineHeight: 20 },
+  confirmReward: { color: theme.accent, fontSize: 13, lineHeight: 19, marginTop: 12 },
   confirmActions: { flexDirection: 'row', gap: 10, marginTop: 22 },
   keepGoingButton: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: '#606871' },
-  keepGoingText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  keepGoingText: { color: theme.text, fontSize: 12, fontWeight: '900' },
   confirmRetireButton: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#FF496C' },
   confirmRetireText: { color: '#101114', fontSize: 12, fontWeight: '900' },
 });

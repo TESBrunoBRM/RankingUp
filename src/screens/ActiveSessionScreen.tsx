@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,6 +28,8 @@ const makeRows = (exercise: SessionPreview['exercises'][number]): SetRow[] =>
   }));
 
 export default function ActiveSessionScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   useKeepAwake();
   const route = useRoute<RouteProp<AppStackParamList, 'LogWorkout'>>();
   const navigation = useNavigation<Nav>();
@@ -151,11 +154,11 @@ export default function ActiveSessionScreen() {
   };
   return <SafeAreaView style={styles.page} edges={['top', 'bottom']}>
     <View style={styles.header}>
-      <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Minimizar entrenamiento"><Ionicons name="chevron-down" size={26} color="#FFF" /></Pressable>
+      <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Minimizar entrenamiento"><Ionicons name="chevron-down" size={26} color={theme.text} /></Pressable>
       <SessionTimer startedAt={startedAt} />
       <Pressable onPress={() => void save()} disabled={saving} style={styles.finish}><Text style={styles.finishText}>{saving ? 'GUARDANDO' : 'TERMINAR'}</Text></Pressable>
     </View>
-    {!ready ? <ActivityIndicator style={{ flex: 1 }} color="#CCFF00" /> : <>
+    {!ready ? <ActivityIndicator style={{ flex: 1 }} color={theme.accent} /> : <>
       <View style={styles.carousel}>{exercises.map((exercise, index) => <Pressable key={exercise.id} onPress={() => { setActiveIndex(index); setActiveCell(null); }} style={[styles.avatar, index === activeIndex && styles.avatarActive]}>
         <Ionicons name={exercise.rows.every((row) => row.completed) ? 'checkmark' : 'barbell'} size={19} color={exercise.rows.every((row) => row.completed) ? '#101114' : '#CCFF00'} />
       </Pressable>)}</View>
@@ -167,19 +170,19 @@ export default function ActiveSessionScreen() {
           {active.lastPerformance ? <Text style={styles.previous}>ULTIMA VEZ  {active.lastPerformance.sets.map((set) => `${set.weight} KG x ${set.reps}`).join('  ·  ')}</Text> : <Text style={styles.previous}>PRIMER REGISTRO</Text>}
           {active.suggestion ? <Text style={styles.suggestion}>↑ SUGERENCIA: {active.suggestion.weight} KG × {active.suggestion.reps} · {active.suggestion.reason}</Text> : null}
           <Pressable onPress={() => setRestEditorOpen(true)} style={styles.restEdit} accessibilityLabel="Editar tiempo de descanso">
-            <Ionicons name="timer-outline" size={17} color="#CCFF00" />
+            <Ionicons name="timer-outline" size={17} color={theme.accent} />
             <Text style={styles.addText}>Descanso: {active.rest_seconds ?? 90} s</Text>
             <Ionicons name="chevron-forward" size={15} color="#A8ABB0" />
           </Pressable>
           <View style={styles.tableHeader}><Text style={styles.colSmall}>SERIE</Text><Text style={styles.col}>KG</Text><Text style={styles.col}>REPES</Text><Text style={styles.colSmall}>OK</Text></View>
           {active.rows.map((row, index) => <View key={row.id} style={[styles.row, row.completed && styles.rowDone]}>
             <Pressable style={styles.colSmall} onPress={() => setTypeTarget({ exerciseId: active.id, rowId: row.id })}><Text style={[styles.setLabel, row.kind === 'warmup' && { color: '#FF9F0A' }]}>{row.kind === 'warmup' ? 'W' : index + 1}</Text></Pressable>
-            <TextInput style={[styles.input, activeCell?.rowId === row.id && activeCell.field === 'weight' && styles.inputActive]} showSoftInputOnFocus={false} keyboardType="decimal-pad" value={row.weight} placeholder={String(active.lastPerformance?.sets[index]?.weight ?? '')} placeholderTextColor="#777" onFocus={() => setActiveCell({ exerciseId: active.id, rowId: row.id, field: 'weight' })} onChangeText={(weight) => updateRow(active.id, row.id, { weight })} />
-            <TextInput style={[styles.input, activeCell?.rowId === row.id && activeCell.field === 'reps' && styles.inputActive]} showSoftInputOnFocus={false} keyboardType="number-pad" value={row.reps} placeholder={String(active.lastPerformance?.sets[index]?.reps ?? active.reps)} placeholderTextColor="#777" onFocus={() => setActiveCell({ exerciseId: active.id, rowId: row.id, field: 'reps' })} onChangeText={(reps) => updateRow(active.id, row.id, { reps })} />
+            <TextInput style={[styles.input, activeCell?.rowId === row.id && activeCell.field === 'weight' && styles.inputActive]} showSoftInputOnFocus={false} keyboardType="decimal-pad" value={row.weight} placeholder={String(active.lastPerformance?.sets[index]?.weight ?? '')} placeholderTextColor={theme.muted} onFocus={() => setActiveCell({ exerciseId: active.id, rowId: row.id, field: 'weight' })} onChangeText={(weight) => updateRow(active.id, row.id, { weight })} />
+            <TextInput style={[styles.input, activeCell?.rowId === row.id && activeCell.field === 'reps' && styles.inputActive]} showSoftInputOnFocus={false} keyboardType="number-pad" value={row.reps} placeholder={String(active.lastPerformance?.sets[index]?.reps ?? active.reps)} placeholderTextColor={theme.muted} onFocus={() => setActiveCell({ exerciseId: active.id, rowId: row.id, field: 'reps' })} onChangeText={(reps) => updateRow(active.id, row.id, { reps })} />
             <Pressable style={[styles.check, row.completed && styles.checkDone]} onPress={() => completeRow(active, row)} accessibilityLabel={row.completed ? 'Desmarcar serie' : 'Completar serie'}><Ionicons name="checkmark" size={19} color={row.completed ? '#101114' : '#777'} /></Pressable>
           </View>)}
-          <Pressable onPress={() => setExercises((current) => current.map((exercise) => exercise.id === active.id ? { ...exercise, rows: [...exercise.rows, { id: `${exercise.id}-${Date.now()}`, weight: '', reps: String(exercise.reps), kind: 'normal', completed: false }] } : exercise))} style={styles.add}><Ionicons name="add" size={18} color="#CCFF00" /><Text style={styles.addText}>Añadir serie</Text></Pressable>
-          <Pressable onPress={() => navigation.navigate('ExerciseProgress', { name: active.exercise_id })} style={styles.history}><Ionicons name="stats-chart-outline" size={16} color="#CCFF00" /><Text style={styles.addText}>Ver progreso</Text></Pressable>
+          <Pressable onPress={() => setExercises((current) => current.map((exercise) => exercise.id === active.id ? { ...exercise, rows: [...exercise.rows, { id: `${exercise.id}-${Date.now()}`, weight: '', reps: String(exercise.reps), kind: 'normal', completed: false }] } : exercise))} style={styles.add}><Ionicons name="add" size={18} color={theme.accent} /><Text style={styles.addText}>Añadir serie</Text></Pressable>
+          <Pressable onPress={() => navigation.navigate('ExerciseProgress', { name: active.exercise_id })} style={styles.history}><Ionicons name="stats-chart-outline" size={16} color={theme.accent} /><Text style={styles.addText}>Ver progreso</Text></Pressable>
         </> : <Text style={styles.instructions}>Esta rutina no tiene ejercicios.</Text>}
       </ScrollView>
       {activeCell && currentRow ? <NumericKeypad field={activeCell.field} value={currentRow[activeCell.field]} onChange={(value) => updateRow(activeCell.exerciseId, activeCell.rowId, { [activeCell.field]: value })} onNext={nextCell} onClose={() => setActiveCell(null)} /> : null}
@@ -192,8 +195,8 @@ export default function ActiveSessionScreen() {
           <Text style={styles.restTitle}>DESCANSO ENTRE SERIES</Text>
           <Text style={styles.restValue}>{active?.rest_seconds ?? 90} s</Text>
           <View style={styles.restControls}>
-            <Pressable style={styles.restStep} onPress={() => setExercises((current) => current.map((exercise) => exercise.id === active?.id ? { ...exercise, rest_seconds: Math.max(0, (exercise.rest_seconds ?? 90) - 15) } : exercise))} accessibilityLabel="Restar 15 segundos"><Ionicons name="remove" size={23} color="#FFF" /></Pressable>
-            <Pressable style={styles.restStep} onPress={() => setExercises((current) => current.map((exercise) => exercise.id === active?.id ? { ...exercise, rest_seconds: Math.min(600, (exercise.rest_seconds ?? 90) + 15) } : exercise))} accessibilityLabel="Sumar 15 segundos"><Ionicons name="add" size={23} color="#FFF" /></Pressable>
+            <Pressable style={styles.restStep} onPress={() => setExercises((current) => current.map((exercise) => exercise.id === active?.id ? { ...exercise, rest_seconds: Math.max(0, (exercise.rest_seconds ?? 90) - 15) } : exercise))} accessibilityLabel="Restar 15 segundos"><Ionicons name="remove" size={23} color={theme.text} /></Pressable>
+            <Pressable style={styles.restStep} onPress={() => setExercises((current) => current.map((exercise) => exercise.id === active?.id ? { ...exercise, rest_seconds: Math.min(600, (exercise.rest_seconds ?? 90) + 15) } : exercise))} accessibilityLabel="Sumar 15 segundos"><Ionicons name="add" size={23} color={theme.text} /></Pressable>
           </View>
           <Pressable style={styles.restDone} onPress={() => setRestEditorOpen(false)}><Text style={styles.finishText}>LISTO</Text></Pressable>
         </Pressable>
@@ -202,39 +205,39 @@ export default function ActiveSessionScreen() {
   </SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#101114' },
-  header: { height: 58, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#2B2E35' },
-  finish: { backgroundColor: '#CCFF00', borderRadius: 4, paddingHorizontal: 14, paddingVertical: 9 },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  page: { flex: 1, backgroundColor: theme.background },
+  header: { height: 58, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border },
+  finish: { backgroundColor: theme.accentFill, borderRadius: 4, paddingHorizontal: 14, paddingVertical: 9 },
   finishText: { color: '#101114', fontWeight: '900', fontSize: 12 },
-  carousel: { flexDirection: 'row', gap: 12, padding: 14, minHeight: 72, borderBottomWidth: 1, borderBottomColor: '#2B2E35' },
+  carousel: { flexDirection: 'row', gap: 12, padding: 14, minHeight: 72, borderBottomWidth: 1, borderBottomColor: theme.border },
   avatar: { height: 43, width: 43, borderRadius: 22, borderWidth: 1, borderColor: '#4C5057', alignItems: 'center', justifyContent: 'center' },
-  avatarActive: { borderColor: '#CCFF00', borderWidth: 2 },
+  avatarActive: { borderColor: theme.accent, borderWidth: 2 },
   content: { padding: 18, paddingBottom: 42 },
-  media: { width: '100%', height: 190, marginBottom: 16, backgroundColor: '#1C1F23' },
-  title: { color: '#FFF', fontSize: 23, fontWeight: '900', marginBottom: 8 },
-  instructions: { color: '#A8ABB0', fontSize: 13, lineHeight: 19, marginBottom: 14 },
-  previous: { color: '#A8ABB0', fontSize: 11, fontWeight: '700', marginVertical: 18 },
-  suggestion: { color: '#CCFF00', fontSize: 11, fontWeight: '700', lineHeight: 16, marginBottom: 14 },
+  media: { width: '100%', height: 190, marginBottom: 16, backgroundColor: theme.surface },
+  title: { color: theme.text, fontSize: 23, fontWeight: '900', marginBottom: 8 },
+  instructions: { color: theme.muted, fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  previous: { color: theme.muted, fontSize: 11, fontWeight: '700', marginVertical: 18 },
+  suggestion: { color: theme.accent, fontSize: 11, fontWeight: '700', lineHeight: 16, marginBottom: 14 },
   restEdit: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 12, marginBottom: 8 },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#000A' },
-  restSheet: { backgroundColor: '#1C1F23', borderTopWidth: 1, borderColor: '#3A3D43', padding: 24, paddingBottom: 36, gap: 18 },
-  restTitle: { color: '#FFF', fontSize: 15, fontWeight: '900' },
-  restValue: { color: '#CCFF00', fontSize: 32, fontWeight: '900', textAlign: 'center' },
+  restSheet: { backgroundColor: theme.surface, borderTopWidth: 1, borderColor: '#3A3D43', padding: 24, paddingBottom: 36, gap: 18 },
+  restTitle: { color: theme.text, fontSize: 15, fontWeight: '900' },
+  restValue: { color: theme.accent, fontSize: 32, fontWeight: '900', textAlign: 'center' },
   restControls: { flexDirection: 'row', justifyContent: 'center', gap: 24 },
-  restStep: { width: 64, height: 52, backgroundColor: '#2B2E35', borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  restDone: { backgroundColor: '#CCFF00', padding: 14, borderRadius: 4, alignItems: 'center' },
+  restStep: { width: 64, height: 52, backgroundColor: theme.surface, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
+  restDone: { backgroundColor: theme.accentFill, padding: 14, borderRadius: 4, alignItems: 'center' },
   tableHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  colSmall: { width: '15%', alignItems: 'center', color: '#A8ABB0', textAlign: 'center', fontSize: 10, fontWeight: '900' },
-  col: { width: '31%', color: '#A8ABB0', textAlign: 'center', fontSize: 10, fontWeight: '900' },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 55, backgroundColor: '#1C1F23', borderRadius: 4, marginBottom: 6, paddingHorizontal: 4 },
-  rowDone: { backgroundColor: '#26321A' },
-  setLabel: { color: '#CCFF00', fontSize: 15, fontWeight: '900' },
-  input: { width: '31%', height: 42, backgroundColor: '#101114', borderRadius: 4, color: '#FFF', textAlign: 'center', fontSize: 17, fontWeight: '700' },
-  inputActive: { borderWidth: 1, borderColor: '#CCFF00' },
-  check: { width: 34, height: 34, borderRadius: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2B2E35' },
-  checkDone: { backgroundColor: '#CCFF00' },
+  colSmall: { width: '15%', alignItems: 'center', color: theme.muted, textAlign: 'center', fontSize: 10, fontWeight: '900' },
+  col: { width: '31%', color: theme.muted, textAlign: 'center', fontSize: 10, fontWeight: '900' },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 55, backgroundColor: theme.surface, borderRadius: 4, marginBottom: 6, paddingHorizontal: 4 },
+  rowDone: { backgroundColor: theme.mode === 'light' ? '#E9F5DA' : '#26321A' },
+  setLabel: { color: theme.accent, fontSize: 15, fontWeight: '900' },
+  input: { width: '31%', height: 42, backgroundColor: theme.background, borderRadius: 4, color: theme.text, textAlign: 'center', fontSize: 17, fontWeight: '700' },
+  inputActive: { borderWidth: 1, borderColor: theme.accent },
+  check: { width: 34, height: 34, borderRadius: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface },
+  checkDone: { backgroundColor: theme.accentFill },
   add: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingVertical: 12 },
   history: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 },
-  addText: { color: '#CCFF00', fontSize: 13, fontWeight: '800' },
+  addText: { color: theme.accent, fontSize: 13, fontWeight: '800' },
 });

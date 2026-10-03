@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +18,8 @@ const DURATION_OPTIONS = [30, 45, 60, 90, 120];
 const DAYS_OPTIONS = [2, 3, 4, 5, 6];
 
 export default function AIWorkoutPlannerScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   
@@ -78,8 +81,8 @@ export default function AIWorkoutPlannerScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-         <Ionicons name="sparkles" size={60} color="#CCFF00" style={{ marginBottom: 20 }} />
-         <ActivityIndicator size="large" color="#CCFF00" />
+         <Ionicons name="sparkles" size={60} color={theme.accent} style={{ marginBottom: 20 }} />
+         <ActivityIndicator size="large" color={theme.accent} />
          <Text style={styles.loadingTitle}>PLANIFICANDO</Text>
          <Text style={styles.loadingText}>{loadingText}</Text>
       </View>
@@ -199,29 +202,29 @@ export default function AIWorkoutPlannerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 10 },
   backButton: { padding: 8 },
-  backButtonText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
-  stepText: { color: '#CCFF00', fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  backButtonText: { color: theme.muted, fontSize: 14, fontWeight: '800', letterSpacing: 1 },
+  stepText: { color: theme.accent, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   content: { padding: 24, paddingBottom: 100 },
   stepContainer: { flex: 1 },
-  title: { fontSize: 28, fontWeight: '900', color: '#FFF', marginBottom: 8, letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, color: '#A0A0A0', marginBottom: 24, fontWeight: '500' },
-  sectionTitle: { fontSize: 12, color: '#888', fontWeight: '800', marginBottom: 12, letterSpacing: 1 },
-  optionBtn: { backgroundColor: '#1A1A1A', padding: 20, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#333' },
-  optionBtnActive: { backgroundColor: 'rgba(204,255,0,0.1)', borderColor: '#CCFF00' },
-  optionText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  optionTextActive: { color: '#CCFF00' },
+  title: { fontSize: 28, fontWeight: '900', color: theme.text, marginBottom: 8, letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, color: theme.muted, marginBottom: 24, fontWeight: '500' },
+  sectionTitle: { fontSize: 12, color: theme.muted, fontWeight: '800', marginBottom: 12, letterSpacing: 1 },
+  optionBtn: { backgroundColor: theme.surface, padding: 20, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.border },
+  optionBtnActive: { backgroundColor: 'rgba(204,255,0,0.1)', borderColor: theme.accent },
+  optionText: { color: theme.text, fontSize: 16, fontWeight: '700' },
+  optionTextActive: { color: theme.accent },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginHorizontal: -4 },
-  gridBtn: { backgroundColor: '#1A1A1A', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: '#333', marginBottom: 4 },
-  gridBtnActive: { backgroundColor: 'rgba(204,255,0,0.1)', borderColor: '#CCFF00' },
-  gridText: { color: '#A0A0A0', fontSize: 14, fontWeight: '800' },
-  gridTextActive: { color: '#CCFF00' },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingBottom: 40, paddingTop: 20, backgroundColor: '#101114' },
+  gridBtn: { backgroundColor: theme.surface, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: theme.border, marginBottom: 4 },
+  gridBtnActive: { backgroundColor: 'rgba(204,255,0,0.1)', borderColor: theme.accent },
+  gridText: { color: theme.muted, fontSize: 14, fontWeight: '800' },
+  gridTextActive: { color: theme.accent },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingBottom: 40, paddingTop: 20, backgroundColor: theme.background },
   generateBtn: { backgroundColor: '#1E90FF', borderRadius: 12, height: 56, justifyContent: 'center', alignItems: 'center', marginVertical: 8 },
-  generateText: { color: '#FFF', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.5, textTransform: 'uppercase' },
-  loadingTitle: { fontSize: 24, fontWeight: '900', color: '#FFF', marginTop: 20, marginBottom: 8, letterSpacing: 1 },
-  loadingText: { fontSize: 14, color: '#A0A0A0', fontWeight: '500' }
+  generateText: { color: theme.text, fontWeight: 'bold', fontSize: 16, letterSpacing: 0.5, textTransform: 'uppercase' },
+  loadingTitle: { fontSize: 24, fontWeight: '900', color: theme.text, marginTop: 20, marginBottom: 8, letterSpacing: 1 },
+  loadingText: { fontSize: 14, color: theme.muted, fontWeight: '500' }
 });

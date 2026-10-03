@@ -25,7 +25,7 @@ export interface FoodSearchResult {
   food_description: string;
   brand_name?: string;
   serving: NutritionServing;
-  source?: 'demo' | 'proxy' | 'local' | 'community' | 'ai';
+  source?: 'demo' | 'proxy' | 'local' | 'community' | 'ai' | 'usda';
 }
 
 export interface WaterLog {
@@ -50,6 +50,7 @@ export interface FoodImageAnalysisResponse {
   imagePath: string;
   confidence: number;
   notes: string | null;
+  visibleFoods: string[];
   disclaimer: string;
   food: FoodSearchResult;
 }
@@ -340,6 +341,7 @@ export interface ProfileComparisonResponse {
 export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
+  Terms: undefined;
   VerifyEmail: { email: string };
 };
 
@@ -365,9 +367,10 @@ export type AppStackParamList = {
   ProgressFeed: undefined;
   Ranking: undefined;
   Onboarding: undefined;
-  SearchFood: { initialQuery?: string; scannedFood?: FoodSearchResult } | undefined;
-  FoodSubmission: undefined;
+  SearchFood: { initialQuery?: string; scannedFood?: FoodSearchResult; scannedAnalysis?: FoodImageAnalysisResponse; photoUri?: string } | undefined;
+  FoodSubmission: { initialAnalysis?: FoodImageAnalysisResponse; photoUri?: string } | undefined;
   Profile: undefined;
+  LegalTerms: undefined;
   DiscoverProfiles: undefined;
   PublicProfile: { profileId: string };
   ProfileComparison: { profileId: string };

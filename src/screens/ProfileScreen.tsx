@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +23,7 @@ import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { authService } from '../services/auth';
 import type { AppStackParamList, GenderType, GoalType, SocialProfileResponse } from '../types';
 import { getErrorMessage } from '../utils/errors';
+import { useThemeStore } from '../theme';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'Profile'>;
 
@@ -32,6 +34,8 @@ const GOALS: Array<{ value: GoalType; label: string; icon: keyof typeof Ionicons
 ];
 
 export default function ProfileScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const [data, setData] = useState<SocialProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +52,8 @@ export default function ProfileScreen() {
   const [goal, setGoal] = useState<GoalType>('mantener');
   const [targetCalories, setTargetCalories] = useState('');
   const [isPublic, setIsPublic] = useState(true);
+  const mode = useThemeStore((state) => state.mode);
+  const setMode = useThemeStore((state) => state.setMode);
 
   const applyResponse = useCallback((response: SocialProfileResponse) => {
     const profile = response.profile;
@@ -152,18 +158,18 @@ export default function ProfileScreen() {
   };
 
   if (loading && !data) {
-    return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color="#CCFF00" /></View></SafeAreaView>;
+    return <SafeAreaView style={styles.container}><View style={styles.center}><ActivityIndicator size="large" color={theme.accent} /></View></SafeAreaView>;
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable accessibilityLabel="Volver" style={styles.iconButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={22} color={theme.text} />
         </Pressable>
         <Text style={styles.headerTitle}>TU PERFIL</Text>
         <Pressable accessibilityLabel="Buscar atletas" style={styles.iconButton} onPress={() => navigation.navigate('DiscoverProfiles')}>
-          <Ionicons name="people-outline" size={22} color="#CCFF00" />
+          <Ionicons name="people-outline" size={22} color={theme.accent} />
         </Pressable>
       </View>
 
@@ -238,7 +244,7 @@ export default function ProfileScreen() {
 
           <View style={styles.calorieResult}>
             <View><Text style={styles.calorieLabel}>META DIARIA</Text><Text style={styles.calorieValue}>{targetCalories || '--'} kcal</Text></View>
-            <Ionicons name="flame" size={28} color="#CCFF00" />
+            <Ionicons name="flame" size={28} color={theme.accent} />
           </View>
 
           <Text style={styles.sectionTitle}>MARCAS DE FUERZA</Text>
@@ -260,6 +266,11 @@ export default function ProfileScreen() {
           <Pressable style={[styles.primaryButton, saving && styles.disabled]} disabled={saving} onPress={() => void handleSave()}>
             {saving ? <ActivityIndicator color="#121212" /> : <Text style={styles.primaryText}>GUARDAR PERFIL</Text>}
           </Pressable>
+          <View style={styles.visibilityRow}>
+            <View style={styles.flex}><Text style={styles.visibilityTitle}>TEMA CLARO</Text><Text style={styles.visibilityText}>Cambiar la apariencia de la aplicación.</Text></View>
+            <Switch accessibilityLabel="Tema claro" value={mode === 'light'} onValueChange={(enabled) => setMode(enabled ? 'light' : 'dark')} trackColor={{ false: '#555555', true: '#8DAA2C' }} thumbColor={mode === 'light' ? '#FFFFFF' : '#CCCCCC'} />
+          </View>
+          <Pressable style={styles.legalLink} onPress={() => navigation.navigate('LegalTerms')}><Text style={styles.legalLinkText}>TÉRMINOS Y PRIVACIDAD</Text></Pressable>
           <Pressable style={styles.logoutButton} onPress={() => void authService.logout()}>
             <Ionicons name="log-out-outline" size={18} color="#FF5B5B" /><Text style={styles.logoutText}>CERRAR SESION</Text>
           </Pressable>
@@ -269,58 +280,60 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#242424' },
+  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border },
   iconButton: { width: 40, height: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  headerTitle: { color: theme.text, fontSize: 15, fontWeight: '900' },
   content: { padding: 20, paddingBottom: 60 },
   identitySection: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#CCFF00', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: theme.accentFill, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   avatarText: { color: '#121212', fontSize: 34, fontWeight: '900' },
   identityCopy: { flex: 1 },
-  displayName: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
-  handle: { color: '#CCFF00', fontSize: 13, fontWeight: '800', marginTop: 2 },
-  bio: { color: '#BDBDBD', fontSize: 13, lineHeight: 18, marginTop: 7 },
-  statsRow: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2A2A2A', paddingVertical: 16, marginBottom: 14 },
+  displayName: { color: theme.text, fontSize: 22, fontWeight: '900' },
+  handle: { color: theme.accent, fontSize: 13, fontWeight: '800', marginTop: 2 },
+  bio: { color: theme.text, fontSize: 13, lineHeight: 18, marginTop: 7 },
+  statsRow: { flexDirection: 'row', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 16, marginBottom: 14 },
   stat: { flex: 1, alignItems: 'center' },
-  statValue: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
-  statLabel: { color: '#777777', fontSize: 8, fontWeight: '900', marginTop: 4 },
-  discoverButton: { height: 44, borderRadius: 8, backgroundColor: '#CCFF00', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 24 },
+  statValue: { color: theme.text, fontSize: 17, fontWeight: '900' },
+  statLabel: { color: theme.muted, fontSize: 8, fontWeight: '900', marginTop: 4 },
+  discoverButton: { height: 44, borderRadius: 8, backgroundColor: theme.accentFill, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 24 },
   discoverText: { color: '#121212', fontSize: 12, fontWeight: '900' },
-  errorNotice: { flexDirection: 'row', gap: 9, borderWidth: 1, borderColor: '#5C481A', backgroundColor: '#211D14', padding: 12, borderRadius: 8, marginBottom: 18 },
-  errorText: { color: '#E7D7B0', fontSize: 12, lineHeight: 17, flex: 1 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', marginTop: 12, marginBottom: 14 },
+  errorNotice: { flexDirection: 'row', gap: 9, borderWidth: 1, borderColor: '#5C481A', backgroundColor: theme.warningSurface, padding: 12, borderRadius: 8, marginBottom: 18 },
+  errorText: { color: theme.warningText, fontSize: 12, lineHeight: 17, flex: 1 },
+  sectionTitle: { color: theme.text, fontSize: 14, fontWeight: '900', marginTop: 12, marginBottom: 14 },
   twoColumns: { flexDirection: 'row', gap: 12 },
-  label: { color: '#888888', fontSize: 9, fontWeight: '900', marginBottom: 7 },
-  input: { height: 48, color: '#FFFFFF', backgroundColor: '#1A1A1A', borderWidth: 1, borderColor: '#333333', borderRadius: 8, paddingHorizontal: 13, marginBottom: 14 },
+  label: { color: theme.muted, fontSize: 9, fontWeight: '900', marginBottom: 7 },
+  input: { height: 48, color: theme.text, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, borderRadius: 8, paddingHorizontal: 13, marginBottom: 14 },
   bioInput: { minHeight: 76, height: 76, paddingTop: 12, textAlignVertical: 'top' },
-  visibilityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2A2A2A', paddingVertical: 14, marginBottom: 20 },
-  visibilityTitle: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
-  visibilityText: { color: '#777777', fontSize: 11, lineHeight: 16, marginTop: 3 },
-  segmented: { flexDirection: 'row', height: 48, padding: 4, backgroundColor: '#1A1A1A', borderWidth: 1, borderColor: '#333333', borderRadius: 8 },
+  visibilityRow: { flexDirection: 'row', alignItems: 'center', gap: 14, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, paddingVertical: 14, marginBottom: 20 },
+  visibilityTitle: { color: theme.text, fontSize: 12, fontWeight: '900' },
+  visibilityText: { color: theme.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
+  segmented: { flexDirection: 'row', height: 48, padding: 4, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, borderRadius: 8 },
   segment: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
-  segmentActive: { backgroundColor: '#CCFF00' },
-  segmentText: { color: '#777777', fontSize: 8, fontWeight: '900' },
+  segmentActive: { backgroundColor: theme.accentFill },
+  segmentText: { color: theme.muted, fontSize: 8, fontWeight: '900' },
   segmentTextActive: { color: '#121212' },
   goalRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  goalButton: { flex: 1, minHeight: 58, borderRadius: 8, borderWidth: 1, borderColor: '#333333', alignItems: 'center', justifyContent: 'center', gap: 5 },
-  goalButtonActive: { backgroundColor: '#CCFF00', borderColor: '#CCFF00' },
-  goalText: { color: '#A0A0A0', fontSize: 10, fontWeight: '900' },
+  goalButton: { flex: 1, minHeight: 58, borderRadius: 8, borderWidth: 1, borderColor: theme.border, alignItems: 'center', justifyContent: 'center', gap: 5 },
+  goalButtonActive: { backgroundColor: theme.accentFill, borderColor: theme.accent },
+  goalText: { color: theme.muted, fontSize: 10, fontWeight: '900' },
   goalTextActive: { color: '#121212' },
-  calorieResult: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#333333', marginBottom: 22 },
-  calorieLabel: { color: '#888888', fontSize: 9, fontWeight: '900' },
-  calorieValue: { color: '#FFFFFF', fontSize: 25, fontWeight: '900', marginTop: 3 },
-  strengthRow: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#292929', paddingVertical: 12 },
-  strengthName: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
-  strengthMeta: { color: '#777777', fontSize: 11, marginTop: 5 },
-  emptyStrength: { alignItems: 'center', justifyContent: 'center', minHeight: 100, borderWidth: 1, borderColor: '#333333', borderStyle: 'dashed', borderRadius: 8, marginBottom: 20 },
-  emptyText: { color: '#777777', fontSize: 12, marginTop: 8 },
-  primaryButton: { height: 50, backgroundColor: '#CCFF00', borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 24 },
+  calorieResult: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, marginBottom: 22 },
+  calorieLabel: { color: theme.muted, fontSize: 9, fontWeight: '900' },
+  calorieValue: { color: theme.text, fontSize: 25, fontWeight: '900', marginTop: 3 },
+  strengthRow: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: theme.border, paddingVertical: 12 },
+  strengthName: { color: theme.text, fontSize: 14, fontWeight: '800' },
+  strengthMeta: { color: theme.muted, fontSize: 11, marginTop: 5 },
+  emptyStrength: { alignItems: 'center', justifyContent: 'center', minHeight: 100, borderWidth: 1, borderColor: theme.border, borderStyle: 'dashed', borderRadius: 8, marginBottom: 20 },
+  emptyText: { color: theme.muted, fontSize: 12, marginTop: 8 },
+  primaryButton: { height: 50, backgroundColor: theme.accentFill, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginTop: 24 },
   primaryText: { color: '#121212', fontSize: 13, fontWeight: '900' },
   disabled: { opacity: 0.6 },
   logoutButton: { height: 48, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
   logoutText: { color: '#FF5B5B', fontSize: 12, fontWeight: '900' },
+  legalLink: { paddingVertical: 16, alignItems: 'center' },
+  legalLinkText: { color: theme.accent, fontSize: 12, fontWeight: '900' },
 });

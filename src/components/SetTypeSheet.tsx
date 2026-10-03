@@ -1,9 +1,12 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React from 'react';
 import { Modal, Pressable, View, Text, StyleSheet } from 'react-native';
 
 export function SetTypeSheet({ visible, onSelect, onClose }: {
   visible: boolean; onSelect: (kind: 'normal' | 'warmup') => void; onClose: () => void;
 }) {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
     <Pressable style={styles.overlay} onPress={onClose}>
       <View style={styles.sheet}>
@@ -15,12 +18,12 @@ export function SetTypeSheet({ visible, onSelect, onClose }: {
   </Modal>;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: '#000A', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#1C1F23', padding: 24, paddingBottom: 42, borderTopLeftRadius: 8, borderTopRightRadius: 8 },
-  title: { color: '#CCFF00', fontSize: 15, fontWeight: '900', marginBottom: 18 },
-  option: { flexDirection: 'row', alignItems: 'center', gap: 16, height: 55, borderTopWidth: 1, borderTopColor: '#2B2E35' },
-  normal: { color: '#CCFF00', fontSize: 18, fontWeight: '800', width: 28 },
+  sheet: { backgroundColor: theme.surface, padding: 24, paddingBottom: 42, borderTopLeftRadius: 8, borderTopRightRadius: 8 },
+  title: { color: theme.accent, fontSize: 15, fontWeight: '900', marginBottom: 18 },
+  option: { flexDirection: 'row', alignItems: 'center', gap: 16, height: 55, borderTopWidth: 1, borderTopColor: theme.border },
+  normal: { color: theme.accent, fontSize: 18, fontWeight: '800', width: 28 },
   warmup: { color: '#FF9F0A', fontSize: 18, fontWeight: '800', width: 28 },
-  label: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  label: { color: theme.text, fontSize: 16, fontWeight: '700' },
 });

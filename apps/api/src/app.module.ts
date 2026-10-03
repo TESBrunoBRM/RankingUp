@@ -16,6 +16,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { StreakModule } from './streak/streak.module';
 import { ProgressModule } from './progress/progress.module';
 import { WorkoutsModule } from './workouts/workouts.module';
+import { LegalModule } from './legal/legal.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { WorkoutsModule } from './workouts/workouts.module';
     RankingModule,
     DashboardModule,
     WorkoutsModule,
+    LegalModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

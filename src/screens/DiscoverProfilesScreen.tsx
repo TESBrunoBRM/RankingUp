@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +12,8 @@ import { getErrorMessage } from '../utils/errors';
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'DiscoverProfiles'>;
 
 export default function DiscoverProfilesScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ProfileSearchResult[]>([]);
@@ -39,7 +42,7 @@ export default function DiscoverProfilesScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable accessibilityLabel="Volver" style={styles.iconButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={22} color={theme.text} />
         </Pressable>
         <Text style={styles.title}>ATLETAS</Text>
         <View style={styles.iconButton} />
@@ -90,7 +93,7 @@ export default function DiscoverProfilesScreen() {
           </View>
         ) : !searched ? (
           <View style={styles.empty}>
-            <Ionicons name="fitness-outline" size={40} color="#CCFF00" />
+            <Ionicons name="fitness-outline" size={40} color={theme.accent} />
             <Text style={styles.emptyTitle}>ENCUENTRA TU EQUIPO</Text>
             <Text style={styles.emptyText}>Busca atletas para seguir su progreso y comparar marcas.</Text>
           </View>
@@ -100,26 +103,26 @@ export default function DiscoverProfilesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
-  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#242424' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
+  header: { height: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.border },
   iconButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  title: { color: theme.text, fontSize: 15, fontWeight: '900' },
   searchRow: { flexDirection: 'row', gap: 10, padding: 16 },
-  searchBox: { flex: 1, height: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, borderRadius: 8, backgroundColor: '#1A1A1A', borderWidth: 1, borderColor: '#333333' },
-  input: { flex: 1, color: '#FFFFFF', marginLeft: 9 },
-  searchButton: { width: 48, height: 48, borderRadius: 8, backgroundColor: '#CCFF00', alignItems: 'center', justifyContent: 'center' },
+  searchBox: { flex: 1, height: 48, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+  input: { flex: 1, color: theme.text, marginLeft: 9 },
+  searchButton: { width: 48, height: 48, borderRadius: 8, backgroundColor: theme.accentFill, alignItems: 'center', justifyContent: 'center' },
   error: { color: '#FFB020', fontSize: 12, paddingHorizontal: 18, paddingBottom: 8 },
   list: { paddingHorizontal: 16, paddingBottom: 40, flexGrow: 1 },
-  resultRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#292929', paddingVertical: 12 },
+  resultRow: { minHeight: 78, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.border, paddingVertical: 12 },
   avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#2C3614', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarText: { color: '#CCFF00', fontSize: 20, fontWeight: '900' },
+  avatarText: { color: theme.accent, fontSize: 20, fontWeight: '900' },
   resultCopy: { flex: 1 },
-  name: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  name: { color: theme.text, fontSize: 14, fontWeight: '900' },
   username: { color: '#8D8D8D', fontSize: 11, marginTop: 3 },
-  bio: { color: '#666666', fontSize: 11, marginTop: 4 },
-  following: { color: '#CCFF00', fontSize: 9, fontWeight: '900' },
+  bio: { color: theme.muted, fontSize: 11, marginTop: 4 },
+  following: { color: theme.accent, fontSize: 9, fontWeight: '900' },
   empty: { flex: 1, minHeight: 320, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36 },
-  emptyTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '900', marginTop: 14 },
-  emptyText: { color: '#777777', fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 7 },
+  emptyTitle: { color: theme.text, fontSize: 14, fontWeight: '900', marginTop: 14 },
+  emptyText: { color: theme.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 7 },
 });

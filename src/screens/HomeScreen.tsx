@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -78,10 +79,12 @@ interface NewsCardProps {
 }
 
 const NewsCard = React.memo(function NewsCard({ item, onPress }: NewsCardProps) {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable style={styles.newsCard} onPress={() => onPress(item)}>
       <View style={styles.newsIcon}>
-        <Ionicons name="newspaper-outline" size={22} color="#CCFF00" />
+        <Ionicons name="newspaper-outline" size={22} color={theme.accent} />
       </View>
       <View style={styles.newsMetaRow}>
         <Text style={styles.newsSource} numberOfLines={1}>{item.source.toUpperCase()}</Text>
@@ -90,13 +93,15 @@ const NewsCard = React.memo(function NewsCard({ item, onPress }: NewsCardProps) 
       <Text style={styles.newsTitle} numberOfLines={3}>{item.title}</Text>
       <View style={styles.newsLinkRow}>
         <Text style={styles.newsLink}>LEER NOTICIA</Text>
-        <Ionicons name="arrow-forward" size={15} color="#CCFF00" />
+        <Ionicons name="arrow-forward" size={15} color={theme.accent} />
       </View>
     </Pressable>
   );
 });
 
 export default function HomeScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const { user } = useAuthStore();
   const navigation = useNavigation<NavigationProp>();
   const splashAnimation = useRef(new Animated.Value(0)).current;
@@ -255,7 +260,7 @@ export default function HomeScreen() {
         </View>
         <StreakBadge count={streak.current} onPress={() => void openStreak()} />
         <Pressable accessibilityLabel="Abrir perfil" style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person-outline" size={21} color="#CCFF00" />
+          <Ionicons name="person-outline" size={21} color={theme.accent} />
         </Pressable>
       </View>
 
@@ -287,7 +292,7 @@ export default function HomeScreen() {
               {currentMessage.text}
             </Animated.Text>
           ) : contentLoading ? (
-            <ActivityIndicator size="small" color="#CCFF00" />
+            <ActivityIndicator size="small" color={theme.accent} />
           ) : (
             <Text style={styles.splashText}>SIGUE SUMANDO REPETICIONES.</Text>
           )}
@@ -301,7 +306,7 @@ export default function HomeScreen() {
               <Text style={styles.noticeText}>{dashboardError}</Text>
             </View>
             <Pressable accessibilityLabel="Reintentar" style={styles.retryButton} onPress={() => void fetchDashboardData()}>
-              <Ionicons name="refresh" size={18} color="#CCFF00" />
+              <Ionicons name="refresh" size={18} color={theme.accent} />
             </Pressable>
           </View>
         ) : null}
@@ -340,7 +345,7 @@ export default function HomeScreen() {
         </View>
 
         {loading && workouts.length === 0 ? (
-          <View style={styles.loadingBlock}><ActivityIndicator color="#CCFF00" /></View>
+          <View style={styles.loadingBlock}><ActivityIndicator color={theme.accent} /></View>
         ) : workoutsForSelectedDay.length > 0 ? (
           workoutsForSelectedDay.map((workout) => (
             <Pressable
@@ -349,7 +354,7 @@ export default function HomeScreen() {
               onPress={() => navigation.navigate('WorkoutDetail', { workoutId: workout.id })}
             >
               <View style={styles.workoutIcon}>
-                <Ionicons name="barbell" size={23} color="#CCFF00" />
+                <Ionicons name="barbell" size={23} color={theme.accent} />
               </View>
               <View style={styles.workoutContent}>
                 <Text style={styles.workoutName} numberOfLines={1}>{workout.name.toUpperCase()}</Text>
@@ -386,7 +391,7 @@ export default function HomeScreen() {
 
         {contentLoading && !homeContent ? (
           <View style={styles.newsLoading}>
-            <ActivityIndicator size="small" color="#CCFF00" />
+            <ActivityIndicator size="small" color={theme.accent} />
             <Text style={styles.newsLoadingText}>Buscando novedades...</Text>
           </View>
         ) : homeContent?.news.length ? (
@@ -401,7 +406,7 @@ export default function HomeScreen() {
           <Pressable onPress={() => navigation.navigate('ProgressFeed')}><Text style={styles.progressLink}>VER TODO  ›</Text></Pressable>
         </View>
         {progressPosts.length ? <View style={styles.progressList}>{progressPosts.map((post) => <ProgressPostCard key={post.id} post={post} onDeleted={(id) => setProgressPosts((current) => current.filter((item) => item.id !== id))} />)}</View>
-          : <Pressable style={styles.progressEmpty} onPress={() => navigation.navigate('ProgressFeed')}><Ionicons name="people-outline" color="#CCFF00" size={23} /><Text style={styles.progressEmptyText}>Aún no hay progreso de tu comunidad.</Text></Pressable>}
+          : <Pressable style={styles.progressEmpty} onPress={() => navigation.navigate('ProgressFeed')}><Ionicons name="people-outline" color={theme.accent} size={23} /><Text style={styles.progressEmptyText}>Aún no hay progreso de tu comunidad.</Text></Pressable>}
       </ScrollView>
       <Modal visible={streakModalOpen} transparent animationType="fade" onRequestClose={() => setStreakModalOpen(false)}>
         <View style={styles.streakBackdrop}>
@@ -415,7 +420,7 @@ export default function HomeScreen() {
                 <Ionicons name="close" size={23} color="#AEB5BF" />
               </Pressable>
             </View>
-            {streakLoading ? <ActivityIndicator color="#CCFF00" style={styles.streakSpinner} /> : (
+            {streakLoading ? <ActivityIndicator color={theme.accent} style={styles.streakSpinner} /> : (
               <View style={styles.streakCalendar}>
                 {streakDetails?.days.map((day) => (
                   <View key={day.date} style={[styles.streakDay, day.active && styles.streakDayActive]}>
@@ -431,84 +436,84 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101114' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.background },
   header: { minHeight: 94, paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#24262B' },
   headerCopy: { flex: 1, minWidth: 0 },
-  eyebrow: { color: '#7E8792', fontSize: 10, fontWeight: '900' },
-  name: { color: '#FFFFFF', fontSize: 25, fontWeight: '900', marginTop: 2 },
-  date: { color: '#CCFF00', fontSize: 10, fontWeight: '800', marginTop: 4 },
-  profileButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1B1D22', borderWidth: 1, borderColor: '#30333A', marginLeft: 14 },
+  eyebrow: { color: theme.muted, fontSize: 10, fontWeight: '900' },
+  name: { color: theme.text, fontSize: 25, fontWeight: '900', marginTop: 2 },
+  date: { color: theme.accent, fontSize: 10, fontWeight: '800', marginTop: 4 },
+  profileButton: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, marginLeft: 14 },
   streakBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.72)', justifyContent: 'center', padding: 20 },
-  streakPanel: { width: '100%', maxWidth: 430, alignSelf: 'center', backgroundColor: '#191B20', borderRadius: 8, borderWidth: 1, borderColor: '#30333A', padding: 20 },
+  streakPanel: { width: '100%', maxWidth: 430, alignSelf: 'center', backgroundColor: theme.surface, borderRadius: 8, borderWidth: 1, borderColor: theme.border, padding: 20 },
   streakPanelHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 },
-  streakPanelTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
-  streakPanelSubtitle: { color: '#AAB1BA', fontSize: 12, marginTop: 5 },
+  streakPanelTitle: { color: theme.text, fontSize: 18, fontWeight: '900' },
+  streakPanelSubtitle: { color: theme.muted, fontSize: 12, marginTop: 5 },
   streakSpinner: { marginVertical: 45 },
   streakCalendar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
-  streakDay: { width: '12%', aspectRatio: 1, borderRadius: 6, backgroundColor: '#2B2E35', alignItems: 'center', justifyContent: 'center' },
-  streakDayActive: { backgroundColor: '#CCFF00' },
+  streakDay: { width: '12%', aspectRatio: 1, borderRadius: 6, backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center' },
+  streakDayActive: { backgroundColor: theme.accentFill },
   content: { paddingTop: 18, paddingBottom: 120 },
-  summaryBand: { minHeight: 72, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2B2E35' },
+  summaryBand: { minHeight: 72, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border },
   summaryItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  summaryValue: { color: '#FFFFFF', fontSize: 19, fontWeight: '900' },
-  summaryLabel: { color: '#727B86', fontSize: 8, fontWeight: '900', marginTop: 4 },
-  summaryDivider: { width: 1, height: 30, backgroundColor: '#2B2E35' },
+  summaryValue: { color: theme.text, fontSize: 19, fontWeight: '900' },
+  summaryLabel: { color: theme.muted, fontSize: 8, fontWeight: '900', marginTop: 4 },
+  summaryDivider: { width: 1, height: 30, backgroundColor: theme.surface },
   splashViewport: { height: 100, marginHorizontal: 26, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   splashText: { width: '94%', color: '#FFF600', fontSize: 20, lineHeight: 23, fontWeight: '900', textAlign: 'center', textShadowColor: '#000000', textShadowOffset: { width: 3, height: 3 }, textShadowRadius: 0 },
   notice: { marginHorizontal: 20, marginBottom: 20, minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 8, padding: 12, backgroundColor: 'rgba(255,159,10,0.08)', borderWidth: 1, borderColor: 'rgba(255,159,10,0.25)' },
   noticeCopy: { flex: 1 },
-  noticeTitle: { color: '#FFFFFF', fontSize: 11, fontWeight: '900' },
-  noticeText: { color: '#A8B0BA', fontSize: 11, lineHeight: 16, marginTop: 3 },
+  noticeTitle: { color: theme.text, fontSize: 11, fontWeight: '900' },
+  noticeText: { color: theme.muted, fontSize: 11, lineHeight: 16, marginTop: 3 },
   retryButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   sectionHeader: { marginTop: 8, marginBottom: 12, paddingHorizontal: 20, minHeight: 42, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   sectionHeaderNews: { marginTop: 34, marginBottom: 14, paddingHorizontal: 20, minHeight: 42, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  sectionEyebrow: { color: '#7E8792', fontSize: 9, fontWeight: '900', marginBottom: 3 },
-  sectionTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
-  sectionMeta: { color: '#727B86', fontSize: 9, fontWeight: '800' },
+  sectionEyebrow: { color: theme.muted, fontSize: 9, fontWeight: '900', marginBottom: 3 },
+  sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '900' },
+  sectionMeta: { color: theme.muted, fontSize: 9, fontWeight: '800' },
   weekRow: { paddingHorizontal: 20, gap: 8, paddingBottom: 18 },
-  dayButton: { width: 44, height: 70, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35' },
-  dayButtonSelected: { backgroundColor: '#CCFF00', borderColor: '#CCFF00' },
-  dayText: { color: '#D7DCE2', fontSize: 13, fontWeight: '900' },
+  dayButton: { width: 44, height: 70, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+  dayButtonSelected: { backgroundColor: theme.accentFill, borderColor: theme.accent },
+  dayText: { color: theme.muted, fontSize: 13, fontWeight: '900' },
   dayTextSelected: { color: '#111111' },
   dayDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#3A3E46', marginTop: 7 },
-  dayDotWorkout: { backgroundColor: '#CCFF00' },
-  dayDotSelected: { backgroundColor: '#111111' },
-  todayLabel: { color: '#727B86', fontSize: 7, fontWeight: '900', marginTop: 5 },
+  dayDotWorkout: { backgroundColor: theme.accentFill },
+  dayDotSelected: { backgroundColor: theme.surface },
+  todayLabel: { color: theme.muted, fontSize: 7, fontWeight: '900', marginTop: 5 },
   todayLabelSelected: { color: '#111111' },
   todaySpacer: { height: 13 },
   workoutHeader: { minHeight: 32, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  workoutDay: { color: '#C5CBD2', fontSize: 10, fontWeight: '900' },
-  workoutCount: { color: '#727B86', fontSize: 9, fontWeight: '800' },
+  workoutDay: { color: theme.muted, fontSize: 10, fontWeight: '900' },
+  workoutCount: { color: theme.muted, fontSize: 9, fontWeight: '800' },
   loadingBlock: { height: 92, alignItems: 'center', justifyContent: 'center' },
-  workoutItem: { minHeight: 82, marginHorizontal: 20, marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 13, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35' },
-  workoutIcon: { width: 48, height: 48, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#24272D' },
+  workoutItem: { minHeight: 82, marginHorizontal: 20, marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 13, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+  workoutIcon: { width: 48, height: 48, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface },
   workoutContent: { flex: 1, minWidth: 0 },
-  workoutName: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
-  workoutDescription: { color: '#858E99', fontSize: 11, lineHeight: 16, marginTop: 4 },
-  restState: { minHeight: 82, marginHorizontal: 20, marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderRadius: 8, borderWidth: 1, borderColor: '#2B2E35', borderStyle: 'dashed' },
+  workoutName: { color: theme.text, fontSize: 14, fontWeight: '900' },
+  workoutDescription: { color: theme.muted, fontSize: 11, lineHeight: 16, marginTop: 4 },
+  restState: { minHeight: 82, marginHorizontal: 20, marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderRadius: 8, borderWidth: 1, borderColor: theme.border, borderStyle: 'dashed' },
   restIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
   restCopy: { flex: 1 },
-  restTitle: { color: '#D7DCE2', fontSize: 12, fontWeight: '900' },
-  restText: { color: '#727B86', fontSize: 10, lineHeight: 15, marginTop: 4 },
-  addButton: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CCFF00' },
+  restTitle: { color: theme.muted, fontSize: 12, fontWeight: '900' },
+  restText: { color: theme.muted, fontSize: 10, lineHeight: 15, marginTop: 4 },
+  addButton: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentFill },
   feedStatus: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingBottom: 2 },
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF9F0A' },
   statusDotLive: { backgroundColor: '#5CE18B' },
-  feedStatusText: { color: '#7E8792', fontSize: 8, fontWeight: '900' },
+  feedStatusText: { color: theme.muted, fontSize: 8, fontWeight: '900' },
   newsRow: { paddingHorizontal: 20, gap: 10 },
-  newsCard: { width: 264, height: 180, padding: 15, borderRadius: 8, backgroundColor: '#191B20', borderWidth: 1, borderColor: '#2B2E35' },
-  newsIcon: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#24272D', marginBottom: 12 },
+  newsCard: { width: 264, height: 180, padding: 15, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+  newsIcon: { width: 38, height: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface, marginBottom: 12 },
   newsMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  newsSource: { flex: 1, color: '#CCFF00', fontSize: 9, fontWeight: '900' },
-  newsDate: { color: '#727B86', fontSize: 8, fontWeight: '800' },
-  newsTitle: { flex: 1, color: '#FFFFFF', fontSize: 14, lineHeight: 19, fontWeight: '800', marginTop: 7 },
+  newsSource: { flex: 1, color: theme.accent, fontSize: 9, fontWeight: '900' },
+  newsDate: { color: theme.muted, fontSize: 8, fontWeight: '800' },
+  newsTitle: { flex: 1, color: theme.text, fontSize: 14, lineHeight: 19, fontWeight: '800', marginTop: 7 },
   newsLinkRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  newsLink: { color: '#CCFF00', fontSize: 9, fontWeight: '900' },
-  newsLoading: { minHeight: 120, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2B2E35', borderStyle: 'dashed' },
-  newsLoadingText: { color: '#7E8792', fontSize: 11 },
-  progressLink: { color: '#CCFF00', fontSize: 10, fontWeight: '900' },
+  newsLink: { color: theme.accent, fontSize: 9, fontWeight: '900' },
+  newsLoading: { minHeight: 120, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 8, borderWidth: 1, borderColor: theme.border, borderStyle: 'dashed' },
+  newsLoadingText: { color: theme.muted, fontSize: 11 },
+  progressLink: { color: theme.accent, fontSize: 10, fontWeight: '900' },
   progressList: { paddingHorizontal: 20 },
-  progressEmpty: { marginHorizontal: 20, minHeight: 90, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#2B2E35', flexDirection: 'row', alignItems: 'center', gap: 12 },
-  progressEmptyText: { color: '#8D96A1', fontSize: 12 },
+  progressEmpty: { marginHorizontal: 20, minHeight: 90, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  progressEmptyText: { color: theme.muted, fontSize: 12 },
 });

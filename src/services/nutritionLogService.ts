@@ -17,6 +17,7 @@ export const nutritionLogService = {
     fatsecret_food_id: string;
     servings: number;
     unit?: NutritionUnit;
+    correction?: { foodName: string; calories: number; protein: number; carbs: number; fat: number };
   }): Promise<FoodLog | null> {
     const result = await rankingUpApiClient.addFoodLog({
       date: log.date,
@@ -24,6 +25,7 @@ export const nutritionLogService = {
       foodId: log.fatsecret_food_id,
       amount: log.servings,
       unit: log.unit ?? 'porcion',
+      correction: log.correction,
     });
     return result.log;
   },

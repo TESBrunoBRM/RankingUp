@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
 import { StyleSheet, Text, KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,8 @@ import { appEnv } from '../config/env';
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -100,10 +103,10 @@ export default function LoginScreen() {
             {appEnv.googleAuthEnabled || appEnv.facebookAuthEnabled ? <>
               <Text style={styles.separator}>O CONTINÚA CON</Text>
               {appEnv.googleAuthEnabled ? <Pressable style={styles.socialButton} disabled={loading} onPress={() => void handleSocialLogin('google')}>
-                <Ionicons name="logo-google" size={21} color="#FFF" /><Text style={styles.socialText}>CONTINUAR CON GOOGLE</Text>
+                <Ionicons name="logo-google" size={21} color={theme.text} /><Text style={styles.socialText}>CONTINUAR CON GOOGLE</Text>
               </Pressable> : null}
               {appEnv.facebookAuthEnabled ? <Pressable style={styles.socialButton} disabled={loading} onPress={() => void handleSocialLogin('facebook')}>
-                <Ionicons name="logo-facebook" size={21} color="#FFF" /><Text style={styles.socialText}>CONTINUAR CON FACEBOOK</Text>
+                <Ionicons name="logo-facebook" size={21} color={theme.text} /><Text style={styles.socialText}>CONTINUAR CON FACEBOOK</Text>
               </Pressable> : null}
             </> : null}
         </ScrollView>
@@ -112,10 +115,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
   },
   keyboardView: {
     flex: 1,
@@ -128,13 +131,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: '900',
-    color: '#CCFF00',
+    color: theme.accent,
     marginBottom: 8,
     fontStyle: 'italic',
   },
   subtitle: {
     fontSize: 14,
-    color: '#A0A0A0',
+    color: theme.muted,
     marginBottom: 40,
     fontWeight: '700',
   },
@@ -142,8 +145,8 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 12,
   },
-  error: { color: '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
-  separator: { color: '#8C929A', textAlign: 'center', fontSize: 11, fontWeight: '800', marginTop: 25, marginBottom: 14 },
+  error: { color: theme.mode === 'light' ? '#B42318' : '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
+  separator: { color: theme.muted, textAlign: 'center', fontSize: 11, fontWeight: '800', marginTop: 25, marginBottom: 14 },
   socialButton: { height: 52, borderWidth: 1, borderColor: '#3D424A', borderRadius: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 10 },
-  socialText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+  socialText: { color: theme.text, fontSize: 12, fontWeight: '800' },
 });

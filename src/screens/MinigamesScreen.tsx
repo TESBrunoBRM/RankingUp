@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,8 @@ import { AppStackParamList } from '../types';
 import { PUSH_UP_MONSTERS, PUSH_UP_VICTORY_TARGET } from '../constants/pushUpGame';
 
 export default function MinigamesScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
 
   return (
@@ -14,7 +17,7 @@ export default function MinigamesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>MINIJUEGOS</Text>
         <View style={{ width: 40 }} />
@@ -59,11 +62,11 @@ export default function MinigamesScreen() {
 
             <View style={styles.rewardRow}>
               <View style={styles.rewardItem}>
-                <Ionicons name="add-circle" size={16} color="#CCFF00" />
+                <Ionicons name="add-circle" size={16} color={theme.accent} />
                 <Text style={styles.rewardText}>+50 XP por victoria</Text>
               </View>
               <View style={styles.rewardItem}>
-                <Ionicons name="camera" size={16} color="#CCFF00" />
+                <Ionicons name="camera" size={16} color={theme.accent} />
                 <Text style={styles.rewardText}>Cámara frontal activa</Text>
               </View>
             </View>
@@ -83,7 +86,7 @@ export default function MinigamesScreen() {
         >
           <View style={styles.cardHeader}>
             <View style={[styles.badge, { backgroundColor: '#FF007F' }]}>
-              <Ionicons name="flash" size={14} color="#FFF" />
+              <Ionicons name="flash" size={14} color={theme.text} />
               <Text style={[styles.badgeText, { color: '#FFF' }]}>NUEVO</Text>
             </View>
             <View style={styles.difficultyBadge}>
@@ -100,11 +103,11 @@ export default function MinigamesScreen() {
 
             <View style={styles.rewardRow}>
               <View style={styles.rewardItem}>
-                <Ionicons name="add-circle" size={16} color="#CCFF00" />
+                <Ionicons name="add-circle" size={16} color={theme.accent} />
                 <Text style={styles.rewardText}>+75 XP al ganador</Text>
               </View>
               <View style={styles.rewardItem}>
-                <Ionicons name="people" size={16} color="#CCFF00" />
+                <Ionicons name="people" size={16} color={theme.accent} />
                 <Text style={styles.rewardText}>Marcador en vivo</Text>
               </View>
             </View>
@@ -139,10 +142,10 @@ export default function MinigamesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
   },
   header: {
     flexDirection: 'row',
@@ -152,20 +155,20 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderColor: '#1A1A1A',
+    borderColor: theme.border,
   },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#222',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#FFF',
+    color: theme.text,
     letterSpacing: 2,
   },
   scrollContent: {
@@ -173,17 +176,17 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#888',
+    color: theme.muted,
     lineHeight: 20,
     marginBottom: 25,
     textAlign: 'center',
     fontWeight: '500',
   },
   card: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 24,
     borderWidth: 2,
-    borderColor: '#CCFF00',
+    borderColor: theme.accent,
     marginBottom: 20,
     overflow: 'hidden',
     shadowColor: '#CCFF00',
@@ -193,7 +196,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   disabledCard: {
-    borderColor: '#222',
+    borderColor: theme.border,
     opacity: 0.6,
   },
   cardHeader: {
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   difficultyBadge: {
-    backgroundColor: '#2A2A2A',
+    backgroundColor: theme.surface,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -235,24 +238,24 @@ const styles = StyleSheet.create({
   gameTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#FFF',
+    color: theme.text,
     marginBottom: 8,
   },
   gameDesc: {
     fontSize: 13,
-    color: '#AAA',
+    color: theme.muted,
     lineHeight: 18,
     marginBottom: 16,
   },
   monsterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#111',
+    backgroundColor: theme.surface,
     padding: 10,
     borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: theme.border,
   },
   monsterIconContainer: {
     alignItems: 'center',
@@ -263,7 +266,7 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1,
-    backgroundColor: '#191921',
+    backgroundColor: theme.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -271,12 +274,12 @@ const styles = StyleSheet.create({
   monsterMiniLabel: {
     width: '100%',
     fontSize: 7,
-    color: '#A0A0A0',
+    color: theme.muted,
     fontWeight: '700',
     textTransform: 'uppercase',
     textAlign: 'center',
   },
-  monsterHpLabel: { fontSize: 7, color: '#666', fontWeight: '800', marginTop: 2 },
+  monsterHpLabel: { fontSize: 7, color: theme.muted, fontWeight: '800', marginTop: 2 },
   rewardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
   },
   rewardText: {
     fontSize: 12,
-    color: '#FFF',
+    color: theme.text,
     fontWeight: '600',
     marginLeft: 6,
   },
@@ -296,7 +299,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
     paddingVertical: 14,
     borderRadius: 16,
   },
@@ -311,16 +314,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#222',
+    backgroundColor: theme.surface,
     paddingVertical: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   playButtonDisabledText: {
     fontSize: 14,
     fontWeight: '900',
-    color: '#555',
+    color: theme.muted,
     marginRight: 6,
     letterSpacing: 1,
   },

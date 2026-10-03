@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -55,6 +56,8 @@ const FACET_TABS: {
 ];
 
 export default function AddExercisesScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const route = useRoute<AddExercisesRouteProp>();
   const navigation = useNavigation<AddExercisesNavigationProp>();
   const { workoutId } = route.params;
@@ -279,7 +282,7 @@ export default function AddExercisesScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar: pecho, mancuernas, squat..."
-            placeholderTextColor="#666"
+            placeholderTextColor={theme.muted}
             value={searchInput}
             onChangeText={setSearchInput}
             returnKeyType="search"
@@ -400,7 +403,7 @@ export default function AddExercisesScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#CCFF00" />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       ) : (
         <FlatList
@@ -413,7 +416,7 @@ export default function AddExercisesScreen() {
           onEndReachedThreshold={0.5}
           keyboardShouldPersistTaps="handled"
           ListFooterComponent={
-            loadingMore ? <ActivityIndicator color="#CCFF00" style={styles.footerLoader} /> : null
+            loadingMore ? <ActivityIndicator color={theme.accent} style={styles.footerLoader} /> : null
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -441,7 +444,7 @@ export default function AddExercisesScreen() {
           <View style={styles.modalContent}>
             {detailLoading || !detail ? (
               <View style={styles.modalLoader}>
-                <ActivityIndicator size="large" color="#CCFF00" />
+                <ActivityIndicator size="large" color={theme.accent} />
               </View>
             ) : (
               <ScrollView showsVerticalScrollIndicator={false}>
@@ -507,7 +510,7 @@ export default function AddExercisesScreen() {
 
                 <View style={styles.modalButtons}>
                   {adding ? (
-                    <ActivityIndicator color="#CCFF00" size="large" />
+                    <ActivityIndicator color={theme.accent} size="large" />
                   ) : (
                     <Button title="AÑADIR A RUTINA" onPress={handleAddExercise} />
                   )}
@@ -524,10 +527,10 @@ export default function AddExercisesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
   },
   header: {
     paddingHorizontal: 20,
@@ -538,7 +541,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   backButtonText: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1,
@@ -546,7 +549,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.text,
     paddingHorizontal: 24,
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -560,24 +563,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 48,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    color: '#FFFFFF',
+    color: theme.text,
     fontSize: 15,
   },
   filterHeading: {
     paddingHorizontal: 24,
     marginBottom: 8,
-    color: '#666',
+    color: theme.muted,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,
@@ -590,9 +593,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     padding: 4,
     borderRadius: 12,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   segment: {
     flex: 1,
@@ -605,10 +608,10 @@ const styles = StyleSheet.create({
     borderRadius: 9,
   },
   segmentActive: {
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
   },
   segmentText: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 13,
     fontWeight: '800',
   },
@@ -620,10 +623,10 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     marginLeft: 6,
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
   },
   segmentDotActive: {
-    backgroundColor: '#121212',
+    backgroundColor: theme.surface,
   },
   chipScroll: {
     flexGrow: 0,
@@ -642,16 +645,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   chipActive: {
-    backgroundColor: '#CCFF00',
-    borderColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
+    borderColor: theme.accent,
   },
   chipText: {
-    color: '#D0D0D0',
+    color: theme.text,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -674,7 +677,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.14)',
   },
   chipCountText: {
-    color: '#8A8A8A',
+    color: theme.muted,
     fontSize: 11,
     fontWeight: '800',
   },
@@ -688,7 +691,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
   },
   activeFilterDimension: {
     color: 'rgba(0,0,0,0.55)',
@@ -712,7 +715,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 12,
-    color: '#666666',
+    color: theme.muted,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
@@ -727,20 +730,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   card: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     flexDirection: 'row',
     padding: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: theme.border,
     alignItems: 'center',
   },
   thumbBox: {
     width: 64,
     height: 64,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -756,20 +759,20 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: theme.text,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   muscleText: {
     fontSize: 12,
-    color: '#CCFF00',
+    color: theme.accent,
     textTransform: 'uppercase',
     fontWeight: '700',
     letterSpacing: 1,
   },
   equipmentText: {
     fontSize: 11,
-    color: '#A0A0A0',
+    color: theme.muted,
     marginTop: 4,
     textTransform: 'uppercase',
     fontWeight: '600',
@@ -778,7 +781,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,
@@ -786,7 +789,7 @@ const styles = StyleSheet.create({
   addButtonIconText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#CCFF00',
+    color: theme.accent,
   },
   center: {
     flex: 1,
@@ -803,14 +806,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: theme.text,
     fontWeight: '900',
     letterSpacing: 1,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 13,
-    color: '#A0A0A0',
+    color: theme.muted,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -820,10 +823,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#CCFF00',
+    borderColor: theme.accent,
   },
   retryText: {
-    color: '#CCFF00',
+    color: theme.accent,
     fontWeight: '800',
     fontSize: 12,
     letterSpacing: 1,
@@ -834,13 +837,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     maxHeight: '88%',
     borderTopWidth: 1,
-    borderTopColor: '#333333',
+    borderTopColor: theme.border,
   },
   modalLoader: {
     paddingVertical: 60,
@@ -849,13 +852,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.text,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   modalSubtitle: {
     fontSize: 13,
-    color: '#CCFF00',
+    color: theme.accent,
     marginBottom: 16,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -864,7 +867,7 @@ const styles = StyleSheet.create({
   gifBox: {
     alignItems: 'center',
     marginBottom: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     height: 220,
     justifyContent: 'center',
@@ -878,15 +881,15 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 140,
     borderRadius: 12,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   gifPlaceholderText: {
-    color: '#666',
+    color: theme.muted,
     marginTop: 10,
     fontSize: 11,
     fontWeight: '800',
@@ -901,19 +904,19 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
   },
   badgeText: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   secondaryMuscles: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 12,
     marginBottom: 16,
     lineHeight: 17,
@@ -922,7 +925,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   stepsTitle: {
-    color: '#FFFFFF',
+    color: theme.text,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1,
@@ -936,7 +939,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -949,7 +952,7 @@ const styles = StyleSheet.create({
   },
   stepText: {
     flex: 1,
-    color: '#D0D0D0',
+    color: theme.text,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -964,7 +967,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   attribution: {
-    color: '#555',
+    color: theme.muted,
     fontSize: 10,
     textAlign: 'center',
     marginTop: 16,

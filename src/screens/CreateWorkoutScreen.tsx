@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +23,8 @@ const DAYS = [
 ] satisfies { id: WeekDay; label: string }[];
 
 export default function CreateWorkoutScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<CreateNavigationProp>();
   const { user } = useAuthStore();
   
@@ -125,10 +128,10 @@ export default function CreateWorkoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
   },
   header: {
     paddingHorizontal: 24,
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#CCFF00',
+    color: theme.accent,
     letterSpacing: 1,
   },
   keyboardView: {
@@ -154,12 +157,12 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#A0A0A0',
+    color: theme.muted,
     marginBottom: 16,
     letterSpacing: 1,
   },
   helperText: {
-    color: '#666',
+    color: theme.muted,
     fontSize: 12,
     marginBottom: 16,
   },
@@ -171,19 +174,19 @@ const styles = StyleSheet.create({
   dayButton: {
     width: '22%',
     aspectRatio: 1,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: theme.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dayButtonSelected: {
-    backgroundColor: '#CCFF00',
-    borderColor: '#CCFF00',
+    backgroundColor: theme.accentFill,
+    borderColor: theme.accent,
   },
   dayText: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1,

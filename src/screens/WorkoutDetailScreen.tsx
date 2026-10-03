@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +22,8 @@ interface EnrichedExercise extends WorkoutExercise {
 }
 
 export default function WorkoutDetailScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const route = useRoute<WorkoutDetailRouteProp>();
   const navigation = useNavigation<WorkoutDetailNavigationProp>();
   const { workoutId } = route.params;
@@ -135,7 +138,7 @@ export default function WorkoutDetailScreen() {
 
       {loading && !workout ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#CCFF00" />
+          <ActivityIndicator size="large" color={theme.accent} />
         </View>
       ) : (
         <>
@@ -177,10 +180,10 @@ export default function WorkoutDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
   },
   header: {
     paddingHorizontal: 20,
@@ -191,7 +194,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   backButtonText: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1,
@@ -203,13 +206,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.text,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   descriptionText: {
     fontSize: 14,
-    color: '#A0A0A0',
+    color: theme.muted,
     marginTop: 8,
     fontWeight: '500',
   },
@@ -218,26 +221,26 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     flexDirection: 'row',
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: theme.border,
     alignItems: 'center',
   },
   avatarBox: {
     width: 60,
     height: 60,
     borderRadius: 12,
-    backgroundColor: '#333333',
+    backgroundColor: theme.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
     fontSize: 28,
-    color: '#CCFF00',
+    color: theme.accent,
     fontWeight: '900',
   },
   cardContent: {
@@ -247,13 +250,13 @@ const styles = StyleSheet.create({
   exerciseName: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: theme.text,
     marginBottom: 4,
     textTransform: 'uppercase',
   },
   muscleText: {
     fontSize: 12,
-    color: '#CCFF00',
+    color: theme.accent,
     marginBottom: 10,
     textTransform: 'uppercase',
     fontWeight: '700',
@@ -267,12 +270,12 @@ const styles = StyleSheet.create({
   statsNumber: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: theme.text,
   },
   statsLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#A0A0A0',
+    color: theme.muted,
     marginRight: 8,
   },
   statsDivider: {
@@ -291,9 +294,9 @@ const styles = StyleSheet.create({
   footer: {
     padding: 24,
     paddingBottom: 32,
-    backgroundColor: '#101114',
+    backgroundColor: theme.background,
     borderTopWidth: 1,
-    borderTopColor: '#1A1A1A',
+    borderTopColor: theme.border,
   },
   center: {
     flex: 1,
@@ -306,13 +309,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: theme.text,
     fontWeight: '900',
     letterSpacing: 2,
     marginBottom: 8,
   },
   emptySubtext: {
-    color: '#A0A0A0',
+    color: theme.muted,
     fontSize: 14,
   },
 });

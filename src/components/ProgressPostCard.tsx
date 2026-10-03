@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
 import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,8 @@ import type { AppStackParamList, ProgressPost } from '../types';
 import { useAuthStore } from '../store/authStore';
 
 export function ProgressPostCard({ post, onDeleted }: { post: ProgressPost; onDeleted?: (id: string) => void }) {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const ownId = useAuthStore((state) => state.user?.id);
   const [liked, setLiked] = useState(post.likedByMe);
@@ -46,12 +49,12 @@ export function ProgressPostCard({ post, onDeleted }: { post: ProgressPost; onDe
   </View>;
 }
 
-const styles = StyleSheet.create({
-  card: { backgroundColor: '#1C1F23', borderWidth: 1, borderColor: '#2B2E35', borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
-  headerRow: { flexDirection: 'row', alignItems: 'center' }, authorRow: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 13, gap: 10 }, avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#CCFF00', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#101114', fontWeight: '900' }, author: { color: '#FFF', fontSize: 13, fontWeight: '800' }, date: { color: '#838A93', fontSize: 11 },
-  photo: { width: '100%', aspectRatio: 1 }, body: { padding: 13, gap: 7 }, title: { color: '#FFF', fontWeight: '900', fontSize: 16 },
-  stats: { color: '#CCFF00', fontSize: 11, fontWeight: '700' }, description: { color: '#C5C8CC', fontSize: 13, lineHeight: 19 },
-  like: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: 5, minHeight: 36 }, likeCount: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  card: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, borderRadius: 6, overflow: 'hidden', marginBottom: 14 },
+  headerRow: { flexDirection: 'row', alignItems: 'center' }, authorRow: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 13, gap: 10 }, avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: theme.accentFill, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { color: '#101114', fontWeight: '900' }, author: { color: theme.text, fontSize: 13, fontWeight: '800' }, date: { color: theme.muted, fontSize: 11 },
+  photo: { width: '100%', aspectRatio: 1 }, body: { padding: 13, gap: 7 }, title: { color: theme.text, fontWeight: '900', fontSize: 16 },
+  stats: { color: theme.accent, fontSize: 11, fontWeight: '700' }, description: { color: theme.text, fontSize: 13, lineHeight: 19 },
+  like: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', marginTop: 5, minHeight: 36 }, likeCount: { color: theme.text, fontSize: 12, fontWeight: '800' },
   delete: { height: 44, width: 44, alignItems: 'center', justifyContent: 'center' },
 });

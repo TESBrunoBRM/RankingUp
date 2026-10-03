@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet, TextInputProps, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +9,8 @@ interface InputProps extends TextInputProps {
 }
 
 export const Input: React.FC<InputProps> = ({ label, error, style, secureTextEntry, ...props }) => {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const [passwordVisible, setPasswordVisible] = useState(false);
   return (
     <View style={styles.container}>
@@ -15,7 +18,7 @@ export const Input: React.FC<InputProps> = ({ label, error, style, secureTextEnt
       <View style={[styles.inputWrap, error ? styles.inputError : null]}>
         <TextInput
           style={[styles.input, secureTextEntry ? styles.passwordInput : null, style]}
-          placeholderTextColor="#858A91"
+          placeholderTextColor={theme.muted}
           {...props}
           secureTextEntry={Boolean(secureTextEntry && !passwordVisible)}
         />
@@ -31,14 +34,14 @@ export const Input: React.FC<InputProps> = ({ label, error, style, secureTextEnt
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: {
     marginBottom: 16,
     width: '100%',
   },
   label: {
     fontSize: 14,
-    color: '#A0A0A0', // Light gray for labels
+    color: theme.muted, // Light gray for labels
     marginBottom: 8,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -47,9 +50,9 @@ const styles = StyleSheet.create({
   inputWrap: {
     height: 56,
     borderWidth: 1,
-    borderColor: '#333333',
+    borderColor: theme.border,
     borderRadius: 6,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.surface,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -58,7 +61,7 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: theme.text,
   },
   passwordInput: { paddingRight: 0 },
   visibilityButton: { width: 52, height: 54, alignItems: 'center', justifyContent: 'center' },

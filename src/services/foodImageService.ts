@@ -14,16 +14,23 @@ export interface FoodPhoto {
 
 const preparePhoto = async (photo: FoodPhoto) => {
   const longest = Math.max(photo.width ?? 0, photo.height ?? 0);
-  const resize = longest > 1280
-    ? (photo.width ?? 0) >= (photo.height ?? 0) ? { width: 1280 } : { height: 1280 }
+  const resize = longest > 1600
+    ? (photo.width ?? 0) >= (photo.height ?? 0) ? { width: 1600 } : { height: 1600 }
     : null;
   const processed = await ImageManipulator.manipulateAsync(
     photo.uri,
     resize ? [{ resize }] : [],
-    { compress: 0.72, format: ImageManipulator.SaveFormat.JPEG },
+    { compress: 0.82, format: ImageManipulator.SaveFormat.JPEG },
   );
-  const base64 = await FileSystem.readAsStringAsync(processed.uri, { encoding: FileSystem.EncodingType.Base64 });
-  const bytes = decode(base64);
+  let base64 = await FileSystem.readAsStringAsync(processed.uri, { encoding: FileSystem.EncodingType.Base64 });
+  let bytes = decode(base64);
+  if (bytes.byteLength > 5 * 1024 * 1024) {
+    const smaller = await ImageManipulator.manipulateAsync(photo.uri,
+      [(photo.width ?? 0) >= (photo.height ?? 0) ? { resize: { width: 1280 } } : { resize: { height: 1280 } }],
+      { compress: 0.72, format: ImageManipulator.SaveFormat.JPEG });
+    base64 = await FileSystem.readAsStringAsync(smaller.uri, { encoding: FileSystem.EncodingType.Base64 });
+    bytes = decode(base64);
+  }
   if (!bytes.byteLength || bytes.byteLength > 5 * 1024 * 1024) {
     throw new Error('La foto debe pesar menos de 5 MB.');
   }

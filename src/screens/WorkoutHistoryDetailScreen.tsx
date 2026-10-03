@@ -1,3 +1,4 @@
+import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +12,8 @@ import type { AppStackParamList, WorkoutHistoryItem } from '../types';
 type ExerciseLog = NonNullable<WorkoutHistoryItem['exercise_logs']>[number];
 
 export default function WorkoutHistoryDetailScreen() {
+  const theme = useThemePalette();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { logId } = useRoute<RouteProp<AppStackParamList, 'WorkoutHistoryDetail'>>().params;
   const [detail, setDetail] = useState<WorkoutHistoryItem | null>(null);
@@ -40,10 +43,10 @@ export default function WorkoutHistoryDetailScreen() {
 
   return <SafeAreaView style={styles.page} edges={['top', 'bottom']}>
     <View style={styles.header}>
-      <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Volver al historial"><Ionicons name="arrow-back" size={24} color="#FFF" /></Pressable>
+      <Pressable onPress={() => navigation.goBack()} accessibilityLabel="Volver al historial"><Ionicons name="arrow-back" size={24} color={theme.text} /></Pressable>
       <Text style={styles.headerTitle}>ENTRENAMIENTO</Text>
     </View>
-    {loading ? <ActivityIndicator style={styles.center} color="#CCFF00" /> : error || !detail ?
+    {loading ? <ActivityIndicator style={styles.center} color={theme.accent} /> : error || !detail ?
       <View style={styles.center}><Text style={styles.muted}>No se pudo cargar esta sesión.</Text></View> :
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>{detail.name || 'Entrenamiento'}</Text>
@@ -56,7 +59,7 @@ export default function WorkoutHistoryDetailScreen() {
         {exercises.length === 0 ? <Text style={styles.muted}>Esta sesión no tiene series registradas.</Text> :
           exercises.map((exercise) => <View key={exercise.name} style={styles.exercise}>
             <Pressable onPress={() => navigation.navigate('ExerciseProgress', { name: exercise.name })} style={styles.exerciseHeader}>
-              <Text style={styles.exerciseName}>{exercise.name}</Text><Ionicons name="stats-chart-outline" size={19} color="#CCFF00" />
+              <Text style={styles.exerciseName}>{exercise.name}</Text><Ionicons name="stats-chart-outline" size={19} color={theme.accent} />
             </Pressable>
             {exercise.sets.map((set) => <View key={set.id} style={styles.setRow}>
               <Text style={styles.setIndex}>{set.kind === 'warmup' ? 'W' : set.set_index}</Text>
@@ -68,24 +71,24 @@ export default function WorkoutHistoryDetailScreen() {
   </SafeAreaView>;
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#101114' },
-  header: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 18, borderBottomWidth: 1, borderColor: '#2B2E35' },
-  headerTitle: { color: '#FFF', fontSize: 19, fontWeight: '900' },
+const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  page: { flex: 1, backgroundColor: theme.background },
+  header: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 18, paddingHorizontal: 18, borderBottomWidth: 1, borderColor: theme.border },
+  headerTitle: { color: theme.text, fontSize: 19, fontWeight: '900' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: { padding: 18, paddingBottom: 42 },
-  title: { color: '#FFF', fontSize: 24, fontWeight: '900' },
-  date: { color: '#A8ABB0', fontSize: 13, marginTop: 5 },
-  metrics: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 24, borderBottomWidth: 1, borderColor: '#2B2E35', marginBottom: 12 },
-  metricValue: { color: '#FFF', fontSize: 17, fontWeight: '800' },
-  metricXp: { color: '#CCFF00', fontSize: 17, fontWeight: '900' },
-  metricLabel: { color: '#A8ABB0', fontSize: 10, fontWeight: '800', marginTop: 5 },
-  exercise: { paddingVertical: 16, borderBottomWidth: 1, borderColor: '#2B2E35' },
+  title: { color: theme.text, fontSize: 24, fontWeight: '900' },
+  date: { color: theme.muted, fontSize: 13, marginTop: 5 },
+  metrics: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 24, borderBottomWidth: 1, borderColor: theme.border, marginBottom: 12 },
+  metricValue: { color: theme.text, fontSize: 17, fontWeight: '800' },
+  metricXp: { color: theme.accent, fontSize: 17, fontWeight: '900' },
+  metricLabel: { color: theme.muted, fontSize: 10, fontWeight: '800', marginTop: 5 },
+  exercise: { paddingVertical: 16, borderBottomWidth: 1, borderColor: theme.border },
   exerciseHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 },
-  exerciseName: { color: '#FFF', fontSize: 16, fontWeight: '800', flex: 1 },
+  exerciseName: { color: theme.text, fontSize: 16, fontWeight: '800', flex: 1 },
   setRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 14 },
-  setIndex: { color: '#CCFF00', width: 24, fontSize: 12, fontWeight: '900' },
-  setValue: { color: '#FFF', fontSize: 14, fontWeight: '700', flex: 1 },
-  pr: { color: '#CCFF00', fontSize: 10, fontWeight: '900' },
-  muted: { color: '#A8ABB0', fontSize: 13 },
+  setIndex: { color: theme.accent, width: 24, fontSize: 12, fontWeight: '900' },
+  setValue: { color: theme.text, fontSize: 14, fontWeight: '700', flex: 1 },
+  pr: { color: theme.accent, fontSize: 10, fontWeight: '900' },
+  muted: { color: theme.muted, fontSize: 13 },
 });

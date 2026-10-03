@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { envStatus } from './src/config/env';
@@ -10,8 +10,10 @@ import { rankingUpApiClient } from './src/services/rankingUpApiClient';
 import AppNavigator from './src/navigation/AppNavigator';
 import { getAuthErrorMessage } from './src/utils/errors';
 import { authService } from './src/services/auth';
+import { useThemePalette } from './src/theme';
 
 function ConfiguredApp() {
+  const theme = useThemePalette();
   const { setSession, setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
@@ -74,8 +76,8 @@ function ConfiguredApp() {
   }, [setLoading, setSession, setUser]);
 
   return (
-    <NavigationContainer>
-      <StatusBar style="light" backgroundColor="#101114" />
+    <NavigationContainer theme={{ ...(theme.mode === 'dark' ? DarkTheme : DefaultTheme), colors: { ...(theme.mode === 'dark' ? DarkTheme : DefaultTheme).colors, background: theme.background, card: theme.surface, text: theme.text, border: theme.border, primary: theme.accent } }}>
+      <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} backgroundColor={theme.background} />
       <AppNavigator />
     </NavigationContainer>
   );

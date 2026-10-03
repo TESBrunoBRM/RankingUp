@@ -46,6 +46,14 @@ export const FOOD_CATALOG: FoodSearchResult[] = [
   food('demo-pear', 'Pera', serving(100, 'g', 57, 0.1, 15, 0.4, 'Por 100 g')),
   food('demo-skim-milk', 'Leche descremada', serving(100, 'ml', 34, 0.1, 5, 3.4, 'Por 100 ml')),
   food('demo-whole-bread', 'Pan integral', serving(100, 'g', 247, 3.4, 41, 13, 'Por 100 g')),
+  // Valores por 100 g de USDA FoodData Central (SR Legacy); el identificador FDC queda en el ID.
+  food('curated-fdc-173424', 'Huevo cocido duro', serving(100, 'g', 155, 10.6, 1.12, 12.6, 'Por 100 g · USDA FDC 173424')),
+  food('curated-fdc-171795', 'Carne molida magra cocida (90/10)', serving(100, 'g', 214, 11.1, 0, 26.6, 'Por 100 g · USDA FDC 171795')),
+  food('curated-fdc-171999', 'Salmón cocido al calor seco', serving(100, 'g', 231, 13.4, 0, 25.7, 'Por 100 g · USDA FDC 171999')),
+  food('curated-fdc-169967', 'Brócoli cocido sin sal', serving(100, 'g', 35, 0.41, 7.18, 2.38, 'Por 100 g · USDA FDC 169967')),
+  food('curated-fdc-172421', 'Lentejas cocidas sin sal', serving(100, 'g', 116, 0.38, 20.1, 9.02, 'Por 100 g · USDA FDC 172421')),
+  food('curated-fdc-173799', 'Garbanzos cocidos con sal', serving(100, 'g', 164, 2.59, 27.4, 8.86, 'Por 100 g · USDA FDC 173799')),
+  food('curated-fdc-174031', 'Hamburguesa de res magra asada (90/10)', serving(100, 'g', 217, 11.8, 0, 26.1, 'Por 100 g · USDA FDC 174031')),
 ];
 
 export const searchFoods = (query: string): FoodSearchResult[] => {
@@ -53,7 +61,7 @@ export const searchFoods = (query: string): FoodSearchResult[] => {
   if (!normalizedQuery) return FOOD_CATALOG;
 
   const matches = FOOD_CATALOG.filter((item) => normalizeLabel(item.food_name).includes(normalizedQuery));
-  return matches.length > 0 ? matches : FOOD_CATALOG.slice(0, 6);
+  return matches;
 };
 
 export const getFoodById = (foodId: string): FoodSearchResult | null =>
