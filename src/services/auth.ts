@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import { AUTH_CALLBACK_URL, parseAuthCallback } from '../utils/authCallback';
+import { meetsPasswordRequirements, PASSWORD_MIN_LENGTH } from '../utils/password';
 
 export type SocialProvider = 'google' | 'facebook';
 
@@ -49,6 +50,7 @@ export const authService = {
   },
 
   async register(email: string, password: string) {
+    if (!meetsPasswordRequirements(password)) throw new Error(`La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`);
     const supabase = getSupabaseClient();
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),

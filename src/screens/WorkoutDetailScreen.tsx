@@ -1,4 +1,5 @@
 import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
+import { SafetyNotice } from '../components/SafetyNotice';
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -150,6 +151,7 @@ export default function WorkoutDetailScreen() {
           </View>
 
           <FlatList
+            ListHeaderComponent={<SafetyNotice kind="training" />}
             data={exercises}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}

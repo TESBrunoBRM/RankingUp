@@ -9,6 +9,7 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import type { AuthStackParamList } from '../types';
 import { getAuthErrorMessage } from '../utils/errors';
+import { meetsPasswordRequirements, PASSWORD_MIN_LENGTH } from '../utils/password';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -22,6 +23,8 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const passwordValid = meetsPasswordRequirements(password);
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
 
   const handleRegister = async () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -33,8 +36,8 @@ export default function RegisterScreen() {
       setError('Ingresa un correo electrónico válido.');
       return;
     }
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
+    if (!passwordValid) {
+      setError(`La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`);
       return;
     }
     if (password !== confirmPassword) {
@@ -80,26 +83,37 @@ export default function RegisterScreen() {
               label="CONTRASEÑA"
               placeholder="********"
               secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
               autoComplete="new-password"
               textContentType="newPassword"
               value={password}
               onChangeText={setPassword}
             />
 
+            <View style={styles.passwordHelp} accessibilityLiveRegion="polite">
+              <Text style={styles.passwordHeading}>Requisito mínimo</Text>
+              <Text style={[styles.passwordRule, passwordValid && styles.ruleMet]}>{passwordValid ? '✓ Cumplido' : '○ Pendiente'}: al menos {PASSWORD_MIN_LENGTH} caracteres ({password.length}/{PASSWORD_MIN_LENGTH}).</Text>
+              <Text style={styles.passwordTip}>Para mayor seguridad, usa una contraseña larga, única y difícil de adivinar.</Text>
+            </View>
+
             <Input
               label="CONFIRMAR CONTRASEÑA"
               placeholder="********"
               secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
               autoComplete="new-password"
               textContentType="newPassword"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
             />
+            {confirmPassword ? <Text accessibilityLiveRegion="polite" style={[styles.passwordRule, passwordsMatch && styles.ruleMet]}>{passwordsMatch ? '✓ Las contraseñas coinciden.' : '○ Las contraseñas todavía no coinciden.'}</Text> : null}
 
             {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
 
             <View style={styles.termsRow}>
-              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: acceptedTerms }} onPress={() => setAcceptedTerms(!acceptedTerms)} style={styles.termsCheck}>
+              <Pressable accessibilityRole="checkbox" accessibilityLabel="Aceptar términos y privacidad" accessibilityState={{ checked: acceptedTerms }} onPress={() => setAcceptedTerms(!acceptedTerms)} style={styles.termsCheck}>
                 <Text style={styles.termsCheckText}>{acceptedTerms ? '✓' : ''}</Text>
               </Pressable>
               <Pressable accessibilityRole="link" onPress={() => navigation.navigate('Terms')} style={styles.termsLink}>
@@ -111,6 +125,7 @@ export default function RegisterScreen() {
               title="REGISTRARSE"
               onPress={handleRegister}
               loading={loading}
+              disabled={loading || !passwordValid || !passwordsMatch || !acceptedTerms || !email.trim()}
               style={styles.button}
             />
 
@@ -157,8 +172,13 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
   },
   error: { color: theme.mode === 'light' ? '#B42318' : '#FF8A80', fontSize: 13, lineHeight: 19, marginTop: 2 },
   termsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14, marginBottom: 8 },
-  termsCheck: { width: 26, height: 26, borderRadius: 5, borderWidth: 2, borderColor: theme.accent, alignItems: 'center', justifyContent: 'center' },
+  termsCheck: { width: 48, height: 48, borderRadius: 8, borderWidth: 2, borderColor: theme.accent, alignItems: 'center', justifyContent: 'center' },
   termsCheckText: { color: theme.accent, fontWeight: '900' },
   termsLink: { flex: 1 },
   termsText: { color: theme.text, fontSize: 12, lineHeight: 18, textDecorationLine: 'underline' },
+  passwordHelp: { marginTop: -4, marginBottom: 20, padding: 14, borderRadius: 8, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+  passwordHeading: { color: theme.text, fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  passwordRule: { color: theme.muted, fontSize: 14, lineHeight: 22 },
+  ruleMet: { color: theme.accent },
+  passwordTip: { color: theme.muted, fontSize: 13, lineHeight: 20, marginTop: 6 },
 });

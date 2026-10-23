@@ -37,6 +37,8 @@ import { getCurrentWeekDay } from '../utils/date';
 import { getErrorMessage } from '../utils/errors';
 import { StreakBadge } from '../components/StreakBadge';
 import { ProgressPostCard } from '../components/ProgressPostCard';
+import { useEnabledFeatures } from '../store/experienceStore';
+import { SafetyNotice } from '../components/SafetyNotice';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -104,6 +106,7 @@ export default function HomeScreen() {
   const styles = useThemedStyles(createStyles);
   const { user } = useAuthStore();
   const navigation = useNavigation<NavigationProp>();
+  const { training, nutrition, community } = useEnabledFeatures();
   const splashAnimation = useRef(new Animated.Value(0)).current;
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -121,7 +124,7 @@ export default function HomeScreen() {
   const [progressPosts, setProgressPosts] = useState<ProgressPost[]>([]);
 
   const checkInStreak = useCallback(async () => {
-    if (!user) return;
+    if (!user || !community) return;
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const now = new Date();
     const key = `streak:lastCheckIn:${user.id}`;
@@ -140,7 +143,7 @@ export default function HomeScreen() {
     } catch (error: unknown) {
       console.warn('Streak:', getErrorMessage(error, 'No se pudo actualizar la racha.'));
     }
-  }, [user]);
+  }, [user, community]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -157,8 +160,7 @@ export default function HomeScreen() {
       setWorkouts(dashboard.workouts);
       setProfile(dashboard.profile);
       if (dashboard.streak) setStreak(dashboard.streak);
-      if (dashboard.requiresOnboarding) navigation.replace('Onboarding');
-      else void checkInStreak();
+      void checkInStreak();
     } catch (error: unknown) {
       const message = getErrorMessage(error, 'No se pudo cargar tu resumen.');
       setDashboardError(message);
@@ -182,6 +184,7 @@ export default function HomeScreen() {
   }, []);
 
   const fetchHomeContent = useCallback(async () => {
+    if (!community) { setContentLoading(false); return; }
     try {
       setHomeContent(await rankingUpApiClient.getHomeContent());
     } catch (error: unknown) {
@@ -189,17 +192,17 @@ export default function HomeScreen() {
     } finally {
       setContentLoading(false);
     }
-  }, []);
+  }, [community]);
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
     void fetchDashboardData();
     void fetchHomeContent();
-    const feedTimer = setTimeout(() => {
+    const feedTimer = community ? setTimeout(() => {
       void rankingUpApiClient.getProgressFeed().then((result) => setProgressPosts(result.items.slice(0, 2))).catch(() => undefined);
-    }, 1200);
-    return () => clearTimeout(feedTimer);
-  }, [fetchDashboardData, fetchHomeContent]));
+    }, 1200) : undefined;
+    return () => { if (feedTimer) clearTimeout(feedTimer); };
+  }, [fetchDashboardData, fetchHomeContent, community]));
 
   const messages = homeContent?.messages ?? [];
   useEffect(() => {
@@ -227,9 +230,9 @@ export default function HomeScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.allSettled([fetchDashboardData(), fetchHomeContent(), rankingUpApiClient.getProgressFeed().then((result) => setProgressPosts(result.items.slice(0, 2)))]);
+    await Promise.allSettled([fetchDashboardData(), fetchHomeContent(), ...(community ? [rankingUpApiClient.getProgressFeed().then((result) => setProgressPosts(result.items.slice(0, 2)))] : [])]);
     setRefreshing(false);
-  }, [fetchDashboardData, fetchHomeContent]);
+  }, [fetchDashboardData, fetchHomeContent, community]);
 
   const openNews = useCallback(async (item: FitnessNewsItem) => {
     try {
@@ -258,7 +261,7 @@ export default function HomeScreen() {
           <Text style={styles.name} numberOfLines={1}>{displayName.toUpperCase()}</Text>
           <Text style={styles.date}>{HOME_DATE_FORMATTER.format(new Date()).toUpperCase()}</Text>
         </View>
-        <StreakBadge count={streak.current} onPress={() => void openStreak()} />
+        {community ? <StreakBadge count={streak.current} onPress={() => void openStreak()} /> : null}
         <Pressable accessibilityLabel="Abrir perfil" style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="person-outline" size={21} color={theme.accent} />
         </Pressable>
@@ -269,12 +272,20 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor="#CCFF00" colors={['#CCFF00']} />}
       >
+        <View style={styles.setupCard}>
+          <Text style={styles.setupTitle}>TU ESPACIO, A TU RITMO</Text>
+          <Text style={styles.setupText}>Funciones activas: {[training ? 'Ejercicios' : '', nutrition ? 'Alimentación' : '', community ? 'Comunidad' : ''].filter(Boolean).join(' · ')}</Text>
+          <Pressable accessibilityRole="button" style={styles.setupAction} onPress={() => navigation.navigate('ExperienceSetup')}><Text style={styles.setupLink}>Cambiar funciones o repetir la guía ›</Text></Pressable>
+        </View>
+        {nutrition ? <Pressable accessibilityRole="button" style={styles.setupCard} onPress={() => navigation.navigate('MainTabs', { screen: 'NutritionTab' })}><Text style={styles.setupTitle}>TU REGISTRO DE ALIMENTACIÓN</Text><Text style={styles.setupText}>Anota tus comidas y agua desde Nutrición. Las metas son orientativas.</Text><Text style={styles.setupLink}>Abrir Nutrición ›</Text></Pressable> : null}
+        {training ? <>
+        <View style={styles.safetyWrap}><SafetyNotice kind="training" /></View>
         <View style={styles.summaryBand}>
-          <View style={styles.summaryItem}>
+          {community ? <><View style={styles.summaryItem}>
             <Text style={styles.summaryValue}>{profile?.xp ?? 0}</Text>
             <Text style={styles.summaryLabel}>XP TOTAL</Text>
           </View>
-          <View style={styles.summaryDivider} />
+          <View style={styles.summaryDivider} /></> : null}
           <View style={styles.summaryItem}>
             <Text style={styles.summaryValue}>{workouts.length}</Text>
             <Text style={styles.summaryLabel}>RUTINAS</Text>
@@ -286,7 +297,8 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <View style={styles.splashViewport}>
+        </> : null}
+        {community ? <View style={styles.splashViewport}>
           {currentMessage ? (
             <Animated.Text style={[styles.splashText, splashStyle]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.78}>
               {currentMessage.text}
@@ -296,8 +308,7 @@ export default function HomeScreen() {
           ) : (
             <Text style={styles.splashText}>SIGUE SUMANDO REPETICIONES.</Text>
           )}
-        </View>
-
+        </View> : null}
         {dashboardError ? (
           <View style={styles.notice}>
             <Ionicons name="cloud-offline-outline" size={20} color="#FF9F0A" />
@@ -311,6 +322,7 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
+        {training ? <>
         <View style={styles.sectionHeader}>
           <View>
             <Text style={styles.sectionEyebrow}>PLANIFICACION</Text>
@@ -376,6 +388,8 @@ export default function HomeScreen() {
           </View>
         )}
 
+        </> : null}
+        {community ? <>
         <View style={styles.sectionHeaderNews}>
           <View>
             <Text style={styles.sectionEyebrow}>ACTUALIDAD</Text>
@@ -407,6 +421,7 @@ export default function HomeScreen() {
         </View>
         {progressPosts.length ? <View style={styles.progressList}>{progressPosts.map((post) => <ProgressPostCard key={post.id} post={post} onDeleted={(id) => setProgressPosts((current) => current.filter((item) => item.id !== id))} />)}</View>
           : <Pressable style={styles.progressEmpty} onPress={() => navigation.navigate('ProgressFeed')}><Ionicons name="people-outline" color={theme.accent} size={23} /><Text style={styles.progressEmptyText}>Aún no hay progreso de tu comunidad.</Text></Pressable>}
+        </> : null}
       </ScrollView>
       <Modal visible={streakModalOpen} transparent animationType="fade" onRequestClose={() => setStreakModalOpen(false)}>
         <View style={styles.streakBackdrop}>
@@ -438,6 +453,12 @@ export default function HomeScreen() {
 
 const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
+  setupCard: { marginHorizontal: 20, marginBottom: 16, padding: 18, borderRadius: 12, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
+  setupTitle: { color: theme.text, fontSize: 17, fontWeight: '800', marginBottom: 8 },
+  setupText: { color: theme.muted, fontSize: 15, lineHeight: 23, marginBottom: 8 },
+  setupAction: { minHeight: 48, justifyContent: 'center' },
+  setupLink: { color: theme.accent, fontSize: 15, fontWeight: '700' },
+  safetyWrap: { marginHorizontal: 20 },
   header: { minHeight: 94, paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#24262B' },
   headerCopy: { flex: 1, minWidth: 0 },
   eyebrow: { color: theme.muted, fontSize: 10, fontWeight: '900' },

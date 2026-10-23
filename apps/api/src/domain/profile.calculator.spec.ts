@@ -1,6 +1,11 @@
 import { assertManualTargetCalories, calculateTargetCalories } from './profile.calculator';
 
 describe('profile calculator', () => {
+  it('does not generate adult calorie targets for children or invalid ages', () => {
+    for (const age of [10, 17, 25.5, 101, NaN]) {
+      expect(() => calculateTargetCalories({ weight: 60, height: 165, age, gender: 'mujer', goal: 'bajar' })).toThrow('adultos');
+    }
+  });
   it('calculates target calories with goal adjustment', () => {
     const maintain = calculateTargetCalories({
       weight: 75,

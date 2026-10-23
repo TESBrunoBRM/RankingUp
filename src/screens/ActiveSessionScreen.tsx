@@ -1,4 +1,5 @@
 import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
+import { SafetyNotice } from '../components/SafetyNotice';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -163,6 +164,7 @@ export default function ActiveSessionScreen() {
         <Ionicons name={exercise.rows.every((row) => row.completed) ? 'checkmark' : 'barbell'} size={19} color={exercise.rows.every((row) => row.completed) ? '#101114' : '#CCFF00'} />
       </Pressable>)}</View>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <SafetyNotice kind="training" />
         {active ? <>
           {active.details?.gifUrl ? <Image source={{ uri: active.details.gifUrl }} style={styles.media} resizeMode="contain" accessibilityLabel={`Demostracion de ${active.exercise_id}`} /> : null}
           <Text style={styles.title}>{active.exercise_id}</Text>

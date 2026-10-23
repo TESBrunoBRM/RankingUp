@@ -19,9 +19,9 @@ export class CompleteOnboardingDto {
   @Max(250)
   height!: number;
 
-  @ApiProperty({ example: 25, minimum: 10, maximum: 100 })
+  @ApiProperty({ example: 25, minimum: 18, maximum: 100 })
   @IsInt()
-  @Min(10)
+  @Min(18)
   @Max(100)
   age!: number;
 

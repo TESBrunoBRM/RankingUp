@@ -1,6 +1,8 @@
 import { appEnv } from '../config/env';
 import { getSupabaseClient } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
+import { EXPERIENCE_VERSION, type AppFeature, type ExperiencePreferences } from '../constants/experience';
+import { LEGAL_VERSION } from '../constants/legal';
 import type {
   CompleteOnboardingRequest,
   DashboardResponse,
@@ -249,8 +251,12 @@ export const rankingUpApiClient = {
     request<SubmissionPage>(`/v1/reports/${kind}/mine?page=${page}`, {}, { skipCache: true }),
   warmUp: warmUpApi,
 
-  getLegalAcceptance: () => request<{ version: string; accepted: boolean; acceptedAt: string | null }>('/v1/legal/acceptance'),
-  acceptLegalTerms: () => request<{ version: string; accepted: boolean; acceptedAt: string }>('/v1/legal/acceptance', { method: 'POST' }),
+  getLegalAcceptance: () => request<{ version: string; accepted: boolean; acceptedAt: string | null }>('/v1/legal/acceptance', {}, { skipCache: true }),
+  acceptLegalTerms: () => request<{ version: string; accepted: boolean; acceptedAt: string }>('/v1/legal/acceptance', { method: 'POST', body: JSON.stringify({ documentVersion: LEGAL_VERSION }) }),
+
+  getExperience: () => request<ExperiencePreferences | null>('/v1/experience', {}, { skipCache: true }),
+  saveExperience: (input: { features: AppFeature[]; safetyVersion: typeof EXPERIENCE_VERSION; safetyAcknowledged: true; dataAccuracyAcknowledged: true; guideCompleted: true }) =>
+    request<ExperiencePreferences>('/v1/experience', { method: 'PUT', body: JSON.stringify(input) }),
 
   getDashboard: () => request<DashboardResponse>('/v1/dashboard'),
 

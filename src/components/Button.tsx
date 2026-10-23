@@ -37,9 +37,12 @@ export const Button: React.FC<ButtonProps> = ({ title, loading, variant = 'prima
 
   return (
     <TouchableOpacity
-      style={[styles.button, getButtonStyle(), style, props.disabled && styles.disabled]}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(props.disabled || loading), busy: Boolean(loading) }}
+      style={[styles.button, getButtonStyle(), style, (props.disabled || loading) && styles.disabled]}
       activeOpacity={0.8}
       {...props}
+      disabled={props.disabled || loading}
     >
       {loading ? (
         <ActivityIndicator color={variant === 'primary' ? '#1A1A1A' : '#CCFF00'} />

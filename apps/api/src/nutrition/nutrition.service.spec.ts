@@ -105,6 +105,16 @@ describe('NutritionService', () => {
     expect(result.water.totalMl).toBe(750);
     expect(result.water.targetMl).toBe(2750);
     expect(result.water.glasses).toBe(3);
+    expect(result.hasPersonalTarget).toBe(true);
+  });
+
+  it('does not present default calories as a personal goal without profile data', async () => {
+    repositoryMock.getProfile.mockResolvedValue(null);
+    repositoryMock.getFoodLogs.mockResolvedValue([]);
+    repositoryMock.getWaterLogs.mockResolvedValue([]);
+    const result = await service.getDailySummary('u1', '2026-10-23');
+    expect(result.hasPersonalTarget).toBe(false);
+    expect(result.logs).toEqual([]);
   });
 
   it('adds and removes water only through ownership-aware repository methods', async () => {

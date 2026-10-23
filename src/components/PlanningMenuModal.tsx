@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../types';
 import { Ionicons } from '@expo/vector-icons';
+import { useEnabledFeatures } from '../store/experienceStore';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -14,6 +15,7 @@ export function PlanningMenuModal() {
   const styles = useThemedStyles(createStyles);
   const { isPlanningMenuOpen, setPlanningMenuOpen } = useUIStore();
   const navigation = useNavigation<NavigationProp>();
+  const { community } = useEnabledFeatures();
   
   const slideAnim = useRef(new Animated.Value(300)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -51,7 +53,7 @@ export function PlanningMenuModal() {
                  </View>
                  <View style={styles.btnContent}>
                    <Text style={styles.btnTitle}>Planificación con IA</Text>
-                   <Text style={styles.btnSub}>Plan personalizado en 4 pasos</Text>
+                   <Text style={styles.btnSub}>Propuesta orientativa en 4 pasos</Text>
                  </View>
                  <Ionicons name="chevron-forward" size={20} color="#666" />
                </TouchableOpacity>
@@ -84,7 +86,7 @@ export function PlanningMenuModal() {
                  <Ionicons name="chevron-forward" size={20} color="#666" />
                </TouchableOpacity>
 
-               <TouchableOpacity 
+               {community ? <TouchableOpacity
                  style={styles.btn} 
                  onPress={() => { setPlanningMenuOpen(false); navigation.navigate('Minigames'); }}
                >
@@ -96,7 +98,7 @@ export function PlanningMenuModal() {
                    <Text style={styles.btnSub}>Desafíos interactivos de fitness</Text>
                  </View>
                  <Ionicons name="chevron-forward" size={20} color="#666" />
-               </TouchableOpacity>
+               </TouchableOpacity> : null}
                
                <TouchableOpacity style={styles.closeBtn} onPress={() => setPlanningMenuOpen(false)}>
                  <Text style={styles.closeText}>CANCELAR</Text>

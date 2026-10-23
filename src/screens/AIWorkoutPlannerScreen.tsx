@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/Button';
+import { SafetyNotice } from '../components/SafetyNotice';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import type { AppStackParamList } from '../types';
 
@@ -99,6 +100,7 @@ export default function AIWorkoutPlannerScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <SafetyNotice kind="training" />
         
         {step === 1 && (
           <View style={styles.stepContainer}>

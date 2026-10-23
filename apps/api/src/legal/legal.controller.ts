@@ -1,11 +1,11 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/auth.types';
 import { SupabaseAuthGuard } from '../auth/supabase-auth.guard';
 import { SupabaseService } from '../supabase/supabase.service';
 
-const DOCUMENT_VERSION = '2026-10-02';
+import { AcceptLegalDto, DOCUMENT_VERSION } from './accept-legal.dto';
 
 @ApiTags('legal')
 @ApiBearerAuth()
@@ -23,9 +23,9 @@ export class LegalController {
   }
 
   @Post()
-  async accept(@CurrentUser() user: AuthenticatedUser) {
+  async accept(@CurrentUser() user: AuthenticatedUser, @Body() dto: AcceptLegalDto) {
     const { data, error } = await this.supabase.serviceClient.from('legal_acceptances')
-      .upsert({ user_id: user.id, document_version: DOCUMENT_VERSION }, { onConflict: 'user_id,document_version' })
+      .upsert({ user_id: user.id, document_version: dto.documentVersion }, { onConflict: 'user_id,document_version' })
       .select('accepted_at').single();
     if (error) throw error;
     return { version: DOCUMENT_VERSION, accepted: true, acceptedAt: data.accepted_at };

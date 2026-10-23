@@ -196,6 +196,7 @@ export interface MacroTotals {
 }
 
 export interface NutritionSummaryResponse {
+  hasPersonalTarget: boolean;
   date: string;
   logs: FoodLog[];
   totals: MacroTotals;
@@ -366,6 +367,7 @@ export type MainTabParamList = {
 };
 
 export type AppStackParamList = {
+  ExperienceSetup: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   Workouts: undefined;
   CreateWorkout: undefined;

@@ -19,6 +19,7 @@ import { WorkoutsModule } from './workouts/workouts.module';
 import { LegalModule } from './legal/legal.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
+import { ExperienceModule } from './experience/experience.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ReportsModule } from './reports/reports.module';
     LegalModule,
     AdminModule,
     ReportsModule,
+    ExperienceModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

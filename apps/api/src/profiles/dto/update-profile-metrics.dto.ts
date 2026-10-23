@@ -30,10 +30,10 @@ export class UpdateProfileMetricsDto {
   @Max(7000)
   targetCalories?: number;
 
-  @ApiPropertyOptional({ example: 25, minimum: 10, maximum: 100 })
+  @ApiPropertyOptional({ example: 25, minimum: 18, maximum: 100 })
   @IsOptional()
   @IsInt()
-  @Min(10)
+  @Min(18)
   @Max(100)
   age?: number;
 

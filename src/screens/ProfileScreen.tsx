@@ -24,6 +24,7 @@ import { authService } from '../services/auth';
 import type { AppStackParamList, GenderType, GoalType, SocialProfileResponse } from '../types';
 import { getErrorMessage } from '../utils/errors';
 import { useThemeStore } from '../theme';
+import { useEnabledFeatures } from '../store/experienceStore';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'Profile'>;
 
@@ -37,6 +38,7 @@ export default function ProfileScreen() {
   const theme = useThemePalette();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
+  const { training, nutrition, community } = useEnabledFeatures();
   const [data, setData] = useState<SocialProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -131,15 +133,20 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     const metrics = parseMetrics();
-    if (!name.trim() || !username.trim() || !metrics.weight || !metrics.height || !metrics.age) {
-      Alert.alert('Datos incompletos', 'Completa nombre, usuario, peso, altura y edad.');
+    if (!name.trim() || !username.trim()) {
+      Alert.alert('Datos incompletos', 'Completa nombre y usuario. Los datos físicos son opcionales.');
+      return;
+    }
+    const hasMetrics = Boolean((training || nutrition) && (weight.trim() || height.trim() || (nutrition && age.trim())));
+    if (hasMetrics && (!metrics.weight || !metrics.height || (nutrition && !metrics.age))) {
+      Alert.alert('Datos incompletos', nutrition ? 'Para calcular una meta, completa peso, altura y edad.' : 'Para guardar métricas, completa peso y altura.');
       return;
     }
 
     try {
       setSaving(true);
       setErrorMessage('');
-      await rankingUpApiClient.updateProfileMetrics({ ...metrics, gender, goal });
+      if (hasMetrics) await rankingUpApiClient.updateProfileMetrics(nutrition ? { ...metrics, gender, goal } : { weight: metrics.weight, height: metrics.height });
       const response = await rankingUpApiClient.updateSocialProfile({
         name: name.trim(),
         username: username.trim().toLowerCase(),
@@ -147,7 +154,7 @@ export default function ProfileScreen() {
         isPublic,
       });
       applyResponse(response);
-      Alert.alert('Perfil actualizado', 'Tus datos y objetivo calorico quedaron guardados.');
+      Alert.alert('Perfil actualizado', 'Tus datos quedaron guardados.');
     } catch (error: unknown) {
       const message = getErrorMessage(error, 'No se pudo guardar el perfil.');
       setErrorMessage(message);
@@ -168,13 +175,14 @@ export default function ProfileScreen() {
           <Ionicons name="arrow-back" size={22} color={theme.text} />
         </Pressable>
         <Text style={styles.headerTitle}>TU PERFIL</Text>
-        <Pressable accessibilityLabel="Buscar atletas" style={styles.iconButton} onPress={() => navigation.navigate('DiscoverProfiles')}>
+        {community ? <Pressable accessibilityLabel="Buscar atletas" style={styles.iconButton} onPress={() => navigation.navigate('DiscoverProfiles')}>
           <Ionicons name="people-outline" size={22} color={theme.accent} />
-        </Pressable>
+        </Pressable> : null}
       </View>
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={() => navigation.navigate('ExperienceSetup')}><Text style={styles.primaryText}>MIS FUNCIONES Y GUÍA</Text></Pressable>
           <View style={styles.identitySection}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{(name || 'R').charAt(0).toUpperCase()}</Text>
@@ -186,6 +194,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
+          {community ? <>
           <View style={styles.statsRow}>
             <View style={styles.stat}><Text style={styles.statValue}>{data?.stats.workouts ?? 0}</Text><Text style={styles.statLabel}>SESIONES</Text></View>
             <View style={styles.stat}><Text style={styles.statValue}>{data?.stats.followers ?? 0}</Text><Text style={styles.statLabel}>SEGUIDORES</Text></View>
@@ -197,6 +206,7 @@ export default function ProfileScreen() {
             <Ionicons name="search" size={18} color="#121212" />
             <Text style={styles.discoverText}>BUSCAR ATLETAS</Text>
           </Pressable>
+          </> : null}
 
           {errorMessage ? <View style={styles.errorNotice}><Ionicons name="warning-outline" size={18} color="#FFB020" /><Text style={styles.errorText}>{errorMessage}</Text></View> : null}
 
@@ -213,11 +223,13 @@ export default function ProfileScreen() {
             <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ false: '#333333', true: '#729000' }} thumbColor={isPublic ? '#CCFF00' : '#888888'} />
           </View>
 
-          <Text style={styles.sectionTitle}>METRICAS Y OBJETIVO</Text>
+          {training || nutrition ? <>
+          <Text style={styles.sectionTitle}>{nutrition ? 'MÉTRICAS Y META ORIENTATIVA' : 'MÉTRICAS OPCIONALES'}</Text>
           <View style={styles.twoColumns}>
             <View style={styles.flex}><Text style={styles.label}>PESO (KG)</Text><TextInput style={styles.input} value={weight} onChangeText={setWeight} keyboardType="decimal-pad" /></View>
             <View style={styles.flex}><Text style={styles.label}>ALTURA (CM)</Text><TextInput style={styles.input} value={height} onChangeText={setHeight} keyboardType="decimal-pad" /></View>
           </View>
+          {nutrition ? <>
           <View style={styles.twoColumns}>
             <View style={styles.flex}><Text style={styles.label}>EDAD</Text><TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="number-pad" /></View>
             <View style={styles.flex}>
@@ -246,7 +258,10 @@ export default function ProfileScreen() {
             <View><Text style={styles.calorieLabel}>META DIARIA</Text><Text style={styles.calorieValue}>{targetCalories || '--'} kcal</Text></View>
             <Ionicons name="flame" size={28} color={theme.accent} />
           </View>
+          </> : null}
+          </> : null}
 
+          {training ? <>
           <Text style={styles.sectionTitle}>MARCAS DE FUERZA</Text>
           {data?.strengths.length ? data.strengths.map((strength) => (
             <View key={strength.exerciseName} style={styles.strengthRow}>
@@ -260,8 +275,9 @@ export default function ProfileScreen() {
             <View style={styles.emptyStrength}><Ionicons name="barbell-outline" size={28} color="#555555" /><Text style={styles.emptyText}>Registra entrenamientos para calcular tus rangos.</Text></View>
           )}
 
-          {data?.profile.id ? <ProfileProgressGrid profileId={data.profile.id} /> : null}
+          {community && data?.profile.id ? <ProfileProgressGrid profileId={data.profile.id} /> : null}
           <Pressable style={styles.primaryButton} onPress={() => navigation.navigate('WorkoutHistory')}><Text style={styles.primaryText}>HISTORIAL DE ENTRENAMIENTOS</Text></Pressable>
+          </> : null}
 
           <Pressable style={[styles.primaryButton, saving && styles.disabled]} disabled={saving} onPress={() => void handleSave()}>
             {saving ? <ActivityIndicator color="#121212" /> : <Text style={styles.primaryText}>GUARDAR PERFIL</Text>}

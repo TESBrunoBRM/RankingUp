@@ -16,6 +16,9 @@ export const calculateTargetCalories = ({
   gender,
   goal,
 }: TargetCaloriesInput): number => {
+  if (!Number.isInteger(age) || age < 18 || age > 100) {
+    throw new Error('La estimación calórica es para adultos de 18 a 100 años. Consulta a un profesional para otras edades.');
+  }
   const genderAdjustment = gender === 'hombre' ? 5 : -161;
   const basalMetabolicRate = (10 * weight) + (6.25 * height) - (5 * age) + genderAdjustment;
   const maintenanceCalories = basalMetabolicRate * 1.55;

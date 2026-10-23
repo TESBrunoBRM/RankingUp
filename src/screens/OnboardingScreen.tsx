@@ -8,6 +8,7 @@ import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { AppStackParamList, GenderType, GoalType } from '../types';
+import { SafetyNotice } from '../components/SafetyNotice';
 
 export default function OnboardingScreen() {
   const theme = useThemePalette();
@@ -22,12 +23,12 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    const w = parseFloat(weight);
-    const h = parseFloat(height);
-    const a = parseInt(age, 10);
+    const w = Number(weight.trim().replace(',', '.'));
+    const h = Number(height.trim().replace(',', '.'));
+    const a = Number(age.trim());
 
-    if (!w || !h || !a || w < 30 || w > 300 || h < 100 || h > 250 || a < 10 || a > 100) {
-      Alert.alert('Datos Inválidos', 'Por favor ingresa valores reales y completos.');
+    if (!Number.isFinite(w) || !Number.isFinite(h) || !Number.isInteger(a) || w < 30 || w > 300 || h < 100 || h > 250 || a < 18 || a > 100) {
+      Alert.alert('Revisa tus datos', 'Peso: 30–300 kg. Estatura: 100–250 cm. Edad: 18–100 años, sin decimales. Los menores deben consultar a un profesional para definir su alimentación.');
       return;
     }
 
@@ -42,7 +43,7 @@ export default function OnboardingScreen() {
       });
       navigation.reset({
         index: 0,
-        routes: [{ name: 'MainTabs' }],
+        routes: [{ name: 'MainTabs', params: { screen: 'NutritionTab' } }],
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudieron guardar tus datos.';
@@ -77,8 +78,10 @@ export default function OnboardingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          <TouchableOpacity accessibilityRole="button" style={{ minHeight: 48, justifyContent: 'center', marginBottom: 12 }} onPress={() => navigation.goBack()}><Text style={{ color: theme.accent, fontSize: 16 }}>‹ Volver sin calcular una meta</Text></TouchableOpacity>
           <Text style={styles.title}>TU PERFIL FÍSICO</Text>
-          <Text style={styles.subtitle}>Necesitamos estos datos para calcular tu meta calórica diaria y tu progreso.</Text>
+          <Text style={styles.subtitle}>Este paso es opcional. Estos datos permiten estimar una meta calórica para adultos; no sustituyen una evaluación profesional. Puedes usar el registro sin calcularla.</Text>
+          <SafetyNotice kind="nutrition" />
 
           <View style={styles.row}>
             <View style={styles.flex1}>
@@ -106,7 +109,7 @@ export default function OnboardingScreen() {
           </View>
 
           <Button 
-            title="INICIAR EXPERIENCIA" 
+            title="GUARDAR META ESTIMADA"
             onPress={handleSave} 
             loading={loading} 
             style={{ marginTop: 32 }}

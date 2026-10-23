@@ -25,6 +25,7 @@ import type {
   SubmissionKind,
 } from "../types";
 import { reportReasons } from "./ReportPostScreen";
+import { useEnabledFeatures } from '../store/experienceStore';
 
 const statuses: Record<string, string> = {
   pending: "Pendiente",
@@ -44,12 +45,14 @@ const tabs: [SubmissionKind, string][] = [
 ];
 
 export default function MySubmissionsScreen() {
+  const { nutrition, community } = useEnabledFeatures();
+  const availableTabs = tabs.filter(([value]) => value === 'bugs' || (value === 'foods' ? nutrition : community));
   const navigation = useNavigation();
   const route = useRoute<RouteProp<AppStackParamList, "MySubmissions">>();
   const theme = useThemePalette();
   const styles = useThemedStyles(supportStyles);
   const [kind, setKind] = useState<SubmissionKind>(
-    route.params?.kind ?? "foods",
+    availableTabs.some(([value]) => value === route.params?.kind) ? route.params!.kind! : availableTabs[0][0],
   );
   const [items, setItems] = useState<OwnSubmission[]>([]);
   const [total, setTotal] = useState(0);
@@ -190,7 +193,7 @@ export default function MySubmissionsScreen() {
         </Pressable>
       </View>
       <View style={styles.tabs}>
-        {tabs.map(([value, label]) => (
+        {availableTabs.map(([value, label]) => (
           <Pressable
             key={value}
             accessibilityRole="tab"

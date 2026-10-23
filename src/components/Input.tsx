@@ -20,6 +20,7 @@ export const Input: React.FC<InputProps> = ({ label, error, style, secureTextEnt
           style={[styles.input, secureTextEntry ? styles.passwordInput : null, style]}
           placeholderTextColor={theme.muted}
           {...props}
+          accessibilityLabel={props.accessibilityLabel ?? label}
           secureTextEntry={Boolean(secureTextEntry && !passwordVisible)}
         />
         {secureTextEntry ? <Pressable

@@ -18,9 +18,9 @@ export class CalculateCalorieTargetDto {
   @Max(250)
   height!: number;
 
-  @ApiProperty({ minimum: 10, maximum: 100 })
+  @ApiProperty({ minimum: 18, maximum: 100 })
   @IsInt()
-  @Min(10)
+  @Min(18)
   @Max(100)
   age!: number;
 

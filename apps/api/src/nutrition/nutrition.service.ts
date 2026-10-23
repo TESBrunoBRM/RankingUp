@@ -22,6 +22,7 @@ export class NutritionService {
 
     return {
       date,
+      hasPersonalTarget: Boolean(profile?.target_calories && (!profile.age || profile.age >= 18)),
       logs,
       water: {
         logs: waterLogs,

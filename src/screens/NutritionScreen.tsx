@@ -10,6 +10,7 @@ import { nutritionLogService } from '../services/nutritionLogService';
 import { AppStackParamList, FoodLog, NutritionSummaryResponse } from '../types';
 import { getLocalDateString } from '../utils/date';
 import { getErrorMessage } from '../utils/errors';
+import { SafetyNotice } from '../components/SafetyNotice';
 
 export default function NutritionScreen() {
   const theme = useThemePalette();
@@ -109,6 +110,10 @@ export default function NutritionScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <SafetyNotice kind="nutrition" />
+        <TouchableOpacity accessibilityRole="button" style={styles.errorNotice} onPress={() => navigation.navigate('Onboarding')}>
+          <View style={styles.errorContent}><Text style={styles.errorTitle}>TU META PERSONAL ES OPCIONAL</Text><Text style={styles.errorText}>Completar o actualizar los datos para una meta calórica estimada ›</Text></View>
+        </TouchableOpacity>
         {errorMessage ? (
           <View style={styles.errorNotice}>
             <Ionicons name="cloud-offline-outline" size={22} color="#FFB020" />
@@ -136,34 +141,38 @@ export default function NutritionScreen() {
         {/* Calories Card */}
         {summary ? <View style={styles.summaryCard}>
           <View style={styles.caloriesRow}>
+            {summary.hasPersonalTarget ? <>
             <View style={styles.calCol}>
               <Text style={styles.calValue}>{targetCals}</Text>
               <Text style={styles.calLabel}>META</Text>
             </View>
             <Text style={styles.calOperator}>-</Text>
+            </> : null}
             <View style={styles.calCol}>
               <Text style={[styles.calValue, { color: '#CCFF00' }]}>{Math.round(totalCals)}</Text>
               <Text style={styles.calLabel}>CONSUMIDO</Text>
             </View>
+            {summary.hasPersonalTarget ? <>
             <Text style={styles.calOperator}>=</Text>
             <View style={styles.calCol}>
               <Text style={[styles.calValue, { color: remaining < 0 ? '#FF3B30' : '#4CD964' }]}>{Math.round(Math.abs(remaining))}</Text>
               <Text style={styles.calLabel}>{remaining < 0 ? 'EXCESO' : 'RESTANTES'}</Text>
             </View>
+            </> : null}
           </View>
 
           {/* Macros Row */}
           <View style={styles.macrosRow}>
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{Math.round(totalC)}/{targetC}g</Text>
+              <Text style={styles.macroValue}>{Math.round(totalC)}{summary.hasPersonalTarget ? `/${targetC}` : ''}g</Text>
               <Text style={styles.macroLabel}>CARB</Text>
             </View>
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{Math.round(totalP)}/{targetP}g</Text>
+              <Text style={styles.macroValue}>{Math.round(totalP)}{summary.hasPersonalTarget ? `/${targetP}` : ''}g</Text>
               <Text style={styles.macroLabel}>PROT</Text>
             </View>
             <View style={styles.macroItem}>
-              <Text style={styles.macroValue}>{Math.round(totalF)}/{targetF}g</Text>
+              <Text style={styles.macroValue}>{Math.round(totalF)}{summary.hasPersonalTarget ? `/${targetF}` : ''}g</Text>
               <Text style={styles.macroLabel}>GRASAS</Text>
             </View>
           </View>
@@ -185,6 +194,7 @@ export default function NutritionScreen() {
                 {(summary.water.totalMl / 1000).toFixed(2)} / {(summary.water.targetMl / 1000).toFixed(2)} L
               </Text>
             </View>
+            <Text style={styles.referenceText}>Referencia general; respeta tus indicaciones profesionales.</Text>
             <View style={styles.waterProgressTrack}>
               <View style={[styles.waterProgressFill, { width: `${summary.water.progressPercent}%` }]} />
             </View>
@@ -265,6 +275,7 @@ export default function NutritionScreen() {
 }
 
 const createStyles = (theme: ThemePalette) => StyleSheet.create({
+  referenceText: { color: theme.muted, fontSize: 14, lineHeight: 22, marginBottom: 12 },
   container: { flex: 1, backgroundColor: theme.background },
   header: { padding: 24, paddingBottom: 10 },
   mainTitle: { fontSize: 32, fontWeight: '900', color: theme.text, letterSpacing: 1 },

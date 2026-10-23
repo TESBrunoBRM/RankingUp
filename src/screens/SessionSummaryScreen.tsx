@@ -10,12 +10,14 @@ import { formatDuration } from '../components/SessionTimer';
 import { progressService, type SelectedProgressPhoto } from '../services/progressService';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { getErrorMessage } from '../utils/errors';
+import { useEnabledFeatures } from '../store/experienceStore';
 
 export default function SessionSummaryScreen() {
   const theme = useThemePalette();
   const styles = useThemedStyles(createStyles);
   const route = useRoute<RouteProp<AppStackParamList, 'SessionSummary'>>();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const { community } = useEnabledFeatures();
   const { summary, name, date } = route.params;
   const [postName, setPostName] = useState(name);
   const [description, setDescription] = useState('');
@@ -58,8 +60,9 @@ export default function SessionSummaryScreen() {
         <View style={styles.stat}><Text style={styles.value}>{summary.totalVolume} kg</Text><Text style={styles.label}>VOLUMEN</Text></View>
         <View style={styles.stat}><Text style={styles.value}>{summary.setsCompleted}</Text><Text style={styles.label}>SERIES</Text></View>
       </View>
-      <Text style={styles.xp}>+{summary.gainedXp} XP</Text>
+      {community ? <Text style={styles.xp}>+{summary.gainedXp} XP</Text> : null}
       {summary.personalRecords.length > 0 ? <View style={styles.records}><Text style={styles.recordsTitle}>NUEVOS RÉCORDS</Text>{summary.personalRecords.map((record) => <Text key={record.exerciseId} style={styles.record}>{record.exerciseId}: {record.previous} → {record.current} kg</Text>)}</View> : null}
+      {community ? <>
       <Pressable onPress={choosePhoto} style={styles.photoSlot}>{photo ? <Image source={{ uri: photo.uri }} style={styles.photo} resizeMode="cover" /> : <Ionicons name="image-outline" size={32} color={theme.accent} />}<Text style={styles.photoText}>{photo ? 'CAMBIAR FOTO' : 'AÑADIR FOTO DE PROGRESO'}</Text></Pressable>
       <Text style={styles.fieldLabel}>DESCRIPCIÓN</Text>
       <TextInput style={styles.description} multiline value={description} onChangeText={setDescription} maxLength={2000} placeholder="¿Cómo ha ido tu entrenamiento?" placeholderTextColor={theme.muted} />
@@ -67,6 +70,7 @@ export default function SessionSummaryScreen() {
       <View style={styles.visibilityRow}>{(['public', 'followers', 'private'] as const).map((value) => <Pressable key={value} style={[styles.visibilityOption, visibility === value && styles.visibilityActive]} onPress={() => setVisibility(value)}><Text style={[styles.visibilityText, visibility === value && styles.visibilityTextActive]}>{value === 'public' ? 'PÚBLICO' : value === 'followers' ? 'SEGUIDORES' : 'PRIVADO'}</Text></Pressable>)}</View>
       <Pressable style={styles.primary} onPress={() => void publish()} disabled={publishing}><Text style={styles.primaryText}>{publishing ? 'PUBLICANDO...' : 'PUBLICAR PROGRESO'}</Text></Pressable>
       <Pressable style={styles.secondary} onPress={omitPublication} disabled={publishing}><Text style={styles.secondaryText}>OMITIR PUBLICACIÓN</Text></Pressable>
+      </> : <Pressable style={styles.primary} onPress={goHome}><Text style={styles.primaryText}>VOLVER AL INICIO</Text></Pressable>}
       <Pressable style={styles.secondary} onPress={() => navigation.navigate('WorkoutHistory')}><Text style={styles.historyText}>VER HISTORIAL</Text></Pressable>
     </ScrollView>
   </SafeAreaView>;

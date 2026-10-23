@@ -18,6 +18,10 @@
 
 ## ✨ Características Principales
 
+La selección inicial de funciones, el recorrido de uso y los nuevos términos se
+describen en [Inicio guiado y condiciones de uso](docs/experience-and-legal.md),
+incluidos los pasos de migración y publicación.
+
 - 🎮 **Entrenamiento Gamificado:** Gana experiencia (XP) por completar entrenamientos. Visualiza tu fuerza relativa y obtén un rango (*Hierro, Bronce, Plata, Oro*, etc.) en la tabla de clasificación global.
 - 🏋️ **Gestión de Rutinas (CRUD):** Crea entrenamientos personalizados, añade ejercicios de una base de datos central y registra tus series, repeticiones y peso.
 - 🤖 **Planificador de Entrenamiento Demo:** Genera rutinas a medida basándose en equipo, grupo muscular, duración y frecuencia sin exponer claves externas en el APK.
