@@ -235,7 +235,7 @@ Para habilitar un administrador desde un entorno de servidor con las claves de S
 pnpm grant:admin -- --email correo@ejemplo.com
 ```
 
-La cuenta debe existir y tener el correo confirmado. El comando conserva los demás metadatos. La cuenta inicial habilitada es `bbrevuelta@gmail.com`.
+La cuenta debe existir y tener el correo confirmado. El comando conserva los demás metadatos; el correo administrativo se configura al ejecutarlo.
 
 Los recursos nuevos se encuentran en `/v1/admin` y `/v1/reports`; Swagger describe los DTO en desarrollo. Las migraciones aditivas de administración se encuentran en `supabase/migrations`; `supabase/tests/admin_panel.sql` verifica las transacciones y permisos con fixtures que revierte al terminar. `pnpm verify` incluye las pruebas de permisos HTTP y proyecciones personales.
 

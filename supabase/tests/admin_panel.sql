@@ -1,7 +1,7 @@
 -- Run against the existing RankingUp schema after the admin migration.
 -- All fixtures and decisions are rolled back, including the audit entries.
 begin;
-select set_config('rankingup.test_admin_id',(select id::text from auth.users where lower(email)='bbrevuelta@gmail.com'),true);
+select set_config('rankingup.test_admin_id',(select id::text from auth.users where raw_app_meta_data->>'role'='admin' order by created_at limit 1),true);
 set local role service_role;
 do $test$
 declare
