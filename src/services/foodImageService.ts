@@ -12,7 +12,7 @@ export interface FoodPhoto {
   height?: number;
 }
 
-const preparePhoto = async (photo: FoodPhoto) => {
+export const preparePhoto = async (photo: FoodPhoto) => {
   const longest = Math.max(photo.width ?? 0, photo.height ?? 0);
   const resize = longest > 1600
     ? (photo.width ?? 0) >= (photo.height ?? 0) ? { width: 1600 } : { height: 1600 }

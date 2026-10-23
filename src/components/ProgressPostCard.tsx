@@ -39,7 +39,7 @@ export function ProgressPostCard({ post, onDeleted }: { post: ProgressPost; onDe
       <View style={{ flex: 1 }}><Text style={styles.author}>{post.author?.name ?? 'Usuario'}</Text><Text style={styles.date}>{new Date(post.published_at).toLocaleDateString('es-CL')}</Text></View>
       <Ionicons name="chevron-forward" size={16} color="#767C83" />
     </Pressable>
-    {ownId === post.user_id ? <Pressable style={styles.delete} onPress={removePost} accessibilityLabel="Eliminar publicación"><Ionicons name="trash-outline" size={18} color="#FF6C7C" /></Pressable> : null}</View>
+    {ownId === post.user_id ? <Pressable style={styles.delete} onPress={removePost} accessibilityLabel="Eliminar publicación"><Ionicons name="trash-outline" size={18} color="#FF6C7C" /></Pressable> : <Pressable style={styles.delete} accessibilityLabel="Reportar publicación" onPress={() => navigation.navigate('ReportPost', {postId:post.id,postTitle:post.name ?? undefined})}><Ionicons name="flag-outline" size={18} color={theme.muted} /></Pressable>}</View>
     {post.photoUrl ? <Image source={{ uri: post.photoUrl }} style={styles.photo} resizeMode="cover" accessibilityLabel={`Progreso de ${post.author?.name ?? 'usuario'}`} /> : null}
     <View style={styles.body}><Text style={styles.title}>{post.name ?? 'Entrenamiento'}</Text>
       <Text style={styles.stats}>{formatDuration(post.duration_seconds ?? 0)}  ·  {Number(post.total_volume)} kg  ·  +{post.xp_awarded} XP</Text>

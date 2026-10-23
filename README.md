@@ -221,6 +221,24 @@ cuando Render despierta una instancia inactiva.
 
 ## Nutricion, IA y aportes comunitarios
 
+### Administración, denuncias y soporte
+
+El panel tiene su propio repositorio: [RankingUp-Admin](https://github.com/TESBrunoBRM/RankingUp-Admin). Se conecta a esta API y al mismo Supabase. Configura `ADMIN_ORIGIN` en el servidor con la URL publicada del panel: se añade a los orígenes CORS existentes y `/admin` redirige a esa web. `/admin/config.json` entrega únicamente la URL y clave pública de Supabase.
+
+El equipo puede corregir y aprobar alimentos, moderar publicaciones, revisar bugs y consultar la auditoría. Cada decisión y su registro se guardan en una transacción; las revisiones desactualizadas devuelven `409`. Los datos originales de un aporte son inmutables. La moderación se guarda fuera de `workout_logs`, en una tabla sin permisos del cliente, y se respeta al consultar publicaciones e interactuar con ellas. Ocultar conserva el entrenamiento y el XP.
+
+La app incorpora “Reportar publicación” en el feed y en los perfiles, además de “Reportar un problema” y “Mis envíos” en Perfil. Las capturas se suben al bucket privado `bug-evidence` (hasta 5 MB). Las consultas personales excluyen notas internas, identidades de otros usuarios y datos de revisión restringidos.
+
+Para habilitar un administrador desde un entorno de servidor con las claves de Supabase:
+
+```powershell
+pnpm grant:admin -- --email correo@ejemplo.com
+```
+
+La cuenta debe existir y tener el correo confirmado. El comando conserva los demás metadatos. La cuenta inicial habilitada es `bbrevuelta@gmail.com`.
+
+Los recursos nuevos se encuentran en `/v1/admin` y `/v1/reports`; Swagger describe los DTO en desarrollo. Las migraciones aditivas de administración se encuentran en `supabase/migrations`; `supabase/tests/admin_panel.sql` verifica las transacciones y permisos con fixtures que revierte al terminar. `pnpm verify` incluye las pruebas de permisos HTTP y proyecciones personales.
+
 - Cada toque en `+` registra un vaso de 250 ml en `water_logs`; el resumen diario calcula el avance contra 2,75 L en el backend.
 - Las fotos se suben al bucket privado `food-evidence` mediante una URL firmada y rutas con prefijo del usuario. El APK nunca recibe `SUPABASE_SERVICE_ROLE_KEY` ni `GEMINI_API_KEY`.
 - `GEMINI_API_KEY` es opcional. Sin ella, una etiqueta puede transcribirse manualmente; un alimento sin etiqueta no puede enviarse como estimación hasta completar un análisis válido.

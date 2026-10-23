@@ -55,7 +55,7 @@ describe('ProgressService', () => {
       published_at: '2026-09-14T00:00:00Z', photo_path: null });
     const rows: Record<string, unknown[]> = {
       profile_follows: [{ following_id: 'friend' }, { following_id: 'hidden' }],
-      workout_logs: [post('own', 'viewer', 'private'), post('pub', 'friend', 'public'),
+      visible_progress_posts: [post('own', 'viewer', 'private'), post('pub', 'friend', 'public'),
         post('followers', 'friend', 'followers'), post('private', 'friend', 'private'), post('hidden', 'hidden', 'public')],
       workout_log_likes: [],
     };

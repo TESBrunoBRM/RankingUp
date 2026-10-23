@@ -59,3 +59,4 @@ yarn-error.*
 
 # Downloaded EAS build artifacts
 /artifacts/
+/apps/api/public/admin/

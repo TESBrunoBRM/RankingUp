@@ -19,6 +19,7 @@
     "test:api": "pnpm --filter @rankingup/api test",
     "typecheck:api": "pnpm --filter @rankingup/api typecheck",
     "build:api": "pnpm --filter @rankingup/api build",
+    "grant:admin": "node --env-file=.env apps/api/scripts/grant-admin.cjs",
     "verify": "pnpm run test && pnpm run typecheck && pnpm run typecheck:api && pnpm run doctor"
   },
   "dependencies": {

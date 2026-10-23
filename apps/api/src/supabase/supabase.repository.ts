@@ -17,6 +17,8 @@ import type {
 } from '../domain/domain.types';
 import type { SetKind } from '../domain/session.rules';
 import { SupabaseService } from './supabase.service';
+import { databaseError } from '../admin/database-error';
+import type { FoodCorrectionsDto } from '../admin/admin.dto';
 
 interface WorkoutLogRecord {
   id: string;
@@ -1042,16 +1044,15 @@ export class SupabaseRepository {
     reviewerId: string,
     status: Extract<FoodSubmissionStatus, 'approved' | 'rejected'>,
     reviewNote: string | null,
+    options: { corrections?: FoodCorrectionsDto; internalNotes?: string; expectedUpdatedAt?: string } = {},
   ): Promise<FoodSubmissionRecord | null> {
-    const now = new Date().toISOString();
-    const { data, error } = await this.db.from('food_submissions').update({
-      status,
-      review_note: reviewNote,
-      reviewed_by: reviewerId,
-      reviewed_at: now,
-      updated_at: now,
-    }).eq('id', id).eq('status', 'pending').select().maybeSingle();
-    if (error) throw toServerError(error.message);
+    const { data, error } = await this.db.rpc('admin_review_food', {
+      p_id: id, p_admin_id: reviewerId, p_status: status, p_note: reviewNote,
+      p_corrections: options.corrections ?? {}, p_internal_notes: options.internalNotes ?? null,
+      p_expected_updated_at: options.expectedUpdatedAt ?? null,
+    });
+    if (error?.code === 'P0002') return null;
+    if (error) databaseError(error);
     return data as FoodSubmissionRecord | null;
   }
 }

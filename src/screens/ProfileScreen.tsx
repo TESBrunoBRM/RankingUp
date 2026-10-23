@@ -271,6 +271,8 @@ export default function ProfileScreen() {
             <Switch accessibilityLabel="Tema claro" value={mode === 'light'} onValueChange={(enabled) => setMode(enabled ? 'light' : 'dark')} trackColor={{ false: '#555555', true: '#8DAA2C' }} thumbColor={mode === 'light' ? '#FFFFFF' : '#CCCCCC'} />
           </View>
           <Pressable style={styles.legalLink} onPress={() => navigation.navigate('LegalTerms')}><Text style={styles.legalLinkText}>TÉRMINOS Y PRIVACIDAD</Text></Pressable>
+          <Pressable accessibilityLabel="Mis envíos" style={styles.legalLink} onPress={() => navigation.navigate('MySubmissions')}><Text style={styles.legalLinkText}>MIS ENVÍOS</Text></Pressable>
+          <Pressable accessibilityLabel="Reportar un problema" style={styles.legalLink} onPress={() => navigation.navigate('ReportBug')}><Text style={styles.legalLinkText}>REPORTAR UN PROBLEMA</Text></Pressable>
           <Pressable style={styles.logoutButton} onPress={() => void authService.logout()}>
             <Ionicons name="log-out-outline" size={18} color="#FF5B5B" /><Text style={styles.logoutText}>CERRAR SESION</Text>
           </Pressable>

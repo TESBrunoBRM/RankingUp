@@ -1,23 +1,26 @@
 import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Alert, Image, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
-import type { ProgressPost } from '../types';
+import type { AppStackParamList, ProgressPost } from '../types';
 import { formatDuration } from './SessionTimer';
 import { useAuthStore } from '../store/authStore';
 
 export function ProfileProgressGrid({ profileId }: { profileId: string }) {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const theme = useThemePalette();
   const styles = useThemedStyles(createStyles);
   const ownId = useAuthStore((state) => state.user?.id);
   const [posts, setPosts] = useState<ProgressPost[]>([]);
   const [selected, setSelected] = useState<ProgressPost | null>(null);
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let active = true;
     rankingUpApiClient.getProfileProgress(profileId).then((result) => { if (active) setPosts(result.items); }).catch(() => undefined);
     return () => { active = false; };
-  }, [profileId]);
+  }, [profileId]));
   return <View style={styles.section}>
     <Text style={styles.title}>PROGRESO</Text>
     {posts.length ? <View style={styles.grid}>{posts.map((post) => <Pressable key={post.id} style={styles.tile} onPress={() => setSelected(post)}>
@@ -29,6 +32,7 @@ export function ProfileProgressGrid({ profileId }: { profileId: string }) {
         <Text style={styles.modalTitle}>{selected?.name ?? 'Entrenamiento'}</Text>
         <Text style={styles.meta}>{selected ? `${formatDuration(selected.duration_seconds ?? 0)} · ${Number(selected.total_volume)} kg · +${selected.xp_awarded} XP` : ''}</Text>
         {selected?.description ? <Text style={styles.description}>{selected.description}</Text> : null}
+        {selected && ownId !== profileId ? <Pressable accessibilityLabel="Reportar publicación" style={styles.delete} onPress={() => { setSelected(null); navigation.navigate('ReportPost',{postId:selected.id,postTitle:selected.name ?? undefined}); }}><Ionicons name="flag-outline" color={theme.accent} size={18} /><Text style={[styles.deleteText,{color:theme.accent}]}>REPORTAR PUBLICACIÓN</Text></Pressable> : null}
         {selected && ownId === profileId ? <Pressable style={styles.delete} onPress={() => Alert.alert('Eliminar publicación', 'El entrenamiento y el XP se conservarán.', [
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Eliminar', style: 'destructive', onPress: () => { void rankingUpApiClient.unpublishProgress(selected.id).then(() => { setPosts((current) => current.filter((post) => post.id !== selected.id)); setSelected(null); }).catch(() => Alert.alert('Error', 'No se pudo eliminar.')); } },

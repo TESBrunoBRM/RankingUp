@@ -57,6 +57,18 @@ export interface FoodImageAnalysisResponse {
 
 export type FoodSubmissionStatus = 'pending' | 'approved' | 'rejected';
 
+export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'violence' | 'misinformation' | 'other';
+export type SubmissionKind = 'foods' | 'posts' | 'bugs';
+export interface OwnSubmission {
+  id: string; status: string; created_at: string; updated_at: string;
+  food_name?: string; brand_name?: string | null; serving_amount?: number; serving_unit?: NutritionUnit;
+  calories?: number; protein?: number; carbs?: number; fat?: number; original_values?: Record<string, unknown>;
+  review_note?: string | null; reason?: ReportReason; details?: string;
+  title?: string; description?: string; steps?: string; priority?: string;
+  public_response?: string | null;
+}
+export interface SubmissionPage { items: OwnSubmission[]; total: number; page: number; pageSize: number }
+
 export interface FoodSubmission {
   id: string;
   status: FoodSubmissionStatus;
@@ -370,6 +382,9 @@ export type AppStackParamList = {
   SearchFood: { initialQuery?: string; scannedFood?: FoodSearchResult; scannedAnalysis?: FoodImageAnalysisResponse; photoUri?: string } | undefined;
   FoodSubmission: { initialAnalysis?: FoodImageAnalysisResponse; photoUri?: string } | undefined;
   Profile: undefined;
+  ReportPost: { postId: string; postTitle?: string };
+  ReportBug: undefined;
+  MySubmissions: { kind?: SubmissionKind } | undefined;
   LegalTerms: undefined;
   DiscoverProfiles: undefined;
   PublicProfile: { profileId: string };

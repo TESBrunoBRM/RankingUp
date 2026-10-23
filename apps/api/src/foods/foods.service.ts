@@ -7,6 +7,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import type { AnalyzeFoodImageDto, CreateFoodSubmissionDto, FoodImageUploadDto, ReviewFoodSubmissionDto } from './dto/foods.dto';
 import { FoodVisionService } from './food-vision.service';
 import { FoodDataCentralService } from './food-data-central.service';
+import type { FoodCorrectionsDto } from '../admin/admin.dto';
 
 const mimeFromPath = (path: string): string => path.endsWith('.png')
   ? 'image/png'
@@ -138,8 +139,10 @@ export class FoodsService {
     return this.repository.getFoodSubmissionsByStatus(status);
   }
 
-  async reviewSubmission(adminId: string, id: string, dto: ReviewFoodSubmissionDto) {
-    const submission = await this.repository.reviewFoodSubmission(id, adminId, dto.status, dto.reviewNote?.trim() || null);
+  async reviewSubmission(adminId: string, id: string, dto: ReviewFoodSubmissionDto & {
+    corrections?: FoodCorrectionsDto; internalNotes?: string; expectedUpdatedAt?: string;
+  }) {
+    const submission = await this.repository.reviewFoodSubmission(id, adminId, dto.status, dto.reviewNote?.trim() || null, dto);
     if (!submission) throw new NotFoundException('El aporte no existe o ya fue revisado.');
     return { submission };
   }

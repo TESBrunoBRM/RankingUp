@@ -4,5 +4,5 @@ import { SupabaseModule } from '../supabase/supabase.module';
 import { ProgressController } from './progress.controller';
 import { ProgressService } from './progress.service';
 
-@Module({ imports: [AuthModule, SupabaseModule], controllers: [ProgressController], providers: [ProgressService] })
+@Module({ imports: [AuthModule, SupabaseModule], controllers: [ProgressController], providers: [ProgressService], exports: [ProgressService] })
 export class ProgressModule {}

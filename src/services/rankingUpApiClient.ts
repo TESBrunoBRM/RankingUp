@@ -7,6 +7,10 @@ import type {
   FoodSearchResult,
   FoodImageAnalysisResponse,
   FoodSubmission,
+  ReportReason,
+  SubmissionKind,
+  SubmissionPage,
+  OwnSubmission,
   HomeContentResponse,
   GeneratedWorkoutPlanResponse,
   LogWorkoutSessionResponse,
@@ -235,6 +239,14 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
 };
 
 export const rankingUpApiClient = {
+  reportPost: (input: { postId: string; reason: ReportReason; details?: string }) =>
+    request<OwnSubmission>('/v1/reports/posts', { method: 'POST', body: JSON.stringify(input) }),
+  createBugUploadUrl: (input: { contentType: string; sizeBytes: number }) =>
+    request<{ path: string; token: string }>('/v1/reports/bugs/upload-url', { method: 'POST', body: JSON.stringify(input) }),
+  reportBug: (input: { title: string; description: string; steps: string; appVersion: string; platform: string; screenshotPath?: string }) =>
+    request<OwnSubmission>('/v1/reports/bugs', { method: 'POST', body: JSON.stringify(input) }),
+  getMySubmissions: (kind: SubmissionKind, page = 1) =>
+    request<SubmissionPage>(`/v1/reports/${kind}/mine?page=${page}`, {}, { skipCache: true }),
   warmUp: warmUpApi,
 
   getLegalAcceptance: () => request<{ version: string; accepted: boolean; acceptedAt: string | null }>('/v1/legal/acceptance'),
@@ -365,10 +377,10 @@ export const rankingUpApiClient = {
     request<ProgressPost>(`/v1/progress/${encodeURIComponent(logId)}`, { method: 'PATCH', body: JSON.stringify(input) }),
 
   getProgressFeed: (cursor?: string) =>
-    request<{ items: ProgressPost[]; nextCursor: string | null }>(`/v1/progress/feed${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+    request<{ items: ProgressPost[]; nextCursor: string | null }>(`/v1/progress/feed${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, {}, { skipCache: true }),
 
   getProfileProgress: (profileId: string, cursor?: string) =>
-    request<{ items: ProgressPost[]; nextCursor: string | null }>(`/v1/progress/profile/${encodeURIComponent(profileId)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`),
+    request<{ items: ProgressPost[]; nextCursor: string | null }>(`/v1/progress/profile/${encodeURIComponent(profileId)}${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, {}, { skipCache: true }),
 
   likeProgress: (logId: string, liked: boolean) =>
     request<{ liked: boolean }>(`/v1/progress/${encodeURIComponent(logId)}/like`, { method: liked ? 'POST' : 'DELETE' }),

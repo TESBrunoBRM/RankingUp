@@ -70,6 +70,20 @@ export class ProgressService {
     return { allowed: true, following: !!follow };
   }
 
+  /** Shared authorization for likes and reporting; the view excludes moderated posts. */
+  async visiblePost(userId: string, logId: string) {
+    const { data: post, error } = await this.db.from('visible_progress_posts')
+      .select('id,user_id,name,description,photo_path,visibility,published_at').eq('id', logId).maybeSingle();
+    if (error) throw new BadRequestException('No se pudo consultar la publicación.');
+    if (!post?.published_at) throw new NotFoundException('Publicación no encontrada.');
+    const access = await this.canView(userId, post.user_id);
+    if (!access.allowed || (post.user_id !== userId && post.visibility === 'private')
+      || (post.user_id !== userId && post.visibility === 'followers' && !access.following)) {
+      throw new ForbiddenException('No puedes ver esta publicación.');
+    }
+    return post;
+  }
+
   private async decorate(viewerId: string, posts: PostRow[]) {
     if (!posts.length) return [];
     const ids = posts.map((post) => post.id);
@@ -83,7 +97,7 @@ export class ProgressService {
     return Promise.all(posts.map(async (post) => {
       let photoUrl: string | null = null;
       if (post.photo_path) {
-        const { data } = await this.db.storage.from('progress-photos').createSignedUrl(post.photo_path, 3600);
+        const { data } = await this.db.storage.from('progress-photos').createSignedUrl(post.photo_path, 300);
         photoUrl = data?.signedUrl ?? null;
       }
       const postLikes = (likes ?? []).filter((like) => like.workout_log_id === post.id);
@@ -95,7 +109,7 @@ export class ProgressService {
   async profilePosts(viewerId: string, authorId: string, cursor?: string) {
     const access = await this.canView(viewerId, authorId);
     if (!access.allowed) return { items: [], nextCursor: null };
-    let query = this.db.from('workout_logs').select('*').eq('user_id', authorId)
+    let query = this.db.from('visible_progress_posts').select('*').eq('user_id', authorId)
       .not('published_at', 'is', null).order('published_at', { ascending: false }).limit(21);
     if (cursor) query = query.lt('published_at', cursor);
     if (viewerId !== authorId) query = query.in('visibility', access.following ? ['public', 'followers'] : ['public']);
@@ -109,7 +123,7 @@ export class ProgressService {
     const { data: follows, error: followError } = await this.db.from('profile_follows').select('following_id').eq('follower_id', viewerId);
     if (followError) throw new BadRequestException(followError.message);
     const authorIds = [viewerId, ...(follows ?? []).map((row) => row.following_id as string)];
-    let query = this.db.from('workout_logs').select('*').in('user_id', authorIds)
+    let query = this.db.from('visible_progress_posts').select('*').in('user_id', authorIds)
       .not('published_at', 'is', null).order('published_at', { ascending: false }).limit(40);
     if (cursor) query = query.lt('published_at', cursor);
     const { data, error } = await query;
@@ -131,14 +145,7 @@ export class ProgressService {
   }
 
   async like(userId: string, logId: string, liked: boolean) {
-    const { data: post, error } = await this.db.from('workout_logs').select('id,user_id,visibility,published_at').eq('id', logId).maybeSingle();
-    if (error) throw new BadRequestException(error.message);
-    if (!post?.published_at) throw new NotFoundException('Publicacion no encontrada.');
-    const access = await this.canView(userId, post.user_id);
-    if (!access.allowed || (post.user_id !== userId && post.visibility === 'private')
-      || (post.user_id !== userId && post.visibility === 'followers' && !access.following)) {
-      throw new ForbiddenException('No puedes ver esta publicacion.');
-    }
+    await this.visiblePost(userId, logId);
     const query = liked
       ? this.db.from('workout_log_likes').upsert({ workout_log_id: logId, user_id: userId }, { onConflict: 'workout_log_id,user_id' })
       : this.db.from('workout_log_likes').delete().eq('workout_log_id', logId).eq('user_id', userId);

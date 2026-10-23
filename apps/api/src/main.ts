@@ -8,6 +8,7 @@ import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { configureAdminWeb } from './admin/admin-web';
 
 /**
  * Ningun payload legitimo de la API se acerca a esto. El limite corta los
@@ -85,12 +86,13 @@ async function bootstrap() {
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   }));
 
-  app.useStaticAssets(join(__dirname, '..', 'public'));
-
   app.enableCors({
-    origin: resolveCorsOrigin(config.get<string>('CORS_ORIGIN') ?? '*', isProduction, logger),
+    origin: resolveCorsOrigin([config.get<string>('CORS_ORIGIN') ?? '*', config.get<string>('ADMIN_ORIGIN')].filter(Boolean).join(','), isProduction, logger),
     credentials: true,
   });
+
+  configureAdminWeb(app, config);
+  app.useStaticAssets(join(__dirname, '..', 'public'));
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,

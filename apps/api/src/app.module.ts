@@ -17,6 +17,8 @@ import { StreakModule } from './streak/streak.module';
 import { ProgressModule } from './progress/progress.module';
 import { WorkoutsModule } from './workouts/workouts.module';
 import { LegalModule } from './legal/legal.module';
+import { AdminModule } from './admin/admin.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { LegalModule } from './legal/legal.module';
     DashboardModule,
     WorkoutsModule,
     LegalModule,
+    AdminModule,
+    ReportsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

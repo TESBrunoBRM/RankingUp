@@ -110,6 +110,7 @@ export default function FoodSubmissionScreen() {
         submitterNotes: notes.trim() || undefined,
       });
       Alert.alert('Aporte enviado', 'Un administrador revisara los datos antes de incorporarlos al catalogo.', [
+        { text: 'Ver mis envíos', onPress: () => navigation.replace('MySubmissions', { kind: 'foods' }) },
         { text: 'Listo', onPress: () => navigation.goBack() },
       ]);
     } catch (error: unknown) {

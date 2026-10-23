@@ -31,6 +31,9 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import NutritionScreen from '../screens/NutritionScreen';
 import SearchFoodScreen from '../screens/SearchFoodScreen';
 import FoodSubmissionScreen from '../screens/FoodSubmissionScreen';
+import ReportPostScreen from '../screens/ReportPostScreen';
+import ReportBugScreen from '../screens/ReportBugScreen';
+import MySubmissionsScreen from '../screens/MySubmissionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import DiscoverProfilesScreen from '../screens/DiscoverProfilesScreen';
 import PublicProfileScreen from '../screens/PublicProfileScreen';
@@ -157,6 +160,9 @@ function MainNavigator() {
         <AppStack.Screen name="Onboarding" component={OnboardingScreen} />
         <AppStack.Screen name="SearchFood" component={SearchFoodScreen} />
         <AppStack.Screen name="FoodSubmission" component={FoodSubmissionScreen} />
+        <AppStack.Screen name="ReportPost" component={ReportPostScreen} />
+        <AppStack.Screen name="ReportBug" component={ReportBugScreen} />
+        <AppStack.Screen name="MySubmissions" component={MySubmissionsScreen} />
         <AppStack.Screen name="Profile" component={ProfileScreen} />
         <AppStack.Screen name="LegalTerms" component={LegalTermsScreen} />
         <AppStack.Screen name="DiscoverProfiles" component={DiscoverProfilesScreen} />
