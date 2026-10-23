@@ -176,7 +176,7 @@ Sigue estos pasos para desplegar el entorno de desarrollo en tu propia máquina.
    ```
 
    El perfil `preview` de EAS genera un APK interno para entregar como prototipo Android.
-   El artefacto validado actual es el [build EAS 6d5de9fe](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/6d5de9fe-b0d9-43db-beed-74094eef9138), también guardado localmente como `artifacts/RankingUp-preview-v2.apk`.
+   La versión validada actual es [RankingUp 1.1.0 para Android](https://github.com/TESBrunoBRM/RankingUp/releases/tag/v1.1.0), compilación 2. El APK está publicado como activo de la release y guardado localmente en `artifacts/RankingUp-1.1.0.apk`.
 
 ### Despliegue del prototipo
 

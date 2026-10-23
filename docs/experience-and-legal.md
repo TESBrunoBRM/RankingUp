@@ -64,6 +64,8 @@ es [3fffe1e5](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/3fffe
 La API se publicó en Render (`dep-dbdeurtg1s2s73b96u80`) desde el commit
 `3fe9239`. Se verificaron `/health` (200), `/v1/experience` (401 sin token) y
 `/v1/legal/acceptance` (401 sin token), sin errores recientes en los logs del servidor.
+El APK terminado se publicó en la [release v1.1.0](https://github.com/TESBrunoBRM/RankingUp/releases/tag/v1.1.0),
+con descarga permanente y SHA-256 `734b6514ecb07df3215d287107623b43612bc32ad643e5c52deefc783c1c00de`.
 
 ## Revisión de los términos
 
