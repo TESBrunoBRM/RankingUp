@@ -61,6 +61,9 @@ La migración `20261023052248_user_experience.sql` se aplicó al proyecto Supaba
 `mpshqfizadislsqjispd` el 23 de octubre de 2026. Se verificaron RLS y la ausencia de
 acceso directo para `anon` y `authenticated`. La build Android 1.1.0 (versionCode 2)
 es [3fffe1e5](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/3fffe1e5-8fd2-437a-8b32-8f0e4465c692).
+La API se publicó en Render (`dep-dbdeurtg1s2s73b96u80`) desde el commit
+`3fe9239`. Se verificaron `/health` (200), `/v1/experience` (401 sin token) y
+`/v1/legal/acceptance` (401 sin token), sin errores recientes en los logs del servidor.
 
 ## Revisión de los términos
 
