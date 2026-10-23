@@ -30,7 +30,7 @@ begin
   begin
     perform public.admin_review_food(actor,food_id,'rejected','Revisión desactualizada');
     raise exception 'Se aceptó una revisión repetida.';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   begin
     update public.food_submissions set original_values='{}' where id=food_id;
     raise exception 'El original pudo modificarse.';
@@ -77,7 +77,7 @@ begin
   begin
     perform public.admin_review_bug(actor,bug_id,'closed','normal','Cambio desactualizado',null,initial_at);
     raise exception 'Se aceptó una actualización desactualizada de un bug.';
-  exception when serialization_failure then null; end;
+  exception when sqlstate 'PT409' then null; end;
   if not exists(select 1 from public.admin_action_log where resource_id=bug_id and action='resolved') then raise exception 'Falta auditoría del bug.'; end if;
 end $test$;
 select 'PASS: approvals, immutable originals, duplicate barcodes, atomic audits, moderation, restoration, stale updates and private grants' as result;

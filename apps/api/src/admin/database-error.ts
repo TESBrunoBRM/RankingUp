@@ -14,7 +14,7 @@ export function databaseError(error: {
     throw new ConflictException(
       "Ya existe un envío abierto o un alimento aprobado con ese código de barras. Actualiza la bandeja.",
     );
-  if (error.code === "40001")
+  if (error.code === "PT409" || error.code === "40001")
     throw new ConflictException(
       error.message ?? "El registro cambió. Actualiza el detalle.",
     );

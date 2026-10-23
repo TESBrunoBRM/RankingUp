@@ -9,7 +9,7 @@ describe("AdminService", () => {
       .fn()
       .mockResolvedValue({
         data: null,
-        error: { code: "40001", message: "El registro cambió." },
+        error: { code: "PT409", message: "El registro cambió." },
       });
     const service = new AdminService(
       { serviceClient: { rpc } } as unknown as SupabaseService,
