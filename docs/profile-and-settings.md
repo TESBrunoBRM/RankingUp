@@ -23,3 +23,11 @@ La versión incluye la corrección del generador de rutinas completas documentad
 - `pnpm run verify`: pruebas, TypeScript del cliente/API y Expo Doctor.
 
 El ensayo de interfaz usa React Native Web con datos de prueba; el APK permite comprobar el comportamiento nativo en el dispositivo.
+
+## Publicación del 25 de octubre de 2026
+
+- Código de la versión: `21fa8569632828031e8643012649cd7d8d0bcfb8`, subido a `codex/prototype-deploy`.
+- Verificación final: 211 pruebas de API + 8 de acceso/configuración; TypeScript del cliente y servidor; Expo Doctor 18/18.
+- API publicada en Render: `dep-dbf45kks728c73e20g3g`, estado `live`, con el mismo commit. `/health` respondió 200 y no hubo errores de aplicación en la ventana revisada tras el despliegue.
+- Prueba real con cuenta temporal: privacidad desactivada, edición de identidad conservando la privacidad, reactivación de visibilidad, petición sin sesión 401, booleano de texto 400 e intento de enviar otro ID de usuario 400. La cuenta temporal fue eliminada al terminar.
+- APK Android solicitado a EAS: versión 1.2.0, versionCode 3, perfil preview. [Abrir build](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/e4f4d557-232e-4b4c-9c3f-957dcccdd08b). La solicitud y subida fueron aceptadas; la compilación se dejó ejecutando sin monitorización repetitiva.
