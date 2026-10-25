@@ -39,3 +39,13 @@ de escribir registros.
 
 La planificación sigue siendo orientativa; no añade una evaluación clínica ni
 modifica los avisos de seguridad de la app.
+
+## Publicación y prueba real
+
+La corrección se publicó el 25 de octubre de 2026 en Render, despliegue
+`dep-dbf2h1cs728c73dsrfu0`, commit `23f3ee6`. Con una cuenta temporal se generó un
+plan completo de tres días mediante la API publicada: se guardaron las sesiones
+de empuje, tirón y piernas. Esta última incluyó sentadilla, peso muerto rumano y
+elevaciones de pantorrillas. Una solicitud completa de un solo día y 30 minutos
+devolvió 400 sin crear registros adicionales. Se eliminaron la cuenta y las rutinas
+temporales al terminar la comprobación.
