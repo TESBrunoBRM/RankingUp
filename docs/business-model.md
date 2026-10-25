@@ -1,6 +1,6 @@
 # Propuesta de negocio para RankingUp
 
-Fecha: 25 de octubre de 2026. Propuesta para decidir el siguiente desarrollo; esta versión no activa suscripciones ni limita las cuentas existentes.
+Fecha: 25 de octubre de 2026. Modelo aprobado para implementar y validar en pruebas. Las cuotas, la integración de compras y la verificación de recompensas están implementadas; el modo comercial permanece desactivado hasta configurar las cuentas de Google Play, RevenueCat y AdMob.
 
 ## Recomendación: Gratis + RankingUp Pro
 
@@ -8,8 +8,8 @@ El valor inicial es ayudar a mantener el hábito con ejercicios, alimentación y
 
 | Plan | Valor propuesto | Precio para validar |
 | --- | --- | --- |
-| Gratis | Registro de entrenamientos, rutinas manuales, historial personal, alimentación y agua básicos, comunidad opcional, privacidad y avisos de seguridad. | Gratis |
-| Pro | Informes de volumen y distribución muscular, tendencias y comparación entre semanas, exportación avanzada para compartir con un profesional, programas y personalización adicionales. Más adelante, planificación adaptativa con uso limitado según coste. | Hipótesis: CLP $2.990/mes o $24.990/año. |
+| Gratis | Entrenamientos manuales, alimentación básica e historial. **3 usos de IA al mes compartidos entre planificación y alimentación.** Cada resultado completado consume 1; un anuncio voluntario y verificado recupera 1 uso, hasta un saldo de 3. | Gratis |
+| Pro | **IA sin la cuota mensual del plan Gratis.** Informes avanzados y más personalización forman parte de la evolución futura y todavía no están disponibles. | Precio para validar: CLP $2.990/mes o $24.990/año. |
 | Entrenadores, después | Panel de alumnos que acepten vincularse, asignación de programas y seguimiento. Cada entrenador paga por un tramo de alumnos activos. | Definir mediante pilotos con entrenadores. |
 
 Los precios son hipótesis para entrevistas y pruebas de disposición a pagar, no tarifas publicadas ni cálculos de rentabilidad. El descuento anual propuesto equivale aproximadamente a un 30% frente a doce pagos mensuales. Evitar la oferta de por vida mientras haya costes recurrentes de almacenamiento o IA.
@@ -22,11 +22,21 @@ No bloquear la consulta del historial ya generado al cancelar. Mantener gratuito
 2. **Programas:** ciclos de varias semanas creados y revisados por profesionales identificados. Se pueden vender como packs independientes cuando exista contenido y una distribución contractual clara con el autor.
 3. **Herramientas para entrenadores:** probar con un grupo pequeño antes de construir un marketplace completo. Es una vía de ingresos recurrentes con menos dependencia de conseguir muchos suscriptores individuales.
 
-El planificador actual usa reglas del servidor. No presentar una suscripción como asesoría clínica ni prometer un entrenador de IA adaptativo antes de implementar y comprobar esa capacidad. Si se integra un proveedor de IA, definir cuotas en el servidor, coste máximo por usuario y comportamiento al agotar el cupo.
+El planificador actual usa reglas del servidor y se incluye en la bolsa de planificación solicitada. El análisis de alimentos usa un proveedor de IA. No presentar una suscripción como asesoría clínica ni prometer un entrenador de IA adaptativo antes de implementar y comprobar esa capacidad. Pro no tiene un límite mensual comercial de IA; se mantienen las medidas técnicas contra abuso.
+
+## Reglas de los usos
+
+- Una sola bolsa por cuenta para todas las funciones de IA actuales. No son 3 usos por sección ni por dispositivo.
+- Reinicio el día 1 de cada mes a medianoche de Santiago de Chile. No se acumulan usos de meses anteriores.
+- Los fallos devuelven la reserva. Reintentar la misma solicitud no vuelve a descontar ni a ejecutar un resultado ya completado.
+- Cada anuncio completado y confirmado por Google recupera un uso. Cerrar un anuncio, no encontrar anuncios o falsificar una confirmación del teléfono no concede créditos.
+- Se pueden recuperar usos nuevamente después de gastarlos; el saldo disponible nunca supera 3.
+- El plan Pro debe estar vigente y verificado por el servidor. Una compra de prueba no habilita Pro comercial.
+- Los entrenamientos manuales, los registros básicos de alimentación y el historial no consumen esta bolsa.
 
 ## Cómo mostrarlo sin invadir
 
-- Acceso a «Mi plan» dentro de Ajustes cuando exista un producto de pago real.
+- Acceso a «Mi plan y usos de IA» dentro de Ajustes, con estado de preparación mientras la contratación no esté habilitada.
 - Mostrar la oferta al solicitar una función Pro concreta, con el beneficio y el precio completo visibles.
 - Un único cierre claro, sin pantallas de pago al terminar cada entrenamiento ni banners permanentes en Inicio.
 - Explicar periodo, renovación, cancelación y restauración de compras antes de contratar. Al cancelar, mantener acceso hasta terminar el periodo abonado.

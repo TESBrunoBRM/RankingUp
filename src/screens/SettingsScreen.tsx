@@ -92,6 +92,8 @@ export default function SettingsScreen() {
     >
       <Text style={styles.sectionTitle}>TU CUENTA</Text>
       <View style={styles.group}>
+        {row('Mi plan y usos de IA', 'sparkles-outline', () => navigation.navigate('Billing'))}
+        <View style={styles.divider} />
         {row('Editar perfil', 'person-outline', () => navigation.navigate('EditProfile'))}
         {training || nutrition ? (
           <>

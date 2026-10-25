@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { AiCreditsInterceptor } from '../billing/ai-credits.interceptor';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -41,6 +42,8 @@ export class WorkoutsController {
   }
 
   @Post('generate-plan')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @UseInterceptors(AiCreditsInterceptor)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Genera y guarda una rutina deterministica.' })
   generatePlan(@CurrentUser() user: AuthenticatedUser, @Body() dto: GeneratePlanDto) {

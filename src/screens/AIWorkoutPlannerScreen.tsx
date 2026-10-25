@@ -10,6 +10,8 @@ import { Button } from '../components/Button';
 import { SafetyNotice } from '../components/SafetyNotice';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import type { AppStackParamList } from '../types';
+import { AiUsageNotice } from '../components/AiUsageNotice';
+import { showAiQuotaError } from '../utils/aiQuota';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'AIPlanning'>;
 
@@ -57,6 +59,7 @@ export default function AIWorkoutPlannerScreen() {
 
       navigation.navigate('MainTabs', { screen: 'RoutineTab' });
     } catch (error) {
+      if (showAiQuotaError(error, () => navigation.navigate('Billing'))) return;
       Alert.alert('No se pudo crear el plan', error instanceof Error ? error.message : 'Revisa tu conexión e intenta nuevamente.');
     } finally {
       setLoading(false);
@@ -97,6 +100,7 @@ export default function AIWorkoutPlannerScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <AiUsageNotice />
         <SafetyNotice kind="training" />
         
         {step === 1 && (

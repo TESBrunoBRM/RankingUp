@@ -386,6 +386,7 @@ export type AppStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
   Settings: undefined;
+  Billing: undefined;
   ProfileMetrics: undefined;
   ReportPost: { postId: string; postTitle?: string };
   ReportBug: undefined;

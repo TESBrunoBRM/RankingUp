@@ -20,6 +20,7 @@ import { LegalModule } from './legal/legal.module';
 import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { ExperienceModule } from './experience/experience.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ExperienceModule } from './experience/experience.module';
     AdminModule,
     ReportsModule,
     ExperienceModule,
+    BillingModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

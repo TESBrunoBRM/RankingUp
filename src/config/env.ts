@@ -52,6 +52,10 @@ export const appEnv = {
   facebookAuthEnabled: normalizeEnv(process.env.EXPO_PUBLIC_AUTH_FACEBOOK_ENABLED) === 'true',
   legalEntityName: normalizeEnv(process.env.EXPO_PUBLIC_LEGAL_ENTITY_NAME),
   legalContactEmail: normalizeEnv(process.env.EXPO_PUBLIC_LEGAL_CONTACT_EMAIL),
+  revenuecatAndroidKey: normalizeEnv(process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY),
+  revenuecatIosKey: normalizeEnv(process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY),
+  admobAndroidUnit: normalizeEnv(process.env.EXPO_PUBLIC_ADMOB_ANDROID_REWARDED_UNIT),
+  admobIosUnit: normalizeEnv(process.env.EXPO_PUBLIC_ADMOB_IOS_REWARDED_UNIT),
 };
 
 const missingKeys = [

@@ -1,11 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../types';
 import { foodImageService } from '../services/foodImageService';
+import { showAiQuotaError } from '../utils/aiQuota';
+import { rankingUpApiClient } from '../services/rankingUpApiClient';
+import type { BillingStatus } from '../types/billing';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'CameraScanner'>;
 
@@ -14,6 +17,12 @@ export default function CameraScannerScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const cameraRef = useRef<React.ElementRef<typeof CameraView> | null>(null);
   const navigation = useNavigation<NavigationProp>();
+  const [billing, setBilling] = useState<BillingStatus | null>(null);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void rankingUpApiClient.getBilling().then(result => { if (active) setBilling(result); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []));
 
   if (!permission) {
     return <View style={styles.container} />;
@@ -45,6 +54,7 @@ export default function CameraScannerScreen() {
       );
       navigation.navigate('SearchFood', { scannedFood: result.food, scannedAnalysis: result, photoUri: photo.uri });
     } catch (error) {
+      if (showAiQuotaError(error, () => navigation.navigate('Billing'))) return;
       const message = error instanceof Error ? error.message : 'Falló el análisis';
       Alert.alert('Error IA', message);
     } finally {
@@ -81,7 +91,7 @@ export default function CameraScannerScreen() {
 
           {/* Controls */}
           <View style={styles.controls}>
-            <Text style={styles.hint}>Encuadra el plato completo. La estimacion podra revisarse antes de guardarla.</Text>
+            <Text style={styles.hint}>{billing && billing.mode !== 'disabled' && billing.plan === 'free' ? `Analizar consume 1 uso de IA. Tienes ${billing.remaining} disponibles. Puedes revisar la estimación antes de guardarla.` : 'Encuadra el plato completo. Puedes revisar la estimación antes de guardarla.'}</Text>
             <TouchableOpacity
               style={[styles.captureBtn, isProcessing && styles.captureBtnDisabled]}
               onPress={handleCapture}

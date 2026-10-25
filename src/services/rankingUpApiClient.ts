@@ -3,6 +3,7 @@ import { getSupabaseClient } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { EXPERIENCE_VERSION, type AppFeature, type ExperiencePreferences } from '../constants/experience';
 import { LEGAL_VERSION } from '../constants/legal';
+import type { BillingStatus } from '../types/billing';
 import type {
   CompleteOnboardingRequest,
   DashboardResponse,
@@ -41,8 +42,13 @@ import type {
 } from '../types';
 
 interface ApiErrorPayload {
+  code?: string;
   message?: string | string[];
   error?: string;
+}
+
+export class ApiRequestError extends Error {
+  constructor(message: string, readonly status: number, readonly code?: string) { super(message); }
 }
 
 interface GeneratePlanRequest {
@@ -204,7 +210,8 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
 
       const payload = await response.json().catch(() => null) as unknown;
       if (!response.ok) {
-        throw new Error(readErrorMessage(payload, 'No se pudo completar la solicitud al backend.'));
+        throw new ApiRequestError(readErrorMessage(payload, 'No se pudo completar la solicitud al backend.'), response.status,
+          payload && typeof payload === 'object' && 'code' in payload && typeof payload.code === 'string' ? payload.code : undefined);
       }
 
       lastApiHealthAt = Date.now();
@@ -240,7 +247,27 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
   return requestPromise;
 };
 
+// Keep the operation key after a timeout, so retrying cannot charge or persist the same request twice.
+const aiRequestKeys = new Map<string, string>();
+const requestAi = async <T>(path: string, input: unknown): Promise<T> => {
+  const key = `${useAuthStore.getState().user?.id}:${path}:${JSON.stringify(input)}`;
+  const id = aiRequestKeys.get(key) ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  aiRequestKeys.set(key, id);
+  try {
+    const result = await request<T>(path, { method: 'POST', body: JSON.stringify(input), headers: { 'Idempotency-Key': id } }, { timeoutMs: 65_000 });
+    aiRequestKeys.delete(key);
+    return result;
+  } catch (error) {
+    if (error instanceof ApiRequestError && (error.code === 'AI_OPERATION_FAILED' || (error.code !== 'AI_REQUEST_PENDING' && error.status < 500))) aiRequestKeys.delete(key);
+    throw error;
+  }
+};
+
 export const rankingUpApiClient = {
+  getBilling: () => request<BillingStatus>('/v1/billing', {}, { skipCache: true }),
+  syncPurchase: () => request<BillingStatus>('/v1/billing/sync', { method: 'POST' }, { timeoutMs: 20_000 }),
+  createReward: () => request<{ id: string; expiresAt: string }>('/v1/billing/reward', { method: 'POST' }),
+  getReward: (id: string) => request<{ credited: boolean; expiresAt: string }>(`/v1/billing/reward/${encodeURIComponent(id)}`, {}, { skipCache: true }),
   reportPost: (input: { postId: string; reason: ReportReason; details?: string }) =>
     request<OwnSubmission>('/v1/reports/posts', { method: 'POST', body: JSON.stringify(input) }),
   createBugUploadUrl: (input: { contentType: string; sizeBytes: number }) =>
@@ -419,10 +446,7 @@ export const rankingUpApiClient = {
     }),
 
   generateWorkoutPlan: (input: GeneratePlanRequest) =>
-    request<GeneratedWorkoutPlanResponse>('/v1/workouts/generate-plan', {
-      method: 'POST',
-      body: JSON.stringify(input),
-    }),
+    requestAi<GeneratedWorkoutPlanResponse>('/v1/workouts/generate-plan', input),
 
   searchFoods: (query: string) =>
     request<FoodSearchResult[]>(`/v1/foods/search?query=${encodeURIComponent(query)}`),
@@ -436,9 +460,7 @@ export const rankingUpApiClient = {
     }),
 
   analyzeFoodImage: (input: { imagePath: string; mode: 'meal' | 'nutrition_label' }) =>
-    request<FoodImageAnalysisResponse>('/v1/foods/analyze-image', {
-      method: 'POST', body: JSON.stringify(input),
-      }, { timeoutMs: 65_000 }),
+    requestAi<FoodImageAnalysisResponse>('/v1/foods/analyze-image', input),
 
   createFoodSubmission: (input: {
     foodName: string; brandName?: string; barcode?: string;

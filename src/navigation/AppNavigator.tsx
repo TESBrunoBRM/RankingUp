@@ -40,6 +40,7 @@ import MySubmissionsScreen from '../screens/MySubmissionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import BillingScreen from '../screens/BillingScreen';
 import ProfileMetricsScreen from '../screens/ProfileMetricsScreen';
 import DiscoverProfilesScreen from '../screens/DiscoverProfilesScreen';
 import PublicProfileScreen from '../screens/PublicProfileScreen';
@@ -179,6 +180,7 @@ function MainNavigator() {
         <AppStack.Screen name="Profile" component={ProfileScreen} />
         <AppStack.Screen name="EditProfile" component={EditProfileScreen} />
         <AppStack.Screen name="Settings" component={SettingsScreen} />
+        <AppStack.Screen name="Billing" component={BillingScreen} />
         {training || nutrition ? <AppStack.Screen name="ProfileMetrics" component={ProfileMetricsScreen} /> : null}
         <AppStack.Screen name="LegalTerms" component={LegalTermsScreen} />
         {community ? <AppStack.Group>

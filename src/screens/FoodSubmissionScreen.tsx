@@ -9,6 +9,8 @@ import { foodImageService, type FoodPhoto } from '../services/foodImageService';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import type { AppStackParamList, FoodImageAnalysisResponse, NutritionUnit } from '../types';
 import { getErrorMessage } from '../utils/errors';
+import { AiUsageNotice } from '../components/AiUsageNotice';
+import { showAiQuotaError } from '../utils/aiQuota';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, 'FoodSubmission'>;
 type SourceMode = 'nutrition_label' | 'ai_estimate';
@@ -76,6 +78,7 @@ export default function FoodSubmissionScreen() {
         setAnalysis(result);
         fillFromAnalysis(result);
       } catch (error: unknown) {
+        if (showAiQuotaError(error, () => navigation.navigate('Billing'))) return;
         if (sourceMode === 'nutrition_label') {
           Alert.alert('Completa los datos', `${getErrorMessage(error, 'No se pudo leer la etiqueta.')} Puedes transcribirla manualmente.`);
         } else {
@@ -140,6 +143,7 @@ export default function FoodSubmissionScreen() {
       </View>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <AiUsageNotice refreshKey={analysis?.analysisId} />
           <View style={styles.segmented}>
             <TouchableOpacity style={[styles.segment, sourceMode === 'nutrition_label' && styles.segmentActive]} onPress={() => { setSourceMode('nutrition_label'); setAnalysis(null); }}>
               <Ionicons name="document-text-outline" size={18} color={sourceMode === 'nutrition_label' ? '#101114' : '#AAA'} />

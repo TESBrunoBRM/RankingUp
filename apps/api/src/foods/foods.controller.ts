@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { AiCreditsInterceptor } from '../billing/ai-credits.interceptor';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AdminGuard } from '../auth/admin.guard';
@@ -29,6 +30,7 @@ export class FoodsController {
   }
 
   @Post('analyze-image')
+  @UseInterceptors(AiCreditsInterceptor)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @ApiOperation({ summary: 'Analiza un plato o tabla nutricional con el proveedor IA del backend.' })
   analyzeImage(@CurrentUser() user: AuthenticatedUser, @Body() dto: AnalyzeFoodImageDto) {
