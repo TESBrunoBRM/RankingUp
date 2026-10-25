@@ -64,3 +64,11 @@ SDKs fijados: `react-native-purchases@10.15.1` y `react-native-google-mobile-ads
 Se usó `find-skills` para localizar y comprobar las fuentes. Instaladas: [Google Mobile Ads rewarded](https://skills.sh/google/skills/google-mobile-ads-rewarded) (5,9 mil instalaciones; repositorio oficial de Google, más de 21 mil estrellas al consultar) e [integrate-revenuecat](https://skills.sh/revenuecat/ai-toolkit/integrate-revenuecat) (aproximadamente mil instalaciones; repositorio oficial del proveedor, 75 estrellas al consultar). La segunda se eligió por ser la guía del proveedor pese a ser más reciente y tener menos estrellas. No se interpretan las estrellas como una auditoría de seguridad.
 
 Referencias técnicas: [SSV de Google](https://developers.google.com/admob/android/ssv), [SDK de compras para Expo](https://www.revenuecat.com/docs/getting-started/installation/expo), [anuncios rewarded para React Native](https://docs.page/invertase/react-native-google-mobile-ads/ad-formats/rewarded).
+
+## Publicación de la preparación · 25 de octubre de 2026
+
+- Código subido: `b94220f94527ac0fbf6b286b3a73fa676e75735e` en `codex/prototype-deploy`.
+- Migración aplicada: `20261025195626_monetization`. Se verificó RLS y ausencia de permisos de lectura de `anon` o actualización de clientes en las cuatro tablas.
+- API Render: despliegue `dep-dbf63avb9u1s73boi54g`, estado `live`. Una prueba autenticada confirmó `mode=disabled`, saldo sin límite activo, compras/recompensas no disponibles y acceso anónimo rechazado. La cuenta temporal se eliminó.
+- Verificación: 247 pruebas de API y 8 de acceso/configuración, TypeScript de app/API, build de API y Expo Doctor 18/18. Sin conflictos de peer dependencies.
+- [Build Android 1.3.0, código 4](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/7b1502f9-bcd4-4b2c-b76a-1d17b26d15dc): solicitud y subida aceptadas; compilación dejada en ejecución. Las cuentas y claves de proveedores siguen pendientes, por lo que no se afirma haber completado una compra o anuncio real ni el arranque autenticado de esos SDKs.
