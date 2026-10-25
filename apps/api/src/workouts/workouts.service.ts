@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { resolveExerciseMuscle } from '../domain/exercise-catalog';
-import { generateWorkoutPlan } from '../domain/workout-plan.generator';
+import { generateWorkoutPlan, WorkoutPlanInputError } from '../domain/workout-plan.generator';
 import { estimateOneRepMax } from '../domain/strength.calculator';
 import { suggestProgression } from '../domain/progression.rules';
 import { calculateSessionXp, calculateVolume, countsForProgress, detectPersonalRecords } from '../domain/session.rules';
@@ -148,7 +148,13 @@ export class WorkoutsService {
   }
 
   async generatePlan(userId: string, dto: GeneratePlanDto) {
-    const plan = generateWorkoutPlan(dto);
+    let plan: ReturnType<typeof generateWorkoutPlan>;
+    try {
+      plan = generateWorkoutPlan(dto);
+    } catch (error) {
+      if (error instanceof WorkoutPlanInputError) throw new BadRequestException(error.message);
+      throw error;
+    }
     const persistedWorkouts = [];
 
     for (const workout of plan.workouts) {

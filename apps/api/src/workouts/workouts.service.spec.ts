@@ -40,6 +40,29 @@ describe('WorkoutsService', () => {
     await expect(service.logSession('u1', { workoutId: 'w1', sets: [] })).rejects.toThrow(BadRequestException);
   });
 
+  it('validates coverage before creating any workout records', async () => {
+    await expect(service.generatePlan('u1', {
+      equipment: 'Gimnasio', primaryMuscles: ['Cuerpo completo'], secondaryMuscles: [], duration: 30, days: 1,
+    })).rejects.toThrow(BadRequestException);
+    expect(repositoryMock.createWorkout).not.toHaveBeenCalled();
+    expect(repositoryMock.addWorkoutExercise).not.toHaveBeenCalled();
+  });
+
+  it('persists a leg session when the installed app requests every muscle', async () => {
+    let id = 0;
+    repositoryMock.createWorkout.mockImplementation(async data => ({ id: `w${++id}`, ...data }));
+    repositoryMock.addWorkoutExercise.mockImplementation(async data => ({ id: 'exercise', ...data }));
+    const result = await service.generatePlan('u1', {
+      equipment: 'Gimnasio',
+      primaryMuscles: ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Cuádriceps', 'Isquiosurales', 'Glúteos', 'Pantorrillas', 'Abdomen'],
+      secondaryMuscles: [], duration: 30, days: 3,
+    });
+    const legDay = result.workouts.find(day => /Piernas/.test(day.name));
+    expect(legDay?.exercises.map(exercise => exercise.exercise_id)).toEqual(expect.arrayContaining(['Sentadilla Libre', 'Peso Muerto Rumano', 'bodyweight standing calf raise']));
+    expect(repositoryMock.createWorkout).toHaveBeenCalledTimes(3);
+    for (const [payload] of repositoryMock.createWorkout.mock.calls) expect(payload.user_id).toBe('u1');
+  });
+
   it('rejects workout from another user', async () => {
     repositoryMock.getWorkoutForUser.mockResolvedValue(null);
 

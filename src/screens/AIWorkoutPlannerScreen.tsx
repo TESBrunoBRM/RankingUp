@@ -26,7 +26,7 @@ export default function AIWorkoutPlannerScreen() {
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState('Analizando perfil...');
+  const [loadingText, setLoadingText] = useState('Preparando tu plan...');
 
   // Form State
   const [equipment, setEquipment] = useState('');
@@ -34,6 +34,7 @@ export default function AIWorkoutPlannerScreen() {
   const [secondaryMuscles, setSecondaryMuscles] = useState<string[]>([]);
   const [duration, setDuration] = useState<number | null>(null);
   const [days, setDays] = useState<number | null>(null);
+  const fullBodySelected = MUSCLE_OPTIONS.every(muscle => primaryMuscles.includes(muscle));
 
   const toggleSelection = (list: string[], setList: (v: string[]) => void, item: string) => {
     if (list.includes(item)) setList(list.filter(i => i !== item));
@@ -41,10 +42,10 @@ export default function AIWorkoutPlannerScreen() {
   };
 
   const executeAIPlan = async () => {
-    if (!user) return;
+    if (!user || loading) return;
     try {
       setLoading(true);
-      setLoadingText('Generando y guardando tu plan en backend...');
+      setLoadingText('Distribuyendo los grupos musculares de la semana...');
 
       await rankingUpApiClient.generateWorkoutPlan({
         equipment,
@@ -54,14 +55,10 @@ export default function AIWorkoutPlannerScreen() {
         days: days ?? 3,
       });
 
-      setLoadingText('Listo. Tu plan quedó guardado.');
-         setTimeout(() => {
-         setLoading(false);
-         navigation.navigate('MainTabs', { screen: 'RoutineTab' });
-      }, 1000);
-
-    } catch {
-      Alert.alert('Error', 'Hubo un error guardando el plan. Revisa tu conexión e intenta nuevamente.');
+      navigation.navigate('MainTabs', { screen: 'RoutineTab' });
+    } catch (error) {
+      Alert.alert('No se pudo crear el plan', error instanceof Error ? error.message : 'Revisa tu conexión e intenta nuevamente.');
+    } finally {
       setLoading(false);
     }
   };
@@ -122,12 +119,24 @@ export default function AIWorkoutPlannerScreen() {
         {step === 2 && (
           <View style={styles.stepContainer}>
             <Text style={styles.title}>ENFOQUE MUSCULAR</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityState={{ selected: fullBodySelected }}
+              style={[styles.optionBtn, fullBodySelected && styles.optionBtnActive]}
+              onPress={() => { setPrimaryMuscles([...MUSCLE_OPTIONS]); setSecondaryMuscles([]); }}
+            >
+              <Text style={[styles.optionText, fullBodySelected && styles.optionTextActive]}>CUERPO COMPLETO</Text>
+            </TouchableOpacity>
+            <Text style={styles.subtitle}>Incluye todos los grupos durante la semana: tren superior, piernas y abdomen. También puedes elegir grupos específicos abajo.</Text>
             
             <Text style={styles.sectionTitle}>MÚSCULOS PRIORITARIOS</Text>
             <View style={styles.grid}>
               {MUSCLE_OPTIONS.map(m => (
                 <TouchableOpacity
                   key={'pri_'+m}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={`Prioritario: ${m}`}
+                  accessibilityState={{ checked: primaryMuscles.includes(m) }}
                   style={[styles.gridBtn, primaryMuscles.includes(m) && styles.gridBtnActive]}
                   onPress={() => {
                     toggleSelection(primaryMuscles, setPrimaryMuscles, m);
@@ -144,6 +153,10 @@ export default function AIWorkoutPlannerScreen() {
               {MUSCLE_OPTIONS.map(m => (
                 <TouchableOpacity
                   key={'sec_'+m}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={`Secundario: ${m}`}
+                  accessibilityState={{ checked: secondaryMuscles.includes(m), disabled: primaryMuscles.includes(m) }}
+                  disabled={primaryMuscles.includes(m)}
                   style={[styles.gridBtn, secondaryMuscles.includes(m) && styles.gridBtnActive]}
                   onPress={() => {
                     if (!primaryMuscles.includes(m)) toggleSelection(secondaryMuscles, setSecondaryMuscles, m);
@@ -176,6 +189,7 @@ export default function AIWorkoutPlannerScreen() {
           <View style={styles.stepContainer}>
             <Text style={styles.title}>FRECUENCIA SEMANAL</Text>
             <Text style={styles.subtitle}>¿Cuántos días a la semana entrenarás?</Text>
+            <Text style={styles.subtitle}>Grupos del plan: {[...primaryMuscles, ...secondaryMuscles].join(', ')}. Se distribuirán durante la semana, sin omitir los seleccionados.</Text>
             {DAYS_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt}
