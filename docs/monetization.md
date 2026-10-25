@@ -49,7 +49,11 @@ Las variables están documentadas en `.env.example`. Los modos son `disabled`, `
 
 Para ensayar con proveedores configurados, arrancar una API de pruebas con `MONETIZATION_MODE=test` y generar un APK que apunte a esa API. No cambiar el modo de producción como sustituto de un entorno de pruebas.
 
-SDKs fijados: `react-native-purchases@10.15.1` y `react-native-google-mobile-ads@16.5.0`. Ads 17 requiere React Native 0.86 o superior y no es compatible con el 0.81 de Expo SDK 54 de este proyecto. No actualizarlo solo por ser la versión más reciente.
+SDKs fijados: `react-native-purchases@10.15.1` y `react-native-google-mobile-ads@16.0.0`. Esta última incluye Google Ads Android 24.6.0 y UMP 3.2.0, compatibles con Kotlin 2.1.20 de React Native 0.81 / Expo SDK 54. Ads 17 requiere React Native 0.86 o superior; la versión 16.5 también resulta incompatible aquí porque incluye Google Ads 25.4.0 con metadatos de Kotlin 2.3. No basta con revisar los peer dependencies de npm: comprobar además las versiones nativas antes de actualizar.
+
+### Corrección de la primera build 1.3.0
+
+La build `7b1502f9-bcd4-4b2c-b76a-1d17b26d15dc` falló en `:react-native-google-mobile-ads:compileReleaseKotlin` por metadatos 2.3.0 cuando el compilador esperaba 2.1.0. Se fijó la versión 16.0.0 del wrapper y se actualizó el lockfile. Se inspeccionó el `classes.jar` del AAR oficial de Google Ads 24.6.0: sus 16 archivos `.kotlin_module` declaran versión 2.1.0. La corrección conserva el Kotlin de Expo y no desactiva la validación de metadatos. La compilación Android en EAS es la comprobación final.
 
 ## Validación realizada
 
