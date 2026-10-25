@@ -55,6 +55,8 @@ SDKs fijados: `react-native-purchases@10.15.1` y `react-native-google-mobile-ads
 
 La build `7b1502f9-bcd4-4b2c-b76a-1d17b26d15dc` falló en `:react-native-google-mobile-ads:compileReleaseKotlin` por metadatos 2.3.0 cuando el compilador esperaba 2.1.0. Se fijó la versión 16.0.0 del wrapper y se actualizó el lockfile. Se inspeccionó el `classes.jar` del AAR oficial de Google Ads 24.6.0: sus 16 archivos `.kotlin_module` declaran versión 2.1.0. La corrección conserva el Kotlin de Expo y no desactiva la validación de metadatos. La compilación Android en EAS es la comprobación final.
 
+La [build corregida](https://expo.dev/accounts/brunobrm/projects/rankingup/builds/693afd53-a2de-4db0-9422-3f76ba8c1bba), versión 1.3.0 / código Android 5, terminó con estado `FINISHED` desde el commit `52f0269`. Se verificaron 255 pruebas, TypeScript, Expo Doctor 18/18 y la generación aislada de Android. El registro nativo confirmó la compilación Kotlin de anuncios y compras, y la generación final del APK. [Descargar el APK de EAS](https://expo.dev/artifacts/eas/lrFOILxTW8pDIfglxKA_wUpCxSF0DnjsC7A-_0say0I.apk) (artefacto temporal de Expo).
+
 ## Validación realizada
 
 - Pruebas PostgreSQL reales con PGlite: bolsa compartida, concurrencia, reintentos, reinicio de mes, devolución, caducidad de Pro, aislamiento de pruebas, duplicados y privilegios.
