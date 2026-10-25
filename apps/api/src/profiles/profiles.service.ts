@@ -119,9 +119,14 @@ export class ProfilesService {
       name: dto.name.trim(),
       username: normalizedUsername,
       bio: dto.bio?.trim() ?? '',
-      is_public: dto.isPublic ?? true,
+      ...(typeof dto.isPublic === 'boolean' ? { is_public: dto.isPublic } : {}),
     });
     return this.getOwnProfile(userId);
+  }
+
+  async updatePrivacy(userId: string, isPublic: boolean) {
+    const profile = await this.repository.updateProfilePrivacy(userId, isPublic);
+    return { isPublic: profile.is_public };
   }
 
   async searchProfiles(userId: string, rawQuery: string) {

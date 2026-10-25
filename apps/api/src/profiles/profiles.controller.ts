@@ -10,6 +10,7 @@ import { RewardMinigameDto } from './dto/reward-minigame.dto';
 import { SearchProfilesDto } from './dto/search-profiles.dto';
 import { UpdateProfileMetricsDto } from './dto/update-profile-metrics.dto';
 import { UpdateSocialProfileDto } from './dto/update-social-profile.dto';
+import { UpdateProfilePrivacyDto } from './dto/update-profile-privacy.dto';
 import { ProfilesService } from './profiles.service';
 
 @ApiTags('profile')
@@ -44,6 +45,12 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Actualiza identidad y visibilidad del perfil social.' })
   updateSocialProfile(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateSocialProfileDto) {
     return this.profilesService.updateSocialProfile(user.id, dto);
+  }
+
+  @Patch('privacy')
+  @ApiOperation({ summary: 'Actualiza solo la visibilidad del perfil del usuario autenticado.' })
+  updatePrivacy(@CurrentUser() user: AuthenticatedUser, @Body() dto: UpdateProfilePrivacyDto) {
+    return this.profilesService.updatePrivacy(user.id, dto.isPublic);
   }
 
   @Post('calorie-target')

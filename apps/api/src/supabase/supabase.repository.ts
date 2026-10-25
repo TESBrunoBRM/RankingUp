@@ -182,7 +182,7 @@ interface UpdateSocialProfileInput {
   name: string;
   username: string;
   bio: string;
-  is_public: boolean;
+  is_public?: boolean;
 }
 
 const toServerError = (message: string): InternalServerErrorException =>
@@ -760,6 +760,17 @@ export class SupabaseRepository {
       .select()
       .single();
 
+    if (error) throw toServerError(error.message);
+    return data as ProfileRecord;
+  }
+
+  async updateProfilePrivacy(userId: string, isPublic: boolean): Promise<ProfileRecord> {
+    const { data, error } = await this.db
+      .from('profiles')
+      .update({ is_public: isPublic })
+      .eq('id', userId)
+      .select()
+      .single();
     if (error) throw toServerError(error.message);
     return data as ProfileRecord;
   }

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class UpdateSocialProfileDto {
   @ApiProperty({ minLength: 2, maxLength: 40 })
@@ -23,6 +24,7 @@ export class UpdateSocialProfileDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @Transform(({ obj }: { obj: Record<string, unknown> }) => obj.isPublic)
   @IsBoolean()
   isPublic?: boolean;
 }

@@ -10,19 +10,17 @@ export function SafetyNotice({ kind }: { kind: 'training' | 'nutrition' }) {
   const styles = useThemedStyles(createStyles);
   return <View style={styles.card}>
     <Pressable accessibilityRole="button" accessibilityState={{ expanded }} onPress={() => setExpanded(value => !value)} style={styles.header}>
-      <Ionicons name="shield-checkmark-outline" color={theme.accent} size={22} />
-      <Text style={styles.title}>{kind === 'training' ? 'Entrena a tu ritmo y sin dolor' : 'Metas orientativas, no una dieta clínica'}</Text>
+      <Ionicons name="shield-checkmark-outline" color={theme.muted} size={18} />
+      <Text style={styles.title}>{kind === 'training' ? 'Seguridad del entrenamiento' : 'Sobre estas estimaciones'}</Text>
       <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} color={theme.muted} size={18} />
     </Pressable>
-    <Text style={styles.text}>{expanded ? (kind === 'training' ? TRAINING_SAFETY : NUTRITION_SAFETY) : kind === 'training'
-      ? 'Detente ante dolor o mareos. Revisa los avisos de seguridad antes de comenzar.'
-      : 'Revisa las estimaciones y respeta las indicaciones de tu profesional, también para el agua.'}</Text>
+    {expanded ? <Text style={styles.text}>{kind === 'training' ? TRAINING_SAFETY : NUTRITION_SAFETY}</Text> : null}
   </View>;
 }
 
 const createStyles = (theme: ThemePalette) => StyleSheet.create({
-  card: { padding: 14, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border, borderRadius: 10, marginBottom: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 },
-  title: { flex: 1, color: theme.text, fontSize: 15, fontWeight: '700' },
-  text: { color: theme.muted, fontSize: 14, lineHeight: 22 },
+  card: { marginBottom: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingVertical: 8 },
+  title: { flex: 1, color: theme.muted, fontSize: 13, fontWeight: '600' },
+  text: { color: theme.muted, fontSize: 14, lineHeight: 22, paddingBottom: 12, paddingTop: 4 },
 });

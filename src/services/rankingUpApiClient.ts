@@ -343,10 +343,15 @@ export const rankingUpApiClient = {
 
   getOwnProfile: () => request<SocialProfileResponse>('/v1/profile'),
 
-  updateSocialProfile: (input: { name: string; username: string; bio: string; isPublic: boolean }) =>
+  updateSocialProfile: (input: { name: string; username: string; bio: string; isPublic?: boolean }) =>
     request<SocialProfileResponse>('/v1/profile/social', {
       method: 'PATCH',
       body: JSON.stringify(input),
+    }),
+
+  updateProfilePrivacy: (isPublic: boolean) =>
+    request<{ isPublic: boolean }>('/v1/profile/privacy', {
+      method: 'PATCH', body: JSON.stringify({ isPublic }),
     }),
 
   searchProfiles: (query: string) =>

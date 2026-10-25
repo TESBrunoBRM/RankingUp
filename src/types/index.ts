@@ -384,6 +384,9 @@ export type AppStackParamList = {
   SearchFood: { initialQuery?: string; scannedFood?: FoodSearchResult; scannedAnalysis?: FoodImageAnalysisResponse; photoUri?: string } | undefined;
   FoodSubmission: { initialAnalysis?: FoodImageAnalysisResponse; photoUri?: string } | undefined;
   Profile: undefined;
+  EditProfile: undefined;
+  Settings: undefined;
+  ProfileMetrics: undefined;
   ReportPost: { postId: string; postTitle?: string };
   ReportBug: undefined;
   MySubmissions: { kind?: SubmissionKind } | undefined;

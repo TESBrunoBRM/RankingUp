@@ -38,7 +38,6 @@ import { getErrorMessage } from '../utils/errors';
 import { StreakBadge } from '../components/StreakBadge';
 import { ProgressPostCard } from '../components/ProgressPostCard';
 import { useEnabledFeatures } from '../store/experienceStore';
-import { SafetyNotice } from '../components/SafetyNotice';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -272,14 +271,13 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor="#CCFF00" colors={['#CCFF00']} />}
       >
-        <View style={styles.setupCard}>
-          <Text style={styles.setupTitle}>TU ESPACIO, A TU RITMO</Text>
-          <Text style={styles.setupText}>Funciones activas: {[training ? 'Ejercicios' : '', nutrition ? 'Alimentación' : '', community ? 'Comunidad' : ''].filter(Boolean).join(' · ')}</Text>
-          <Pressable accessibilityRole="button" style={styles.setupAction} onPress={() => navigation.navigate('ExperienceSetup')}><Text style={styles.setupLink}>Cambiar funciones o repetir la guía ›</Text></Pressable>
-        </View>
-        {nutrition ? <Pressable accessibilityRole="button" style={styles.setupCard} onPress={() => navigation.navigate('MainTabs', { screen: 'NutritionTab' })}><Text style={styles.setupTitle}>TU REGISTRO DE ALIMENTACIÓN</Text><Text style={styles.setupText}>Anota tus comidas y agua desde Nutrición. Las metas son orientativas.</Text><Text style={styles.setupLink}>Abrir Nutrición ›</Text></Pressable> : null}
+        {nutrition && !training && !community ? <View style={styles.nutritionWelcome}>
+          <Ionicons name="restaurant-outline" size={32} color={theme.accent} />
+          <Text style={styles.nutritionTitle}>Tu alimentación, día a día</Text>
+          <Text style={styles.nutritionText}>Lleva tu registro de comidas y agua en un solo lugar.</Text>
+          <Pressable accessibilityRole="button" style={styles.nutritionAction} onPress={() => navigation.navigate('MainTabs', { screen: 'NutritionTab' })}><Text style={styles.nutritionActionText}>Abrir mi registro</Text><Ionicons name="arrow-forward" size={18} color={theme.accent} /></Pressable>
+        </View> : null}
         {training ? <>
-        <View style={styles.safetyWrap}><SafetyNotice kind="training" /></View>
         <View style={styles.summaryBand}>
           {community ? <><View style={styles.summaryItem}>
             <Text style={styles.summaryValue}>{profile?.xp ?? 0}</Text>
@@ -453,12 +451,11 @@ export default function HomeScreen() {
 
 const createStyles = (theme: ThemePalette) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.background },
-  setupCard: { marginHorizontal: 20, marginBottom: 16, padding: 18, borderRadius: 12, backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },
-  setupTitle: { color: theme.text, fontSize: 17, fontWeight: '800', marginBottom: 8 },
-  setupText: { color: theme.muted, fontSize: 15, lineHeight: 23, marginBottom: 8 },
-  setupAction: { minHeight: 48, justifyContent: 'center' },
-  setupLink: { color: theme.accent, fontSize: 15, fontWeight: '700' },
-  safetyWrap: { marginHorizontal: 20 },
+  nutritionWelcome: { padding: 24, gap: 16 },
+  nutritionTitle: { color: theme.text, fontSize: 24, fontWeight: '800' },
+  nutritionText: { color: theme.muted, fontSize: 15, lineHeight: 23 },
+  nutritionAction: { flexDirection: 'row', gap: 12, minHeight: 48, alignItems: 'center' },
+  nutritionActionText: { color: theme.accent, fontSize: 15, fontWeight: '700' },
   header: { minHeight: 94, paddingHorizontal: 20, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#24262B' },
   headerCopy: { flex: 1, minWidth: 0 },
   eyebrow: { color: theme.muted, fontSize: 10, fontWeight: '900' },

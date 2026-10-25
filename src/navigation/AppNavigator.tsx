@@ -38,6 +38,9 @@ import ReportPostScreen from '../screens/ReportPostScreen';
 import ReportBugScreen from '../screens/ReportBugScreen';
 import MySubmissionsScreen from '../screens/MySubmissionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import ProfileMetricsScreen from '../screens/ProfileMetricsScreen';
 import DiscoverProfilesScreen from '../screens/DiscoverProfilesScreen';
 import PublicProfileScreen from '../screens/PublicProfileScreen';
 import ProfileComparisonScreen from '../screens/ProfileComparisonScreen';
@@ -174,6 +177,9 @@ function MainNavigator() {
         <AppStack.Screen name="ReportBug" component={ReportBugScreen} />
         <AppStack.Screen name="MySubmissions" component={MySubmissionsScreen} />
         <AppStack.Screen name="Profile" component={ProfileScreen} />
+        <AppStack.Screen name="EditProfile" component={EditProfileScreen} />
+        <AppStack.Screen name="Settings" component={SettingsScreen} />
+        {training || nutrition ? <AppStack.Screen name="ProfileMetrics" component={ProfileMetricsScreen} /> : null}
         <AppStack.Screen name="LegalTerms" component={LegalTermsScreen} />
         {community ? <AppStack.Group>
         <AppStack.Screen name="ProgressFeed" component={ProgressFeedScreen} />

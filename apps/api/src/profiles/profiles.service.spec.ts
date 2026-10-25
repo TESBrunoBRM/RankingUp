@@ -10,6 +10,7 @@ describe('ProfilesService', () => {
     awardMinigameXp: jest.fn(),
     findProfileByUsername: jest.fn(),
     updateSocialProfile: jest.fn(),
+    updateProfilePrivacy: jest.fn(),
     getExerciseHistory: jest.fn(),
     getFollowCounts: jest.fn(),
     getWorkoutCount: jest.fn(),
@@ -140,6 +141,35 @@ describe('ProfilesService', () => {
       name: 'Bruno', username: 'bruno', bio: '', isPublic: true,
     })).rejects.toThrow(ConflictException);
     expect(repositoryMock.updateSocialProfile).not.toHaveBeenCalled();
+  });
+
+  it('preserves stored privacy when only identity is edited', async () => {
+    repositoryMock.findProfileByUsername.mockResolvedValue(null);
+    const response = { profile: { id: 'u1', isPublic: false } };
+    jest.spyOn(service, 'getOwnProfile').mockResolvedValue(response as Awaited<ReturnType<ProfilesService['getOwnProfile']>>);
+    await service.updateSocialProfile('u1', { name: ' Bruno ', username: 'bruno', bio: ' Hola ' });
+    expect(repositoryMock.updateSocialProfile).toHaveBeenCalledWith('u1', { name: 'Bruno', username: 'bruno', bio: 'Hola' });
+    expect(repositoryMock.updateSocialProfile.mock.calls[0][1]).not.toHaveProperty('is_public');
+  });
+
+  it('supports explicit visibility from older clients', async () => {
+    repositoryMock.findProfileByUsername.mockResolvedValue(null);
+    jest.spyOn(service, 'getOwnProfile').mockResolvedValue({} as Awaited<ReturnType<ProfilesService['getOwnProfile']>>);
+    await service.updateSocialProfile('u1', { name: 'Bruno', username: 'bruno', isPublic: false });
+    expect(repositoryMock.updateSocialProfile).toHaveBeenCalledWith('u1', expect.objectContaining({ is_public: false }));
+  });
+
+  it('changes privacy for the authenticated user without writing identity or metrics', async () => {
+    repositoryMock.updateProfilePrivacy.mockResolvedValue({ id: 'u1', is_public: false });
+    await expect(service.updatePrivacy('u1', false)).resolves.toEqual({ isPublic: false });
+    expect(repositoryMock.updateProfilePrivacy).toHaveBeenCalledWith('u1', false);
+    expect(repositoryMock.updateSocialProfile).not.toHaveBeenCalled();
+    expect(repositoryMock.updateProfileMetrics).not.toHaveBeenCalled();
+  });
+
+  it('propagates privacy write failures without reporting success', async () => {
+    repositoryMock.updateProfilePrivacy.mockRejectedValue(new Error('write failed'));
+    await expect(service.updatePrivacy('u1', true)).rejects.toThrow('write failed');
   });
 
   it('compares exercise levels relative to each athlete bodyweight', async () => {
