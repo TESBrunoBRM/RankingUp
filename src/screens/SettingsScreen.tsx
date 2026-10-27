@@ -93,6 +93,7 @@ export default function SettingsScreen() {
       <Text style={styles.sectionTitle}>TU CUENTA</Text>
       <View style={styles.group}>
         {row('Mi plan y usos de IA', 'sparkles-outline', () => navigation.navigate('Billing'))}
+        {training || nutrition ? <><View style={styles.divider} />{row('Informes de peso', 'analytics-outline', () => navigation.navigate('Reports'), 'Historial, objetivo y recordatorio semanal.')}</> : null}
         <View style={styles.divider} />
         {row('Editar perfil', 'person-outline', () => navigation.navigate('EditProfile'))}
         {training || nutrition ? (

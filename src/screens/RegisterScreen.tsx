@@ -10,6 +10,7 @@ import { Button } from '../components/Button';
 import type { AuthStackParamList } from '../types';
 import { getAuthErrorMessage } from '../utils/errors';
 import { meetsPasswordRequirements, PASSWORD_MIN_LENGTH } from '../utils/password';
+import { BrandLogo } from '../components/BrandLogo';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 
@@ -65,6 +66,7 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
+            <BrandLogo />
             <Text style={styles.title}>CREAR CUENTA</Text>
             <Text style={styles.subtitle}>REGÍSTRATE PARA COMENZAR</Text>
 

@@ -110,6 +110,12 @@ interface InsertWorkoutExerciseInput {
   sets: number;
   reps: number;
   order: number;
+  rest_seconds?: number;
+}
+
+interface InsertWorkoutPlanDayInput {
+  name: string; description: string; scheduled_day: WeekDay;
+  exercises: Array<{ name: string; sets: number; reps: number; rest_seconds: number }>;
 }
 
 interface UpdateProfileMetricsInput {
@@ -231,6 +237,13 @@ export class SupabaseRepository {
 
     if (error) throw toServerError(error.message);
     return data as WorkoutRecord;
+  }
+
+  async saveWorkoutPlan(userId: string, workouts: InsertWorkoutPlanDayInput[]): Promise<Array<WorkoutRecord & { exercises: WorkoutExerciseRecord[] }>> {
+    const { data, error } = await this.db.rpc('save_workout_plan', { p_user_id: userId, p_workouts: workouts });
+    if (error) throw toServerError('No se pudo guardar el plan completo. No se guardaron rutinas parciales.');
+    if (!Array.isArray(data) || data.length !== workouts.length) throw toServerError('No se pudo confirmar el guardado del plan.');
+    return data as Array<WorkoutRecord & { exercises: WorkoutExerciseRecord[] }>;
   }
 
   async addWorkoutExercise(input: InsertWorkoutExerciseInput): Promise<WorkoutExerciseRecord> {
@@ -656,7 +669,7 @@ export class SupabaseRepository {
   async getWorkoutHistory(userId: string, limit: number, before?: string): Promise<WorkoutSessionRow[]> {
     let query = this.db.from('workout_logs')
       .select('id, workout_id, user_id, date, name, duration_seconds, total_volume, xp_awarded')
-      .eq('user_id', userId).order('date', { ascending: false }).limit(limit);
+      .eq('user_id', userId).gte('date', new Date(Date.now() - 14 * 86400000).toISOString()).order('date', { ascending: false }).limit(limit);
     if (before) query = query.lt('date', before);
     const { data, error } = await query;
     if (error) throw toServerError(error.message);
@@ -666,7 +679,7 @@ export class SupabaseRepository {
   async getWorkoutHistoryDetail(userId: string, logId: string): Promise<WorkoutSessionRow | null> {
     const { data, error } = await this.db.from('workout_logs')
       .select('id, workout_id, user_id, date, name, duration_seconds, total_volume, xp_awarded, exercise_logs(id, exercise_id, weight, reps, set_index, kind, is_pr)')
-      .eq('user_id', userId).eq('id', logId).maybeSingle();
+      .eq('user_id', userId).gte('date', new Date(Date.now() - 14 * 86400000).toISOString()).eq('id', logId).maybeSingle();
     if (error) throw toServerError(error.message);
     return data as WorkoutSessionRow | null;
   }
@@ -674,7 +687,7 @@ export class SupabaseRepository {
   async getExerciseProgress(userId: string, exerciseName: string): Promise<Array<{ date: string; weight: number; reps: number; kind: SetKind }>> {
     const { data, error } = await this.db.from('workout_logs')
       .select('date, exercise_logs!inner(weight, reps, kind, exercise_id)')
-      .eq('user_id', userId).eq('exercise_logs.exercise_id', exerciseName)
+      .eq('user_id', userId).gte('date', new Date(Date.now() - 14 * 86400000).toISOString()).eq('exercise_logs.exercise_id', exerciseName)
       .order('date', { ascending: true }).limit(200);
     if (error) throw toServerError(error.message);
     return ((data ?? []) as Array<{ date: string; exercise_logs: Array<{ weight: number; reps: number; kind: SetKind }> }>).flatMap((row) =>
@@ -899,7 +912,7 @@ export class SupabaseRepository {
           reps
         )
       `)
-      .eq('user_id', userId)
+      .eq('user_id', userId).gte('date', new Date(Date.now() - 14 * 86400000).toISOString())
       .in('exercise_logs.kind', ['normal', 'failure']);
 
     if (error) throw toServerError(error.message);

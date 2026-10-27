@@ -222,6 +222,7 @@ export default function BillingScreen() {
             </Pressable>
           ) : null}
           <View style={styles.future}>
+            <Text style={styles.body}>Disponible para todos: informe de peso con historial, objetivo y recordatorio semanal desde Informes.</Text>
             <Text style={styles.title}>Lo que viene después</Text>
             <Text style={styles.body}>
               Informes avanzados y más personalización para Pro. Más adelante: programas de

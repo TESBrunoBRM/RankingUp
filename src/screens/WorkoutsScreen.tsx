@@ -77,7 +77,7 @@ export default function WorkoutsScreen() {
           <Text style={styles.deleteText}>✕</Text>
         </TouchableOpacity>
       </View>
-      {item.description ? <Text style={styles.cardDescription}>{item.description}</Text> : null}
+      {item.description ? <Text style={styles.cardDescription} numberOfLines={3}>{item.description}</Text> : null}
       <View style={styles.cardFooter}>
          <Text style={styles.dateText}>{new Date(item.created_at).toLocaleDateString()}</Text>
          <View style={styles.enterBadge}>

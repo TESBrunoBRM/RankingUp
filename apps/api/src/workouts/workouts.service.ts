@@ -42,7 +42,7 @@ export class WorkoutsService {
     const personalRecords = detectPersonalRecords(dto.sets, previousBests);
     const recordValues = new Map(personalRecords.map((record) => [record.exerciseId, record.current]));
 
-    // exercise_id guarda el nombre del ejercicio. Los 14 destacados se resuelven
+    // exercise_id guarda el nombre del ejercicio. Los destacados se resuelven
     // en memoria; el resto viene del catalogo en base de datos.
     const unresolved = dto.sets
       .filter((set) => resolveExerciseMuscle(set.exerciseId) === 'default')
@@ -155,33 +155,18 @@ export class WorkoutsService {
       if (error instanceof WorkoutPlanInputError) throw new BadRequestException(error.message);
       throw error;
     }
-    const persistedWorkouts = [];
-
-    for (const workout of plan.workouts) {
-      const savedWorkout = await this.repository.createWorkout({
-        user_id: userId,
-        name: workout.name,
-        description: `${plan.routineName} - ${plan.description}`,
-        scheduled_day: workout.scheduled_day,
-      });
-
-      const exercises = [];
-      for (const [order, exercise] of workout.exercises.entries()) {
-        exercises.push(await this.repository.addWorkoutExercise({
-          workout_id: savedWorkout.id,
-          exercise_id: exercise.name,
-          sets: exercise.sets,
-          reps: exercise.reps,
-          order,
-        }));
-      }
-
-      persistedWorkouts.push({ ...savedWorkout, exercises });
-    }
+    const persistedWorkouts = await this.repository.saveWorkoutPlan(userId, plan.workouts.map((workout, index) => ({
+      name: workout.name,
+      description: `${plan.routineName} - ${plan.description} Duración orientativa de esta sesión: ${plan.assessment.estimatedMinutesByDay[index]} min, incluyendo preparación y descansos.`,
+      scheduled_day: workout.scheduled_day,
+      exercises: workout.exercises,
+    })));
 
     return {
       routineName: plan.routineName,
       description: plan.description,
+      trainingGoal: plan.trainingGoal,
+      assessment: plan.assessment,
       workouts: persistedWorkouts,
     };
   }

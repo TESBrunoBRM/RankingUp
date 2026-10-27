@@ -21,6 +21,8 @@ import { AdminModule } from './admin/admin.module';
 import { ReportsModule } from './reports/reports.module';
 import { ExperienceModule } from './experience/experience.module';
 import { BillingModule } from './billing/billing.module';
+import { WeightReportsModule } from './weight-reports/weight-reports.module';
+import { ExpiredWorkoutPhotosService } from './workouts/expired-workout-photos.service';
 
 @Module({
   imports: [
@@ -50,7 +52,8 @@ import { BillingModule } from './billing/billing.module';
     ReportsModule,
     ExperienceModule,
     BillingModule,
+    WeightReportsModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }, ExpiredWorkoutPhotosService],
 })
 export class AppModule {}

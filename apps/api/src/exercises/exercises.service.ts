@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { FEATURED_EXERCISES, getExerciseByName } from '../domain/exercise-catalog';
+import type { ExerciseRecord } from '../domain/domain.types';
 import {
   normalizeSearchTerm,
   toSpanishBodyPart,
@@ -110,6 +112,10 @@ export class ExercisesService {
   }
 
   async getById(id: string): Promise<ExerciseDetail> {
+    if (id.startsWith('featured:')) {
+      const exercise = FEATURED_EXERCISES.find(item => item.name === id.slice(9));
+      if (exercise) return this.featuredDetail(exercise);
+    }
     const row = await this.repository.getExerciseCatalogEntry(id);
     if (!row) throw new NotFoundException('Ejercicio no encontrado.');
     return this.toDetail(row);
@@ -139,7 +145,14 @@ export class ExercisesService {
     if (cleaned.length === 0) return [];
 
     const rows = await this.repository.findExerciseCatalogEntriesByNames(cleaned);
-    return rows.map((row) => this.toDetail(row));
+    const details = rows.map((row) => this.toDetail(row));
+    for (const name of cleaned) {
+      if (!details.some(item => normalizeSearchTerm(item.name) === normalizeSearchTerm(name))) {
+        const exercise = getExerciseByName(name);
+        if (exercise && normalizeSearchTerm(exercise.name) === normalizeSearchTerm(name)) details.push(this.featuredDetail(exercise));
+      }
+    }
+    return details;
   }
 
   async getByName(name: string): Promise<ExerciseDetail | null> {
@@ -147,7 +160,17 @@ export class ExercisesService {
     if (!cleaned) return null;
 
     const row = await this.repository.findExerciseCatalogEntryByName(cleaned);
-    return row ? this.toDetail(row) : null;
+    if (row) return this.toDetail(row);
+    const exercise = getExerciseByName(cleaned);
+    return exercise && normalizeSearchTerm(exercise.name) === normalizeSearchTerm(cleaned) ? this.featuredDetail(exercise) : null;
+  }
+
+  private featuredDetail(exercise: ExerciseRecord): ExerciseDetail {
+    return { id: `featured:${exercise.name}`, name: exercise.name, bodyPart: exercise.muscle,
+      bodyPartLabel: exercise.muscle, equipment: exercise.equipment, equipmentLabel: exercise.equipment,
+      target: exercise.muscle, targetLabel: exercise.muscle, muscleGroupLabel: exercise.muscle,
+      secondaryMuscleLabels: [], instructions: exercise.instructions, steps: [exercise.instructions],
+      thumbnailUrl: null, gifUrl: exercise.gifUrl ?? null, attribution: null };
   }
 
   private async loadFacets() {

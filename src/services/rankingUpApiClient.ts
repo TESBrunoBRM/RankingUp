@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { EXPERIENCE_VERSION, type AppFeature, type ExperiencePreferences } from '../constants/experience';
 import { LEGAL_VERSION } from '../constants/legal';
 import type { BillingStatus } from '../types/billing';
+import type { WeightReport } from '../types/weightReports';
 import type {
   CompleteOnboardingRequest,
   DashboardResponse,
@@ -52,6 +53,7 @@ export class ApiRequestError extends Error {
 }
 
 interface GeneratePlanRequest {
+  trainingGoal?: 'balanced' | 'strength' | 'hypertrophy';
   equipment: string;
   primaryMuscles: string[];
   secondaryMuscles: string[];
@@ -78,6 +80,7 @@ const API_COLD_START_TIMEOUT_MS = 65000;
 const API_HEALTH_TTL_MS = 10 * 60 * 1000;
 const AUTH_SESSION_TIMEOUT_MS = 4000;
 const API_CACHE_MS = 15000;
+const MAX_CACHED_RESPONSES = 100;
 const responseCache = new Map<string, CachedResponse>();
 const inFlightRequests = new Map<string, Promise<unknown>>();
 let apiWarmupPromise: Promise<void> | null = null;
@@ -175,8 +178,13 @@ interface RequestOptions {
 }
 
 const request = async <T>(path: string, init: RequestInit = {}, options: RequestOptions = {}): Promise<T> => {
+  const startedUserId = useAuthStore.getState().session?.user.id;
   await warmUpApi();
   const { token, userId } = await getSessionCredentials();
+  if (startedUserId && userId !== startedUserId) throw new Error('La sesión cambió. Vuelve a abrir esta pantalla.');
+  for (const [key, value] of responseCache) {
+    if (value.expiresAt <= Date.now() || !key.startsWith(`${userId}:`)) responseCache.delete(key);
+  }
   const method = (init.method ?? 'GET').toUpperCase();
   const cacheKey = `${userId}:${method}:${path}`;
   const canCache = method === 'GET' && !options.skipCache;
@@ -217,6 +225,7 @@ const request = async <T>(path: string, init: RequestInit = {}, options: Request
       lastApiHealthAt = Date.now();
 
       if (canCache) {
+        if (responseCache.size >= MAX_CACHED_RESPONSES) responseCache.delete(responseCache.keys().next().value!);
         responseCache.set(cacheKey, { value: payload, expiresAt: Date.now() + API_CACHE_MS });
       } else {
         for (const key of responseCache.keys()) {
@@ -286,6 +295,10 @@ export const rankingUpApiClient = {
     request<ExperiencePreferences>('/v1/experience', { method: 'PUT', body: JSON.stringify(input) }),
 
   getDashboard: () => request<DashboardResponse>('/v1/dashboard'),
+
+  getWeightReport: (before?: string) => request<WeightReport>(`/v1/weight-reports${before ? `?before=${encodeURIComponent(before)}` : ''}`, {}, { skipCache: true }),
+  recordWeight: (weight: number, timeZone: string) => request<WeightReport>('/v1/weight-reports', { method: 'POST', body: JSON.stringify({ weight, timeZone }) }),
+  setWeightTarget: (targetWeight: number | null) => request<WeightReport>('/v1/weight-reports/target', { method: 'PATCH', body: JSON.stringify({ targetWeight }) }),
 
   checkInStreak: (timeZone: string) => request<StreakCheckInResponse>('/v1/streak/check-in', {
     method: 'POST', body: JSON.stringify({ timeZone }),

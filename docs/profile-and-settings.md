@@ -6,6 +6,8 @@ Cada sección respeta las funciones habilitadas. No se muestran seguidores/publi
 
 El control de privacidad permanece accesible incluso con Comunidad desactivada, para poder ocultar un perfil publicado anteriormente.
 
+La implementación del 27 de octubre añade **Informes de peso** en Ajustes y en las pestañas principales cuando se usa Ejercicios o Nutrición. Su comportamiento, notificaciones, migración pendiente y política de retención están documentados en [weight-reports-and-retention.md](weight-reports-and-retention.md).
+
 ## Guardado
 
 - Identidad: `PATCH /v1/profile/social`. Omitir `isPublic` conserva la visibilidad existente; clientes anteriores aún pueden enviarla.

@@ -11,6 +11,7 @@ import { Button } from '../components/Button';
 import type { AuthStackParamList } from '../types';
 import { getAuthErrorMessage, isEmailNotConfirmed } from '../utils/errors';
 import { appEnv } from '../config/env';
+import { BrandLogo } from '../components/BrandLogo';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -68,7 +69,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.formContainer} keyboardShouldPersistTaps="handled">
-            <Text style={styles.title}>RANKINGUP</Text>
+            <BrandLogo />
             <Text style={styles.subtitle}>INICIA SESIÓN PARA CONTINUAR</Text>
 
             {notice ? <Text style={styles.notice}>{notice}</Text> : null}

@@ -3,7 +3,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
-import { View, ActivityIndicator, StyleSheet, TouchableOpacity, Text, Pressable } from 'react-native';
+import { View, ActivityIndicator, AppState, Platform, StyleSheet, TouchableOpacity, Text, Pressable } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { syncWeightReminder } from '../services/weightReminder';
+import ReportsScreen from '../screens/ReportsScreen';
 import { useUIStore } from '../store/uiStore';
 import { PlanningMenuModal } from '../components/PlanningMenuModal';
 import { useThemePalette } from '../theme';
@@ -88,6 +93,21 @@ function AuthNavigator() {
 function MainTabs() {
   const theme = useThemePalette();
   const { training, nutrition, community } = useEnabledFeatures();
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  useEffect(() => {
+    if (Platform.OS === 'web' || (!training && !nutrition)) return;
+    const openReport = (response: Notifications.NotificationResponse | null) => {
+      const data = response?.notification.request.content.data;
+      if (data?.screen === 'Reports' && data.userId === useAuthStore.getState().session?.user.id) {
+        navigation.navigate('Reports');
+        void Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+      }
+    };
+    let active = true;
+    void Notifications.getLastNotificationResponseAsync().then(response => { if (active) openReport(response); }).catch(() => undefined);
+    const listener = Notifications.addNotificationResponseReceivedListener(openReport);
+    return () => { active = false; listener.remove(); };
+  }, [navigation, training, nutrition]);
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -113,6 +133,7 @@ function MainTabs() {
           else if (route.name === 'CreateTab') iconName = 'add-circle';
           else if (route.name === 'NutritionTab') iconName = 'restaurant';
           else if (route.name === 'RankTab') iconName = 'stats-chart';
+          else if (route.name === 'ReportsTab') iconName = 'analytics-outline';
 
           return <Ionicons name={iconName} size={28} color={color} />;
         },
@@ -130,6 +151,7 @@ function MainTabs() {
         }}
       /> : null}
       {nutrition ? <Tab.Screen name="NutritionTab" component={NutritionScreen} options={{ tabBarLabel: 'NUTRICIÓN' }} /> : null}
+      {training || nutrition ? <Tab.Screen name="ReportsTab" component={ReportsScreen} options={{ tabBarLabel: 'INFORMES' }} /> : null}
       {training && community ? <Tab.Screen name="RankTab" component={RankingScreen} options={{ tabBarLabel: 'RANGO' }} /> : null}
     </Tab.Navigator>
   );
@@ -181,6 +203,7 @@ function MainNavigator() {
         <AppStack.Screen name="EditProfile" component={EditProfileScreen} />
         <AppStack.Screen name="Settings" component={SettingsScreen} />
         <AppStack.Screen name="Billing" component={BillingScreen} />
+        {training || nutrition ? <AppStack.Screen name="Reports" component={ReportsScreen} /> : null}
         {training || nutrition ? <AppStack.Screen name="ProfileMetrics" component={ProfileMetricsScreen} /> : null}
         <AppStack.Screen name="LegalTerms" component={LegalTermsScreen} />
         {community ? <AppStack.Group>
@@ -205,6 +228,15 @@ function MainNavigator() {
 export default function AppNavigator() {
   const { session, isLoading } = useAuthStore();
   const theme = useThemePalette();
+  const userId = session?.user.id ?? null;
+  const reportsEnabled = useExperienceStore(state => state.userId === userId
+    && Boolean(state.preferences?.features.some(feature => feature === 'training' || feature === 'nutrition')));
+  useEffect(() => {
+    const sync = () => { void syncWeightReminder(reportsEnabled ? userId : null).catch(() => console.warn('No se pudo sincronizar el recordatorio semanal.')); };
+    sync();
+    const listener = AppState.addEventListener('change', state => { if (state === 'active') sync(); });
+    return () => listener.remove();
+  }, [userId, reportsEnabled]);
 
   if (isLoading) {
     return (

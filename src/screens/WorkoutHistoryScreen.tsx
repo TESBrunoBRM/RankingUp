@@ -25,6 +25,7 @@ export default function WorkoutHistoryScreen() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   return <SafeAreaView style={styles.page}>
     <View style={styles.header}><Pressable onPress={() => navigation.goBack()}><Ionicons name="arrow-back" size={24} color={theme.text} /></Pressable><Text style={styles.title}>HISTORIAL</Text></View>
+    <Text style={[styles.meta, { padding: 18 }]}>Últimos 14 días. Las sesiones, series y publicaciones asociadas se eliminan automáticamente. Tu XP acumulada se conserva.</Text>
     {loading ? <ActivityIndicator style={{ flex: 1 }} color={theme.accent} /> : error ? <Pressable onPress={() => void load()} style={styles.center}><Text style={styles.empty}>No se pudo cargar. Toca para reintentar.</Text></Pressable> :
       <FlatList data={items} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} ListEmptyComponent={<Text style={styles.empty}>Tus entrenamientos aparecerán aquí.</Text>} renderItem={({ item }) =>
         <Pressable onPress={() => navigation.navigate('WorkoutHistoryDetail', { logId: item.id })} style={styles.row} accessibilityLabel={`Ver detalle de ${item.name || 'Entrenamiento'}`}>

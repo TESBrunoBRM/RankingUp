@@ -186,6 +186,13 @@ export interface GeneratedWorkoutPlanResponse {
   routineName: string;
   description: string;
   workouts: Array<Workout & { exercises: WorkoutExercise[] }>;
+  trainingGoal?: 'balanced' | 'strength' | 'hypertrophy';
+  assessment?: {
+    estimatedMinutesByDay: number[];
+    muscles: Array<{ muscle: string; directSets: number; indirectSets: number; sessions: number }>;
+    warnings: string[];
+    decisions: Array<{ day: string; exercise: string; reason: string }>;
+  };
 }
 
 export interface MacroTotals {
@@ -364,6 +371,7 @@ export type MainTabParamList = {
   CreateTab: undefined;
   NutritionTab: undefined;
   RankTab: undefined;
+  ReportsTab: undefined;
 };
 
 export type AppStackParamList = {
@@ -388,6 +396,7 @@ export type AppStackParamList = {
   Settings: undefined;
   Billing: undefined;
   ProfileMetrics: undefined;
+  Reports: undefined;
   ReportPost: { postId: string; postTitle?: string };
   ReportBug: undefined;
   MySubmissions: { kind?: SubmissionKind } | undefined;

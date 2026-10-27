@@ -15,6 +15,7 @@ const repositoryMock = {
   getExerciseProgress: jest.fn(),
   createWorkout: jest.fn(),
   addWorkoutExercise: jest.fn(),
+  saveWorkoutPlan: jest.fn(),
 };
 
 describe('WorkoutsService', () => {
@@ -34,6 +35,9 @@ describe('WorkoutsService', () => {
       { exercise_id: 'Press de Banca' }, { exercise_id: 'Curl de Biceps' },
     ]);
     repositoryMock.getRecentExerciseSessions.mockResolvedValue([]);
+    repositoryMock.saveWorkoutPlan.mockImplementation(async (userId, days) => days.map((day: { exercises: Array<{ name: string }> }, index: number) => ({
+      ...day, id: `w${index}`, user_id: userId, exercises: day.exercises.map(item => ({ ...item, exercise_id: item.name })),
+    })));
   });
 
   it('rejects empty set payload', async () => {
@@ -46,12 +50,10 @@ describe('WorkoutsService', () => {
     })).rejects.toThrow(BadRequestException);
     expect(repositoryMock.createWorkout).not.toHaveBeenCalled();
     expect(repositoryMock.addWorkoutExercise).not.toHaveBeenCalled();
+    expect(repositoryMock.saveWorkoutPlan).not.toHaveBeenCalled();
   });
 
   it('persists a leg session when the installed app requests every muscle', async () => {
-    let id = 0;
-    repositoryMock.createWorkout.mockImplementation(async data => ({ id: `w${++id}`, ...data }));
-    repositoryMock.addWorkoutExercise.mockImplementation(async data => ({ id: 'exercise', ...data }));
     const result = await service.generatePlan('u1', {
       equipment: 'Gimnasio',
       primaryMuscles: ['Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps', 'Cuádriceps', 'Isquiosurales', 'Glúteos', 'Pantorrillas', 'Abdomen'],
@@ -59,8 +61,9 @@ describe('WorkoutsService', () => {
     });
     const legDay = result.workouts.find(day => /Piernas/.test(day.name));
     expect(legDay?.exercises.map(exercise => exercise.exercise_id)).toEqual(expect.arrayContaining(['Sentadilla Libre', 'Peso Muerto Rumano', 'bodyweight standing calf raise']));
-    expect(repositoryMock.createWorkout).toHaveBeenCalledTimes(3);
-    for (const [payload] of repositoryMock.createWorkout.mock.calls) expect(payload.user_id).toBe('u1');
+    expect(repositoryMock.saveWorkoutPlan).toHaveBeenCalledTimes(1);
+    expect(repositoryMock.saveWorkoutPlan.mock.calls[0][0]).toBe('u1');
+    expect(repositoryMock.saveWorkoutPlan.mock.calls[0][1]).toHaveLength(3);
   });
 
   it('rejects workout from another user', async () => {
@@ -70,6 +73,13 @@ describe('WorkoutsService', () => {
       workoutId: 'w1',
       sets: [{ exerciseId: 'Press de Banca', weight: 80, reps: 10 }],
     })).rejects.toThrow(NotFoundException);
+  });
+  it('persists the goal-specific rests instead of falling back to the database default', async () => {
+    const plan = await service.generatePlan('u1', { equipment: 'Gimnasio Comercial', trainingGoal: 'strength',
+      primaryMuscles: ['Pecho'], secondaryMuscles: [], duration: 60, days: 2 });
+    expect(repositoryMock.saveWorkoutPlan.mock.calls[0][1][0].exercises).toEqual(expect.arrayContaining([expect.objectContaining({ name: 'Press de Banca', reps: 5, rest_seconds: 180 })]));
+    expect(plan.trainingGoal).toBe('strength');
+    expect(repositoryMock.saveWorkoutPlan.mock.calls[0][1][0].description).toMatch(/Fuerza/);
   });
 
   it('persists logs and XP in one transaction', async () => {

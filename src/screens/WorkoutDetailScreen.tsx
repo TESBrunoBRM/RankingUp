@@ -118,6 +118,7 @@ export default function WorkoutDetailScreen() {
           <Text style={styles.statsNumber}>{item.reps}</Text>
           <Text style={styles.statsLabel}> REPS</Text>
         </View>
+        <Text style={styles.restText}>Descanso entre series: {item.rest_seconds ?? 90} s</Text>
         {item.currentStrength ? <View style={styles.rankRow}><StrengthLevelBadge level={item.currentStrength.level} /></View> : null}
       </View>
       <TouchableOpacity 
@@ -143,15 +144,11 @@ export default function WorkoutDetailScreen() {
         </View>
       ) : (
         <>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title} numberOfLines={2}>{workout?.name}</Text>
-            {workout?.description ? (
-              <Text style={styles.descriptionText}>{workout.description}</Text>
-            ) : null}
-          </View>
-
           <FlatList
-            ListHeaderComponent={<SafetyNotice kind="training" />}
+            ListHeaderComponent={<><View style={styles.titleContainer}>
+              <Text style={styles.title} numberOfLines={2}>{workout?.name}</Text>
+              {workout?.description ? <Text style={styles.descriptionText}>{workout.description}</Text> : null}
+            </View><SafetyNotice kind="training" /></>}
             data={exercises}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
@@ -202,7 +199,6 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
     letterSpacing: 1,
   },
   titleContainer: {
-    paddingHorizontal: 24,
     paddingBottom: 20,
   },
   title: {
@@ -269,6 +265,7 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
     alignItems: 'center',
   },
   rankRow: { marginTop: 10 },
+  restText: { color: theme.muted, fontSize: 12, marginTop: 8 },
   statsNumber: {
     fontSize: 16,
     fontWeight: '900',

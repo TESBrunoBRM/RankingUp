@@ -1,7 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ArrayMinSize, IsArray, IsInt, IsString, Max, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ArrayMinSize, IsArray, IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import type { TrainingGoal } from '../../domain/workout-plan.generator';
 
 export class GeneratePlanDto {
+  @ApiPropertyOptional({ enum: ['balanced', 'strength', 'hypertrophy'], default: 'balanced' })
+  @IsOptional()
+  @IsIn(['balanced', 'strength', 'hypertrophy'])
+  trainingGoal?: TrainingGoal;
+
   @ApiProperty({ example: 'Gimnasio Comercial' })
   @IsString()
   equipment!: string;

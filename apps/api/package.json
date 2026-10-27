@@ -10,7 +10,8 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "seed:exercises": "ts-node scripts/seed-exercises.ts"
+    "seed:exercises": "ts-node scripts/seed-exercises.ts",
+    "audit:planner": "ts-node scripts/audit-workout-planner.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.20",

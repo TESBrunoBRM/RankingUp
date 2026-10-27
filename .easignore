@@ -1,0 +1,67 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.rankingup-api.*.log
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+# Se ignora cualquier .env salvo la plantilla sin secretos.
+.env
+.env.*
+!.env.example
+
+# skills instaladas con `npx skills add`
+.agents/
+.claude/skills/
+.serena/
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# Supabase CLI local state
+/supabase/.temp/
+/supabase/.branches/
+
+# Local security audit artifacts
+/SECURITY-FINDINGS.md
+/strix_runs/
+
+# Downloaded EAS build artifacts
+/artifacts/
+/apps/api/public/admin/
+
+# Unrelated editor files are excluded from the mobile build archive.
+/src/ReplicatedStorage/
+/src/ServerScriptService/
+/src/StarterPlayer/

@@ -38,6 +38,7 @@ import { getErrorMessage } from '../utils/errors';
 import { StreakBadge } from '../components/StreakBadge';
 import { ProgressPostCard } from '../components/ProgressPostCard';
 import { useEnabledFeatures } from '../store/experienceStore';
+import { BrandLogo } from '../components/BrandLogo';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -255,6 +256,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <BrandLogo compact />
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>{getGreeting()}</Text>
           <Text style={styles.name} numberOfLines={1}>{displayName.toUpperCase()}</Text>
