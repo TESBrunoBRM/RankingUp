@@ -4,7 +4,7 @@ El planificador usa un generador local de reglas. Recibe los grupos musculares
 seleccionados, la duración y los días; no interpreta un chat ni consulta a un
 modelo de lenguaje externo.
 
-La ampliación por objetivo (fuerza/hipertrofia/equilibrado), controles de tiempo, guardado transaccional y auditoría de combinaciones está detallada en [planner-goals-and-quality.md](planner-goals-and-quality.md). Estas capacidades también están implementadas localmente y pendientes de publicar.
+La ampliación por objetivo (fuerza/hipertrofia/equilibrado), controles de tiempo, guardado transaccional y auditoría de combinaciones está detallada en [planner-goals-and-quality.md](planner-goals-and-quality.md). Estas capacidades están publicadas en la API y la build Android 1.4.0; véase [release-1.4.0.md](release-1.4.0.md).
 
 ## Restricciones de equipo · 27 de octubre de 2026
 
@@ -12,7 +12,7 @@ El equipo antes solo aparecía en la descripción. Ahora cada ejercicio declara 
 
 Casa separa mancuernas y bandas. Las variantes con mancuernas no suponen un banco; las bandas se sujetan bajo los pies, sin anclajes. Los clientes anteriores que envían `Casa (Mancuernas/Bandas)` reciben alternativas de autocarga, porque no se puede saber cuál de los dos materiales tienen. Parque permite dominadas; gimnasio pequeño usa un conjunto conservador sin máquinas/poleas. Se rechazan equipos desconocidos. Espalda y bíceps sin equipo tienen menor capacidad de carga; el plan lo indica. Si falta tiempo para todos los grupos, devuelve un error antes de guardar, sin sustituirlos por ejercicios de gimnasio.
 
-Las pruebas específicas comprueban planes en casa de 2–6 días y la ausencia de bancos/barras/poleas en el modo mancuernas. Esta corrección está implementada localmente; la publicación descrita más abajo corresponde a la versión anterior.
+Las pruebas específicas comprueban planes en casa de 2–6 días y la ausencia de bancos/barras/poleas en el modo mancuernas. Esta corrección está publicada con la versión 1.4.0; la publicación descrita más abajo corresponde a la versión anterior.
 
 El generador anterior recorría un grupo por día y recortaba una lista concatenada
 de ejercicios. Seleccionar muchos grupos podía dejar piernas al final de la lista,

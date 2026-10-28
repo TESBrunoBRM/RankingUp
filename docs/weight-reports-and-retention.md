@@ -1,6 +1,6 @@
 # Informes de peso y retención de entrenamientos
 
-Implementación del 27 de octubre de 2026. La migración ya está aplicada en Supabase y se verificaron permisos y el trabajo horario. La publicación de API y la build Android 1.4.0 se preparan como parte de esta entrega.
+Publicado el 27 de octubre de 2026, hora de Chile. Se verificaron la migración, los permisos y el primer ciclo horario. La API está en línea y el APK Android 1.4.0 está compilado y firmado. Véase [release-1.4.0.md](release-1.4.0.md).
 
 ## Informes
 

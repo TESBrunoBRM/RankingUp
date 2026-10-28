@@ -1,6 +1,6 @@
 # Objetivos y controles del planificador
 
-Implementación del 27 de octubre de 2026. La migración transaccional ya está aplicada en Supabase; la API y Android 1.4.0 se preparan para publicación. La planificación sigue siendo un generador determinista; el rótulo de IA no implica que consulte un modelo externo.
+Publicado el 27 de octubre de 2026, hora de Chile. La migración está aplicada, la API está en línea y la build Android 1.4.0 terminó y se verificó. Véase [release-1.4.0.md](release-1.4.0.md). La planificación sigue siendo un generador determinista; el rótulo de IA no implica que consulte un modelo externo.
 
 El cuestionario tiene cinco pasos: equipo, objetivo, músculos, tiempo y días. `trainingGoal` acepta `strength`, `hypertrophy` o `balanced`. Los clientes anteriores pueden omitirlo y conservan el enfoque equilibrado. Un objetivo desconocido se rechaza antes de guardar.
 
@@ -34,7 +34,7 @@ El porcentaje observado de errores se refiere a incumplimientos de esas reglas e
 
 La migración `20261027221645_atomic_workout_plan.sql` añade una función restringida a la API que guarda toda la semana en una transacción. Si un día o ejercicio falla, revierte todos los registros de esa solicitud. Los descansos se almacenan y llegan al temporizador; la descripción conserva objetivo, limitaciones y duración orientativa. Las fichas nuevas tienen instrucciones aunque no estén en el dataset externo.
 
-Aplicar esta migración antes de desplegar la API. La migración previa de peso/retención sigue pendiente si todavía no se publicó. Compilar una app nueva para el cuestionario de cinco pasos y la presentación de descansos. No se han publicado estos cambios ni alterado rutinas previamente guardadas.
+La migración transaccional y la de peso/retención ya están aplicadas. La API publicada y Android 1.4.0 incluyen el cuestionario de cinco pasos y los descansos. Las rutinas planificadas anteriores no se regeneran automáticamente; las sesiones vencidas siguen la retención de 14 días.
 
 Verificación: pruebas de PostgreSQL con PGlite para guardado íntegro, rollback después de días anteriores, enum de calendario y permisos; regresiones de selección/orden/descansos por objetivo; pruebas de calorías con registros sucesivos que mantienen el objetivo nutricional. La interfaz se prueba con React Native Web y el generador real, usando navegación y persistencia simuladas.
 
