@@ -1,10 +1,9 @@
 import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
   Alert,
-  Animated,
   Linking,
   Modal,
   Pressable,
@@ -36,9 +35,11 @@ import { rankingUpApiClient } from '../services/rankingUpApiClient';
 import { getCurrentWeekDay } from '../utils/date';
 import { getErrorMessage } from '../utils/errors';
 import { StreakBadge } from '../components/StreakBadge';
+import { StreakCalendar } from '../components/StreakCalendar';
 import { ProgressPostCard } from '../components/ProgressPostCard';
 import { useEnabledFeatures } from '../store/experienceStore';
 import { BrandLogo } from '../components/BrandLogo';
+import { HomeMessageCarousel } from '../components/HomeMessageCarousel';
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
@@ -107,7 +108,6 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const navigation = useNavigation<NavigationProp>();
   const { training, nutrition, community } = useEnabledFeatures();
-  const splashAnimation = useRef(new Animated.Value(0)).current;
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [homeContent, setHomeContent] = useState<HomeContentResponse | null>(null);
@@ -116,15 +116,15 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
   const [selectedDay, setSelectedDay] = useState<WeekDay>(() => getCurrentWeekDay());
-  const [splashIndex, setSplashIndex] = useState(0);
   const [streak, setStreak] = useState<StreakSummary>({ current: 0, longest: 0, lastActivityDate: null });
   const [streakModalOpen, setStreakModalOpen] = useState(false);
   const [streakDetails, setStreakDetails] = useState<StreakResponse | null>(null);
   const [streakLoading, setStreakLoading] = useState(false);
+  const [streakError, setStreakError] = useState<string | null>(null);
   const [progressPosts, setProgressPosts] = useState<ProgressPost[]>([]);
 
   const checkInStreak = useCallback(async () => {
-    if (!user || !community) return;
+    if (!user) return;
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const now = new Date();
     const key = `streak:lastCheckIn:${user.id}`;
@@ -133,17 +133,17 @@ export default function HomeScreen() {
     try {
       if (await AsyncStorage.getItem(key) === marker) return;
       const result = await rankingUpApiClient.checkInStreak(timeZone);
-      setStreak((previous) => ({
+      setStreak({
         current: result.currentStreak,
         longest: result.longestStreak,
-        lastActivityDate: result.isNewDay ? localDate : previous.lastActivityDate,
-      }));
+        lastActivityDate: localDate,
+      });
       await AsyncStorage.setItem(key, marker);
       if (result.isNewDay) Vibration.vibrate(75);
     } catch (error: unknown) {
       console.warn('Streak:', getErrorMessage(error, 'No se pudo actualizar la racha.'));
     }
-  }, [user, community]);
+  }, [user]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -173,15 +173,20 @@ export default function HomeScreen() {
   const openStreak = useCallback(async () => {
     setStreakModalOpen(true);
     setStreakLoading(true);
+    setStreakError(null);
+    setStreakDetails(null);
     try {
+      await checkInStreak();
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-      setStreakDetails(await rankingUpApiClient.getStreak(timeZone));
+      const details = await rankingUpApiClient.getStreak(timeZone);
+      setStreakDetails(details);
+      setStreak({ current: details.current, longest: details.longest, lastActivityDate: details.lastActivityDate });
     } catch (error: unknown) {
-      console.warn('Streak calendar:', getErrorMessage(error, 'No se pudo cargar el calendario.'));
+      setStreakError(getErrorMessage(error, 'No se pudo cargar el calendario.'));
     } finally {
       setStreakLoading(false);
     }
-  }, []);
+  }, [checkInStreak]);
 
   const fetchHomeContent = useCallback(async () => {
     if (!community) { setContentLoading(false); return; }
@@ -205,19 +210,6 @@ export default function HomeScreen() {
   }, [fetchDashboardData, fetchHomeContent, community]));
 
   const messages = homeContent?.messages ?? [];
-  useEffect(() => {
-    if (messages.length === 0) return undefined;
-    splashAnimation.setValue(0);
-    const animation = Animated.sequence([
-      Animated.timing(splashAnimation, { toValue: 1, duration: 280, useNativeDriver: true }),
-      Animated.delay(3_300),
-      Animated.timing(splashAnimation, { toValue: 0, duration: 220, useNativeDriver: true }),
-    ]);
-    animation.start(({ finished }) => {
-      if (finished) setSplashIndex((current) => (current + 1) % messages.length);
-    });
-    return () => animation.stop();
-  }, [messages.length, splashAnimation, splashIndex]);
 
   const workoutsForSelectedDay = useMemo(
     () => workouts.filter((workout) => workout.scheduled_day === selectedDay),
@@ -244,14 +236,6 @@ export default function HomeScreen() {
   }, []);
 
   const displayName = profile?.name || user?.email?.split('@')[0] || 'ATLETA';
-  const currentMessage = messages[splashIndex % Math.max(messages.length, 1)];
-  const splashStyle = {
-    opacity: splashAnimation,
-    transform: [
-      { rotate: '-5deg' },
-      { scale: splashAnimation.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) },
-    ],
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -262,7 +246,7 @@ export default function HomeScreen() {
           <Text style={styles.name} numberOfLines={1}>{displayName.toUpperCase()}</Text>
           <Text style={styles.date}>{HOME_DATE_FORMATTER.format(new Date()).toUpperCase()}</Text>
         </View>
-        {community ? <StreakBadge count={streak.current} onPress={() => void openStreak()} /> : null}
+        <StreakBadge count={streak.current} onPress={() => void openStreak()} />
         <Pressable accessibilityLabel="Abrir perfil" style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="person-outline" size={21} color={theme.accent} />
         </Pressable>
@@ -298,17 +282,7 @@ export default function HomeScreen() {
         </View>
 
         </> : null}
-        {community ? <View style={styles.splashViewport}>
-          {currentMessage ? (
-            <Animated.Text style={[styles.splashText, splashStyle]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.78}>
-              {currentMessage.text}
-            </Animated.Text>
-          ) : contentLoading ? (
-            <ActivityIndicator size="small" color={theme.accent} />
-          ) : (
-            <Text style={styles.splashText}>SIGUE SUMANDO REPETICIONES.</Text>
-          )}
-        </View> : null}
+        {community ? <HomeMessageCarousel messages={messages} loading={contentLoading} /> : null}
         {dashboardError ? (
           <View style={styles.notice}>
             <Ionicons name="cloud-offline-outline" size={20} color="#FF9F0A" />
@@ -429,21 +403,18 @@ export default function HomeScreen() {
             <View style={styles.streakPanelHeader}>
               <View>
                 <Text style={styles.streakPanelTitle}>TU RACHA</Text>
-                <Text style={styles.streakPanelSubtitle}>{streak.current} dias actuales · mejor: {streak.longest}</Text>
+                <Text style={styles.streakPanelSubtitle}>{streak.current} días seguidos · récord: {streak.longest}</Text>
               </View>
-              <Pressable onPress={() => setStreakModalOpen(false)} accessibilityRole="button" accessibilityLabel="Cerrar calendario">
-                <Ionicons name="close" size={23} color="#AEB5BF" />
+              <Pressable onPress={() => setStreakModalOpen(false)} hitSlop={12} accessibilityRole="button" accessibilityLabel="Cerrar calendario">
+                <Ionicons name="close" size={23} color={theme.muted} />
               </Pressable>
             </View>
-            {streakLoading ? <ActivityIndicator color={theme.accent} style={styles.streakSpinner} /> : (
-              <View style={styles.streakCalendar}>
-                {streakDetails?.days.map((day) => (
-                  <View key={day.date} style={[styles.streakDay, day.active && styles.streakDayActive]}>
-                    {day.active ? <Ionicons name="checkmark" size={15} color="#101114" /> : null}
-                  </View>
-                ))}
-              </View>
-            )}
+            <ScrollView style={{ maxHeight: 480 }}>
+              {streakLoading ? <ActivityIndicator color={theme.accent} style={styles.streakSpinner} /> : streakError ? <View>
+                <Text style={{ color: theme.text }}>{streakError}</Text>
+                <Pressable onPress={() => void openStreak()} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: theme.accent }}>Reintentar calendario</Text></Pressable>
+              </View> : <StreakCalendar days={streakDetails?.days ?? []} />}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -470,17 +441,12 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
   streakPanelTitle: { color: theme.text, fontSize: 18, fontWeight: '900' },
   streakPanelSubtitle: { color: theme.muted, fontSize: 12, marginTop: 5 },
   streakSpinner: { marginVertical: 45 },
-  streakCalendar: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
-  streakDay: { width: '12%', aspectRatio: 1, borderRadius: 6, backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center' },
-  streakDayActive: { backgroundColor: theme.accentFill },
   content: { paddingTop: 18, paddingBottom: 120 },
   summaryBand: { minHeight: 72, marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.border },
   summaryItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   summaryValue: { color: theme.text, fontSize: 19, fontWeight: '900' },
   summaryLabel: { color: theme.muted, fontSize: 8, fontWeight: '900', marginTop: 4 },
   summaryDivider: { width: 1, height: 30, backgroundColor: theme.surface },
-  splashViewport: { height: 100, marginHorizontal: 26, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  splashText: { width: '94%', color: '#FFF600', fontSize: 20, lineHeight: 23, fontWeight: '900', textAlign: 'center', textShadowColor: '#000000', textShadowOffset: { width: 3, height: 3 }, textShadowRadius: 0 },
   notice: { marginHorizontal: 20, marginBottom: 20, minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 8, padding: 12, backgroundColor: 'rgba(255,159,10,0.08)', borderWidth: 1, borderColor: 'rgba(255,159,10,0.25)' },
   noticeCopy: { flex: 1 },
   noticeTitle: { color: theme.text, fontSize: 11, fontWeight: '900' },

@@ -498,6 +498,8 @@ export interface Exercise {
   difficulty: string;
   instructions: string;
   gifUrl?: string;
+  thumbnailUrl?: string;
+  attribution?: string;
 }
 
 

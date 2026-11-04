@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { ExerciseMedia } from '../components/ExerciseMedia';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
@@ -240,16 +240,7 @@ export default function AddExercisesScreen() {
   const renderItem = ({ item }: { item: CatalogExerciseSummary }) => (
     <TouchableOpacity style={styles.card} onPress={() => openDetail(item)} activeOpacity={0.7}>
       <View style={styles.thumbBox}>
-        {item.thumbnailUrl ? (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={styles.thumb}
-            resizeMode="cover"
-            accessibilityLabel={`Vista previa de ${item.name}`}
-          />
-        ) : (
-          <Ionicons name="barbell-outline" size={26} color="#666" />
-        )}
+        <ExerciseMedia compact name={item.name} thumbnailUrl={item.thumbnailUrl} gifUrl={item.gifUrl} style={styles.thumb} />
       </View>
       <View style={styles.cardContent}>
         <Text style={styles.exerciseName} numberOfLines={2}>
@@ -453,21 +444,7 @@ export default function AddExercisesScreen() {
                   {detail.targetLabel} • {detail.equipmentLabel}
                 </Text>
 
-                {detail.gifUrl ? (
-                  <View style={styles.gifBox}>
-                    <Image
-                      source={{ uri: detail.gifUrl }}
-                      style={styles.gif}
-                      resizeMode="contain"
-                      accessibilityLabel={`Animación de ${detail.name}`}
-                    />
-                  </View>
-                ) : (
-                  <View style={styles.gifPlaceholder}>
-                    <Ionicons name="barbell-outline" size={44} color="#666" />
-                    <Text style={styles.gifPlaceholderText}>SIN PREVISUALIZACIÓN</Text>
-                  </View>
-                )}
+                <View style={styles.gifBox}><ExerciseMedia name={detail.name} gifUrl={detail.gifUrl} thumbnailUrl={detail.thumbnailUrl} style={styles.gif} /></View>
 
                 <View style={styles.badgeRow}>
                   <View style={styles.badge}>

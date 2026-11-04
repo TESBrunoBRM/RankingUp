@@ -1,7 +1,8 @@
 import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 import { SafetyNotice } from '../components/SafetyNotice';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ExerciseMedia } from '../components/ExerciseMedia';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +54,12 @@ export default function ActiveSessionScreen() {
 
   useEffect(() => {
     let active = true;
+    const hydrateDetails = async (rows: ExerciseRow[]) => {
+      await exerciseApi.primeExercises(rows.map(exercise => exercise.exercise_id));
+      const entries = await Promise.all(rows.map(async exercise => [exercise.exercise_id, await exerciseApi.getExerciseByName(exercise.exercise_id)] as const));
+      const byName = new Map(entries);
+      if (active) setExercises(current => current.map(exercise => ({ ...exercise, details: byName.get(exercise.exercise_id) ?? exercise.details })));
+    };
     const loadPreview = async () => {
       try {
         const preview = await rankingUpApiClient.getSessionPreview(workoutId);
@@ -61,10 +68,7 @@ export default function ActiveSessionScreen() {
         setName(preview.workout.name);
         setExercises(rows);
         setReady(true);
-        void exerciseApi.primeExercises(rows.map((exercise) => exercise.exercise_id)).then(async () => {
-          const details = await Promise.all(rows.map((exercise) => exerciseApi.getExerciseByName(exercise.exercise_id).catch(() => undefined)));
-          if (active) setExercises((current) => current.map((exercise, index) => ({ ...exercise, details: details[index] })));
-        }).catch(() => undefined);
+        void hydrateDetails(rows).catch(() => undefined);
       } catch (error) {
         if (active) Alert.alert('No se pudo cargar la rutina', getErrorMessage(error, 'Intenta de nuevo cuando haya conexion.'), [{ text: 'Volver', onPress: () => navigation.goBack() }]);
       }
@@ -81,6 +85,7 @@ export default function ActiveSessionScreen() {
               { text: 'Retomar', onPress: () => {
                 if (!active) return;
                 setExercises(draft.exercises); setName(draft.name || 'Entrenamiento');
+                void hydrateDetails(draft.exercises).catch(() => undefined);
                 setStartedAt(draft.startedAt); setClientSessionId(draft.clientSessionId); setReady(true);
               } },
             ], { cancelable: false });
@@ -160,15 +165,21 @@ export default function ActiveSessionScreen() {
       <Pressable onPress={() => void save()} disabled={saving} style={styles.finish}><Text style={styles.finishText}>{saving ? 'GUARDANDO' : 'TERMINAR'}</Text></Pressable>
     </View>
     {!ready ? <ActivityIndicator style={{ flex: 1 }} color={theme.accent} /> : <>
-      <View style={styles.carousel}>{exercises.map((exercise, index) => <Pressable key={exercise.id} onPress={() => { setActiveIndex(index); setActiveCell(null); }} style={[styles.avatar, index === activeIndex && styles.avatarActive]}>
-        <Ionicons name={exercise.rows.every((row) => row.completed) ? 'checkmark' : 'barbell'} size={19} color={exercise.rows.every((row) => row.completed) ? '#101114' : '#CCFF00'} />
-      </Pressable>)}</View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={styles.carousel}>{exercises.map((exercise, index) => <Pressable key={exercise.id} accessibilityRole="button" accessibilityLabel={`${index + 1}. ${exercise.exercise_id}${exercise.rows.every(row => row.completed) ? ', completado' : ''}`} accessibilityState={{ selected: index === activeIndex }} onPress={() => { setActiveIndex(index); setActiveCell(null); }} style={[styles.avatar, index === activeIndex && styles.avatarActive]}>
+        <ExerciseMedia compact name={exercise.exercise_id} gifUrl={exercise.details?.gifUrl} thumbnailUrl={exercise.details?.thumbnailUrl} style={{ width: 44, height: 44 }} />
+        {exercise.rows.every(row => row.completed) ? <Ionicons name="checkmark-circle" size={18} color={theme.accent} style={{ position: 'absolute', right: -2, bottom: -2 }} /> : null}
+      </Pressable>)}</ScrollView>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <SafetyNotice kind="training" />
         {active ? <>
-          {active.details?.gifUrl ? <Image source={{ uri: active.details.gifUrl }} style={styles.media} resizeMode="contain" accessibilityLabel={`Demostracion de ${active.exercise_id}`} /> : null}
+          <ExerciseMedia name={active.exercise_id} gifUrl={active.details?.gifUrl} thumbnailUrl={active.details?.thumbnailUrl} style={styles.media} />
+          {!active.details ? <Pressable accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => {
+            const exerciseId = active.exercise_id;
+            void exerciseApi.getExerciseByName(exerciseId).then(details => setExercises(current => current.map(exercise => exercise.exercise_id === exerciseId ? { ...exercise, details } : exercise)));
+          }}><Text style={{ color: theme.accent }}>Volver a buscar demostración e instrucciones</Text></Pressable> : null}
+          {active.details?.attribution ? <Text style={styles.previous}>{active.details.attribution}</Text> : null}
           <Text style={styles.title}>{active.exercise_id}</Text>
-          {active.details?.instructions ? <Text style={styles.instructions} numberOfLines={3}>{active.details.instructions}</Text> : null}
+          {active.details?.instructions ? <Text style={styles.instructions}>{active.details.instructions}</Text> : null}
           {active.lastPerformance ? <Text style={styles.previous}>ULTIMA VEZ  {active.lastPerformance.sets.map((set) => `${set.weight} KG x ${set.reps}`).join('  ·  ')}</Text> : <Text style={styles.previous}>PRIMER REGISTRO</Text>}
           {active.suggestion ? <Text style={styles.suggestion}>↑ SUGERENCIA: {active.suggestion.weight} KG × {active.suggestion.reps} · {active.suggestion.reason}</Text> : null}
           <Pressable onPress={() => setRestEditorOpen(true)} style={styles.restEdit} accessibilityLabel="Editar tiempo de descanso">
@@ -213,7 +224,7 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
   finish: { backgroundColor: theme.accentFill, borderRadius: 4, paddingHorizontal: 14, paddingVertical: 9 },
   finishText: { color: '#101114', fontWeight: '900', fontSize: 12 },
   carousel: { flexDirection: 'row', gap: 12, padding: 14, minHeight: 72, borderBottomWidth: 1, borderBottomColor: theme.border },
-  avatar: { height: 43, width: 43, borderRadius: 22, borderWidth: 1, borderColor: '#4C5057', alignItems: 'center', justifyContent: 'center' },
+  avatar: { height: 48, width: 48, borderRadius: 12, borderWidth: 2, borderColor: theme.border, alignItems: 'center', justifyContent: 'center' },
   avatarActive: { borderColor: theme.accent, borderWidth: 2 },
   content: { padding: 18, paddingBottom: 42 },
   media: { width: '100%', height: 190, marginBottom: 16, backgroundColor: theme.surface },

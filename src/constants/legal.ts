@@ -1,1 +1,1 @@
-export const LEGAL_VERSION = '2026-10-23';
+export const LEGAL_VERSION = '2026-11-04';

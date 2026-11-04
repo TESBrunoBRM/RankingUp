@@ -1,5 +1,6 @@
 import { CatalogExerciseDetail, Exercise } from '../types';
 import { rankingUpApiClient } from './rankingUpApiClient';
+import { catalogExerciseName, normalizeExerciseName } from '../constants/exerciseAliases';
 
 const FEATURED_EXERCISES: Exercise[] = [
   { name: 'Press de Banca', type: 'Fuerza', muscle: 'Pecho', equipment: 'Barra', difficulty: 'Intermedio', instructions: 'Acostado en banca, baja la barra con control hasta el pecho y empuja verticalmente manteniendo los hombros estables.', gifUrl: 'https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif' },
@@ -18,22 +19,15 @@ const FEATURED_EXERCISES: Exercise[] = [
   { name: 'Zancadas', type: 'Fuerza', muscle: 'Gluteos', equipment: 'Peso corporal/Mancuernas', difficulty: 'Principiante', instructions: 'Da un paso al frente, baja estable y vuelve empujando con la pierna delantera.' },
 ];
 
-const normalize = (value: string) =>
-  value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+const normalize = normalizeExerciseName;
 
 // El catalogo completo (1.324 ejercicios) vive en la API. Estos 14 destacados
 // se mantienen como respaldo offline y para las rutinas antiguas en espanol.
-const detailCache = new Map<string, Exercise | undefined>();
+const detailCache = new Map<string, Exercise>();
 
 const findFeatured = (name: string): Exercise | undefined => {
   const normalizedName = normalize(name);
-  return (
-    FEATURED_EXERCISES.find((exercise) => normalize(exercise.name) === normalizedName) ??
-    FEATURED_EXERCISES.find((exercise) => normalize(exercise.name).includes(normalizedName))
-  );
+  return FEATURED_EXERCISES.find((exercise) => normalize(exercise.name) === normalizedName);
 };
 
 const toExercise = (detail: CatalogExerciseDetail): Exercise => ({
@@ -44,6 +38,8 @@ const toExercise = (detail: CatalogExerciseDetail): Exercise => ({
   difficulty: detail.muscleGroupLabel,
   instructions: detail.instructions,
   gifUrl: detail.gifUrl ?? undefined,
+  thumbnailUrl: detail.thumbnailUrl ?? undefined,
+  attribution: detail.attribution ?? undefined,
 });
 
 export const exerciseApi = {
@@ -54,18 +50,18 @@ export const exerciseApi = {
   async primeExercises(names: string[]): Promise<void> {
     const pending = names
       .map((name) => name.trim())
-      .filter((name) => name && !detailCache.has(normalize(name)) && !findFeatured(name));
+      .filter((name) => name && !detailCache.has(normalize(name)));
 
     if (pending.length === 0) return;
 
     try {
-      const details = await rankingUpApiClient.getExercisesByNames([...new Set(pending)]);
+      const details = await rankingUpApiClient.getExercisesByNames([...new Set(pending.map(catalogExerciseName))]);
       const byNormalizedName = new Map(details.map((detail) => [normalize(detail.name), detail]));
 
       for (const name of pending) {
         const key = normalize(name);
-        const detail = byNormalizedName.get(key);
-        detailCache.set(key, detail ? toExercise(detail) : undefined);
+        const detail = byNormalizedName.get(normalize(catalogExerciseName(name)));
+        if (detail) detailCache.set(key, { ...toExercise(detail), name });
       }
     } catch {
       // Sin red: cada pantalla cae al lookup individual, que ya tolera el fallo.
@@ -75,19 +71,16 @@ export const exerciseApi = {
   async getExerciseByName(name: string): Promise<Exercise | undefined> {
     const normalizedName = normalize(name);
 
-    const featured = findFeatured(name);
-    if (featured) return featured;
-
     if (detailCache.has(normalizedName)) return detailCache.get(normalizedName);
 
     try {
-      const detail = await rankingUpApiClient.getExerciseByName(name);
-      const mapped = detail ? toExercise(detail) : undefined;
-      detailCache.set(normalizedName, mapped);
-      return mapped;
+      const detail = await rankingUpApiClient.getExerciseByName(catalogExerciseName(name));
+      const mapped = detail ? { ...toExercise(detail), name } : undefined;
+      if (mapped) detailCache.set(normalizedName, mapped);
+      return mapped ?? findFeatured(name);
     } catch {
       // Sin red o sin sesion: la pantalla se pinta sin previsualizacion.
-      return undefined;
+      return findFeatured(name);
     }
   },
 };

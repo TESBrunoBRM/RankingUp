@@ -287,7 +287,7 @@ export const rankingUpApiClient = {
     request<SubmissionPage>(`/v1/reports/${kind}/mine?page=${page}`, {}, { skipCache: true }),
   warmUp: warmUpApi,
 
-  getLegalAcceptance: () => request<{ version: string; accepted: boolean; acceptedAt: string | null }>('/v1/legal/acceptance', {}, { skipCache: true }),
+  getLegalAcceptance: () => request<{ version: string; accepted: boolean; acceptedAt: string | null }>(`/v1/legal/acceptance?documentVersion=${encodeURIComponent(LEGAL_VERSION)}`, {}, { skipCache: true }),
   acceptLegalTerms: () => request<{ version: string; accepted: boolean; acceptedAt: string }>('/v1/legal/acceptance', { method: 'POST', body: JSON.stringify({ documentVersion: LEGAL_VERSION }) }),
 
   getExperience: () => request<ExperiencePreferences | null>('/v1/experience', {}, { skipCache: true }),
@@ -304,7 +304,7 @@ export const rankingUpApiClient = {
     method: 'POST', body: JSON.stringify({ timeZone }),
   }),
 
-  getStreak: (timeZone: string) => request<StreakResponse>(`/v1/streak?timeZone=${encodeURIComponent(timeZone)}`),
+  getStreak: (timeZone: string) => request<StreakResponse>(`/v1/streak?timeZone=${encodeURIComponent(timeZone)}`, {}, { skipCache: true }),
 
   getHomeContent: () => request<HomeContentResponse>('/v1/home-content'),
 
