@@ -1,6 +1,6 @@
 {
   "name": "rankingup",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "packageManager": "pnpm@11.7.0",
   "engines": {
     "node": "22.x"
@@ -12,6 +12,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "guides:sync": "node scripts/sync-exercise-guides.cjs",
+    "guides:check": "node scripts/sync-exercise-guides.cjs --check",
     "test:auth": "node --experimental-strip-types --test tests/authCallback.test.ts tests/experience.test.ts tests/weightReminder.test.cjs tests/streakCalendar.test.ts tests/exerciseMedia.test.cjs",
     "test": "pnpm run test:auth && pnpm run test:api",
     "doctor": "npx --yes expo-doctor",

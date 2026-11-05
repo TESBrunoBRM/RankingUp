@@ -3,6 +3,7 @@ import { SafetyNotice } from '../components/SafetyNotice';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ExerciseMedia } from '../components/ExerciseMedia';
+import { ExerciseReference } from '../components/ExerciseReference';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Ionicons } from '@expo/vector-icons';
@@ -63,7 +64,7 @@ export default function ActiveSessionScreen() {
     const loadPreview = async () => {
       try {
         const preview = await rankingUpApiClient.getSessionPreview(workoutId);
-        const rows = preview.exercises.map((exercise) => ({ ...exercise, rows: makeRows(exercise) }));
+        const rows = preview.exercises.map((exercise) => ({ ...exercise, details: exerciseApi.getOfflineExercise(exercise.exercise_id), rows: makeRows(exercise) }));
         if (!active) return;
         setName(preview.workout.name);
         setExercises(rows);
@@ -172,14 +173,12 @@ export default function ActiveSessionScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <SafetyNotice kind="training" />
         {active ? <>
-          <ExerciseMedia name={active.exercise_id} gifUrl={active.details?.gifUrl} thumbnailUrl={active.details?.thumbnailUrl} style={styles.media} />
+          <Text style={styles.title}>{active.exercise_id}</Text>
+          <ExerciseReference name={active.exercise_id} exercise={active.details ?? exerciseApi.getOfflineExercise(active.exercise_id)} />
           {!active.details ? <Pressable accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => {
             const exerciseId = active.exercise_id;
             void exerciseApi.getExerciseByName(exerciseId).then(details => setExercises(current => current.map(exercise => exercise.exercise_id === exerciseId ? { ...exercise, details } : exercise)));
           }}><Text style={{ color: theme.accent }}>Volver a buscar demostración e instrucciones</Text></Pressable> : null}
-          {active.details?.attribution ? <Text style={styles.previous}>{active.details.attribution}</Text> : null}
-          <Text style={styles.title}>{active.exercise_id}</Text>
-          {active.details?.instructions ? <Text style={styles.instructions}>{active.details.instructions}</Text> : null}
           {active.lastPerformance ? <Text style={styles.previous}>ULTIMA VEZ  {active.lastPerformance.sets.map((set) => `${set.weight} KG x ${set.reps}`).join('  ·  ')}</Text> : <Text style={styles.previous}>PRIMER REGISTRO</Text>}
           {active.suggestion ? <Text style={styles.suggestion}>↑ SUGERENCIA: {active.suggestion.weight} KG × {active.suggestion.reps} · {active.suggestion.reason}</Text> : null}
           <Pressable onPress={() => setRestEditorOpen(true)} style={styles.restEdit} accessibilityLabel="Editar tiempo de descanso">

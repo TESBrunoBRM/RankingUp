@@ -128,7 +128,7 @@ export default function RankingScreen() {
 
   if (loading && !rankProgress) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>PROGRESO GLOBAL</Text>
@@ -145,7 +145,7 @@ export default function RankingScreen() {
 
   if (errorMessage && !rankProgress) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>PROGRESO GLOBAL</Text>
@@ -168,7 +168,7 @@ export default function RankingScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.eyebrow}>PROGRESO GLOBAL</Text>

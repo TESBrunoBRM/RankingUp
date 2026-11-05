@@ -282,6 +282,15 @@ export default function HomeScreen() {
         </View>
 
         </> : null}
+        {training && community ? <Pressable accessibilityRole="button" accessibilityLabel="Ver mi rango y clasificación"
+          style={[styles.rankingShortcut, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => navigation.navigate('Ranking')}>
+          <Ionicons name="trophy-outline" size={27} color={theme.accent} />
+          <View style={{ flex: 1, gap: 4 }}>
+            <Text style={{ color: theme.text, fontSize: 16, fontWeight: '800' }}>MI RANGO</Text>
+            <Text style={{ color: theme.muted, fontSize: 13 }}>Consulta tu progreso y clasificación</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+        </Pressable> : null}
         {community ? <HomeMessageCarousel messages={messages} loading={contentLoading} /> : null}
         {dashboardError ? (
           <View style={styles.notice}>
@@ -356,7 +365,7 @@ export default function HomeScreen() {
               <Text style={styles.restTitle}>DIA DE DESCANSO</Text>
               <Text style={styles.restText}>Recupera energia o agenda una sesion para este dia.</Text>
             </View>
-            <Pressable accessibilityLabel="Crear rutina" style={styles.addButton} onPress={() => navigation.navigate('MainTabs', { screen: 'CreateTab' })}>
+            <Pressable accessibilityLabel="Crear rutina" style={styles.addButton} onPress={() => navigation.navigate('CreateWorkout')}>
               <Ionicons name="add" size={22} color="#111111" />
             </Pressable>
           </View>
@@ -456,6 +465,7 @@ const createStyles = (theme: ThemePalette) => StyleSheet.create({
   sectionHeaderNews: { marginTop: 34, marginBottom: 14, paddingHorizontal: 20, minHeight: 42, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   sectionEyebrow: { color: theme.muted, fontSize: 9, fontWeight: '900', marginBottom: 3 },
   sectionTitle: { color: theme.text, fontSize: 18, fontWeight: '900' },
+  rankingShortcut: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderRadius: 14, padding: 16, marginHorizontal: 20, marginBottom: 20, minHeight: 76 },
   sectionMeta: { color: theme.muted, fontSize: 9, fontWeight: '800' },
   weekRow: { paddingHorizontal: 20, gap: 8, paddingBottom: 18 },
   dayButton: { width: 44, height: 70, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.border },

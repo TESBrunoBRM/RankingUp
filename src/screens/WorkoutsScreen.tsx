@@ -44,7 +44,7 @@ export default function WorkoutsScreen() {
   const handleDelete = async (id: string, name: string) => {
     Alert.alert(
       'Eliminar',
-      `¿Eliminar rutina ${name}?`,
+      `¿Eliminar rutina ${name}? Las sesiones completadas conservarán su historial hasta cumplir 14 días.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { 

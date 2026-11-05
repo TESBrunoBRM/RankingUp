@@ -53,14 +53,14 @@ export function PlanningMenuModal() {
                  </View>
                  <View style={styles.btnContent}>
                    <Text style={styles.btnTitle}>Planificación con IA</Text>
-                   <Text style={styles.btnSub}>Propuesta orientativa en 4 pasos</Text>
+                   <Text style={styles.btnSub}>Propuesta orientativa en 5 pasos</Text>
                  </View>
                  <Ionicons name="chevron-forward" size={20} color="#666" />
                </TouchableOpacity>
 
                <TouchableOpacity 
                  style={styles.btn} 
-                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('MainTabs', { screen: 'CreateTab' }); }}
+                 onPress={() => { setPlanningMenuOpen(false); navigation.navigate('CreateWorkout'); }}
                >
                  <View style={[styles.btnIcon, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
                     <Ionicons name="build" size={20} color={theme.text} />

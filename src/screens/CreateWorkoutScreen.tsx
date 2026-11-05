@@ -54,7 +54,7 @@ export default function CreateWorkoutScreen() {
       });
       Alert.alert('Éxito', '¡Rutina creada con éxito!');
       // Navigate to the detail screen so they can add exercises
-      navigation.navigate('WorkoutDetail', { workoutId: newWorkout.id });
+      navigation.replace('WorkoutDetail', { workoutId: newWorkout.id });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo crear la rutina.';
       Alert.alert('Error', message);
@@ -64,7 +64,7 @@ export default function CreateWorkoutScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
         <Text style={styles.mainTitle}>NUEVA RUTINA</Text>
       </View>

@@ -1,5 +1,5 @@
 import { ValidationPipe } from '@nestjs/common';
-import { AcceptLegalDto, DOCUMENT_VERSION, LEGACY_DOCUMENT_VERSION, LegalVersionQuery } from './accept-legal.dto';
+import { AcceptLegalDto, DOCUMENT_VERSION, LEGACY_DOCUMENT_VERSION, LegalVersionQuery, SUPPORTED_DOCUMENT_VERSIONS } from './accept-legal.dto';
 import { LegalController } from './legal.controller';
 import { SupabaseService } from '../supabase/supabase.service';
 
@@ -9,7 +9,7 @@ describe('legal acceptance', () => {
     await expect(pipe.transform(body, { type: 'body', metatype: AcceptLegalDto })).rejects.toThrow();
   });
 
-  it.each([LEGACY_DOCUMENT_VERSION, DOCUMENT_VERSION])('checks the exact text version without carrying consent across versions: %s', async version => {
+  it.each(SUPPORTED_DOCUMENT_VERSIONS)('checks the exact text version without carrying consent across versions: %s', async version => {
     const query = { select: jest.fn().mockReturnThis(), eq: jest.fn().mockReturnThis(), maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }) };
     const controller = new LegalController({ serviceClient: { from: () => query } } as unknown as SupabaseService);
     const response = await controller.current({ id: 'signed-in', email: null, role: null }, await pipe.transform({ documentVersion: version }, { type: 'query', metatype: LegalVersionQuery }));

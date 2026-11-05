@@ -1,0 +1,309 @@
+[
+  {
+    "name": "bodyweight standing calf raise",
+    "type": "Fuerza",
+    "muscle": "Pantorrillas",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "De pie sobre el suelo, separa los pies al ancho de caderas. Eleva los talones manteniendo el equilibrio y sin rebotar. Baja con control hasta apoyar los talones."
+  },
+  {
+    "name": "donkey calf raise",
+    "type": "Fuerza",
+    "muscle": "Pantorrillas",
+    "equipment": "Banco o soporte firme",
+    "difficulty": "Intermedio",
+    "instructions": "Apoya las manos en un soporte firme e inclina el tronco desde la cadera con espalda neutra. Con los pies estables, eleva los talones sin impulsarte con los brazos. Baja despacio; comienza sin carga adicional."
+  },
+  {
+    "name": "dumbbell standing calf raise",
+    "type": "Fuerza",
+    "muscle": "Pantorrillas",
+    "equipment": "Mancuernas",
+    "difficulty": "Principiante",
+    "instructions": "De pie sobre el suelo, sujeta las mancuernas a los lados. Eleva los talones sin balancear el cuerpo. Baja con control; usa una carga que permita mantener el equilibrio."
+  },
+  {
+    "name": "push-up",
+    "type": "Fuerza",
+    "muscle": "Pecho",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "Apoya manos y puntas de los pies, con abdomen firme y cuerpo alineado. Flexiona los codos y acerca el pecho al suelo sin hundir la cadera. Empuja para regresar; reduce el recorrido si pierdes la postura."
+  },
+  {
+    "name": "dumbbell fly",
+    "type": "Fuerza",
+    "muscle": "Pecho",
+    "equipment": "Mancuernas y banco",
+    "difficulty": "Intermedio",
+    "instructions": "Túmbate en un banco firme con pies apoyados y mancuernas sobre el pecho. Abre los brazos con codos ligeramente flexionados hasta un recorrido cómodo. Acerca las mancuernas con control sin cambiar la flexión de los codos ni forzar los hombros."
+  },
+  {
+    "name": "dumbbell bench press",
+    "type": "Fuerza",
+    "muscle": "Pecho",
+    "equipment": "Mancuernas y banco",
+    "difficulty": "Intermedio",
+    "instructions": "Túmbate en un banco firme con los pies apoyados y una mancuerna en cada mano. Baja las mancuernas a los lados del pecho con los antebrazos estables. Empuja para regresar sin perder el apoyo de la espalda."
+  },
+  {
+    "name": "crunch (hands overhead)",
+    "type": "Core",
+    "muscle": "Abdominales",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "Túmbate boca arriba con rodillas flexionadas, pies apoyados y brazos extendidos por encima de la cabeza. Acerca las costillas a la pelvis levantando ligeramente los hombros, sin tirar del cuello. Vuelve con control; el recorrido es corto."
+  },
+  {
+    "name": "Press inclinado en poleas",
+    "type": "Fuerza",
+    "muscle": "Pecho Superior",
+    "equipment": "Poleas y banco inclinado",
+    "difficulty": "Intermedio",
+    "instructions": "Usa un banco inclinado estable entre dos poleas bajas. Ajusta los cables para un recorrido cómodo, mantén los pies apoyados y empuja las asas sin perder el apoyo de la espalda. Regresa con control; evita forzar los hombros al bajar."
+  },
+  {
+    "name": "Pec deck",
+    "type": "Fuerza",
+    "muscle": "Pecho",
+    "equipment": "Maquina",
+    "difficulty": "Principiante",
+    "instructions": "Ajusta el asiento para mantener los brazos a una altura cómoda del pecho. Apoya la espalda, aproxima los brazos sin impulso y vuelve con control. Usa un recorrido que no provoque dolor en los hombros."
+  },
+  {
+    "name": "Prensa de piernas",
+    "type": "Fuerza",
+    "muscle": "Cuadriceps",
+    "equipment": "Maquina",
+    "difficulty": "Principiante",
+    "instructions": "Ajusta el asiento y apoya espalda y pelvis. Coloca los pies en la plataforma y flexiona caderas y rodillas hasta donde mantengas esos apoyos. Empuja con control, sin bloquear bruscamente las rodillas ni despegar la pelvis."
+  },
+  {
+    "name": "Curl femoral en máquina",
+    "type": "Fuerza",
+    "muscle": "Isquiosurales",
+    "equipment": "Maquina",
+    "difficulty": "Principiante",
+    "instructions": "Ajusta el eje de la máquina a la rodilla y fija los apoyos según el modelo. Flexiona las rodillas sin levantar la pelvis ni dar tirones, y vuelve con control. Selecciona una carga que permita mantener la técnica."
+  },
+  {
+    "name": "Remo en polea sentado",
+    "type": "Fuerza",
+    "muscle": "Espalda Media",
+    "equipment": "Polea",
+    "difficulty": "Principiante",
+    "instructions": "Siéntate en la estación de remo con los pies apoyados y la espalda neutra. Lleva el agarre hacia el abdomen sin balancear el tronco y regresa con control. Ajusta el recorrido para mantener hombros y zona lumbar cómodos."
+  },
+  {
+    "name": "Hip thrust con barra",
+    "type": "Fuerza",
+    "muscle": "Gluteos",
+    "equipment": "Barra y banco",
+    "difficulty": "Intermedio",
+    "instructions": "Apoya la parte alta de la espalda en un banco firme y coloca una barra protegida sobre la cadera. Con los pies apoyados, eleva la pelvis manteniendo el abdomen firme. Termina al alinear el tronco y los muslos, sin hiperextender la zona lumbar."
+  },
+  {
+    "name": "Remo con banda bajo los pies",
+    "type": "Fuerza",
+    "muscle": "Espalda Media",
+    "equipment": "Banda elastica",
+    "difficulty": "Principiante",
+    "instructions": "Revisa que la banda esté intacta. Písala por el centro con ambos pies, sujeta los extremos e inclina el torso desde la cadera manteniendo espalda neutra. Lleva las manos hacia los costados y regresa con control. No necesitas anclajes externos."
+  },
+  {
+    "name": "Curl de bíceps con banda",
+    "type": "Fuerza",
+    "muscle": "Biceps",
+    "equipment": "Banda elastica",
+    "difficulty": "Principiante",
+    "instructions": "Pisa una banda intacta por el centro y sujeta sus extremos. Con codos junto al cuerpo, flexiona los brazos sin balancear el torso y baja con control. Ajusta la resistencia para completar el recorrido sin dolor."
+  },
+  {
+    "name": "Dominadas en parque",
+    "type": "Fuerza",
+    "muscle": "Espalda (Dorsales)",
+    "equipment": "Barra de dominadas",
+    "difficulty": "Intermedio",
+    "instructions": "Usa una barra de parque firme. Sujeta la barra con un agarre cómodo y eleva el cuerpo sin impulso ni balanceos, acercando el pecho a la barra. Desciende con control. Si no puedes completar el movimiento, reemplázalo por una variante de espalda en el suelo."
+  },
+  {
+    "name": "Sentadilla sin equipo",
+    "type": "Fuerza",
+    "muscle": "Cuadriceps",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "De pie, separa los pies al ancho de hombros. Flexiona caderas y rodillas hasta una profundidad cómoda, mantén los talones apoyados y vuelve con control. No necesitas barra ni banco."
+  },
+  {
+    "name": "Puente con pasos de talones",
+    "type": "Fuerza",
+    "muscle": "Isquiosurales",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "Túmbate boca arriba con rodillas flexionadas y talones apoyados. Eleva la cadera y aleja los talones con pasos cortos sin arquear la espalda. Acércalos y baja la cadera: ese ciclo cuenta como una repetición. Usa un recorrido corto al comenzar."
+  },
+  {
+    "name": "Ángeles invertidos en el suelo",
+    "type": "Fuerza",
+    "muscle": "Espalda Media",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "Túmbate boca abajo con cuello neutro y brazos junto al cuerpo. Levanta suavemente las manos y dibuja un arco hasta donde resulte cómodo; regresa juntando las escápulas sin arquear la zona lumbar. No necesitas anclajes ni muebles."
+  },
+  {
+    "name": "Curl de bíceps con autorresistencia",
+    "type": "Fuerza",
+    "muscle": "Biceps",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "De pie, pega un codo al costado y coloca la otra mano sobre el antebrazo. Flexiona el codo mientras la otra mano opone resistencia suave y controla el regreso. Completa las repeticiones en ambos brazos, sin tirones ni dolor."
+  },
+  {
+    "name": "Flexiones pica",
+    "type": "Fuerza",
+    "muscle": "Hombros",
+    "equipment": "Peso corporal",
+    "difficulty": "Intermedio",
+    "instructions": "Apoya manos y pies en el suelo, eleva la cadera y flexiona los codos con control acercando la cabeza al suelo sin apoyarla. Empuja para volver. Acorta el recorrido si necesitas reducir la dificultad; no uses bancos."
+  },
+  {
+    "name": "Peso muerto rumano con mancuernas",
+    "type": "Fuerza",
+    "muscle": "Isquiosurales",
+    "equipment": "Mancuernas",
+    "difficulty": "Intermedio",
+    "instructions": "De pie con mancuernas a los lados, flexiona ligeramente las rodillas y lleva la cadera atrás con espalda neutra. Baja las mancuernas cerca de las piernas hasta un recorrido cómodo y vuelve extendiendo la cadera."
+  },
+  {
+    "name": "Remo con mancuernas de pie",
+    "type": "Fuerza",
+    "muscle": "Espalda Media",
+    "equipment": "Mancuernas",
+    "difficulty": "Intermedio",
+    "instructions": "Con rodillas ligeramente flexionadas, inclina el torso desde la cadera y mantén espalda neutra. Lleva las mancuernas hacia los costados y bájalas con control, sin balanceos. No necesitas banco."
+  },
+  {
+    "name": "Press de Banca",
+    "type": "Fuerza",
+    "muscle": "Pecho",
+    "equipment": "Barra",
+    "difficulty": "Intermedio",
+    "instructions": "Acostado en banca, baja la barra con control hasta el pecho y empuja verticalmente manteniendo los hombros estables.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Bench-Press.gif"
+  },
+  {
+    "name": "Jalon al Pecho",
+    "type": "Fuerza",
+    "muscle": "Espalda (Dorsales)",
+    "equipment": "Maquina/Polea",
+    "difficulty": "Principiante",
+    "instructions": "Tira la barra hacia la parte alta del pecho, junta escapulas y evita balancear el torso.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Lat-Pulldown.gif"
+  },
+  {
+    "name": "Elevaciones Laterales",
+    "type": "Fuerza",
+    "muscle": "Hombros",
+    "equipment": "Mancuernas",
+    "difficulty": "Principiante",
+    "instructions": "Eleva las mancuernas hasta la linea de hombros con codos ligeramente flexionados.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Lateral-Raise.gif"
+  },
+  {
+    "name": "Remo con Barra",
+    "type": "Fuerza",
+    "muscle": "Espalda Media",
+    "equipment": "Barra",
+    "difficulty": "Intermedio",
+    "instructions": "Inclina el torso, mantiene espalda neutra y tira la barra hacia el abdomen.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Row.gif"
+  },
+  {
+    "name": "Sentadilla Libre",
+    "type": "Fuerza",
+    "muscle": "Cuadriceps",
+    "equipment": "Barra",
+    "difficulty": "Intermedio",
+    "instructions": "Baja con control manteniendo rodillas alineadas y sube empujando el suelo.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Squat.gif"
+  },
+  {
+    "name": "Sentadilla Hack",
+    "type": "Fuerza",
+    "muscle": "Cuadriceps",
+    "equipment": "Maquina",
+    "difficulty": "Intermedio",
+    "instructions": "Apoya la espalda en la maquina, baja profundo y extiende piernas sin bloquear agresivamente.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Hack-Squat.gif"
+  },
+  {
+    "name": "Sentadilla en Maquina Smith",
+    "type": "Fuerza",
+    "muscle": "Cuadriceps",
+    "equipment": "Maquina",
+    "difficulty": "Principiante",
+    "instructions": "Ubica pies levemente adelantados, baja estable y sube siguiendo el riel.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Smith-Machine-Squat.gif"
+  },
+  {
+    "name": "Press Inclinado con Mancuernas",
+    "type": "Fuerza",
+    "muscle": "Pecho Superior",
+    "equipment": "Mancuernas",
+    "difficulty": "Intermedio",
+    "instructions": "En banca inclinada, empuja las mancuernas con recorrido controlado y sin perder retraccion escapular.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Incline-Dumbbell-Press.gif"
+  },
+  {
+    "name": "Peso Muerto Rumano",
+    "type": "Fuerza",
+    "muscle": "Isquiosurales",
+    "equipment": "Barra",
+    "difficulty": "Intermedio",
+    "instructions": "Lleva la cadera atras, baja la barra cerca del cuerpo y vuelve apretando gluteos.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Romanian-Deadlift.gif"
+  },
+  {
+    "name": "Press Militar",
+    "type": "Fuerza",
+    "muscle": "Hombros",
+    "equipment": "Barra",
+    "difficulty": "Intermedio",
+    "instructions": "Empuja la barra desde claviculas hasta sobre la cabeza manteniendo abdomen firme."
+  },
+  {
+    "name": "Curl de Biceps",
+    "type": "Fuerza",
+    "muscle": "Biceps",
+    "equipment": "Mancuernas",
+    "difficulty": "Principiante",
+    "instructions": "Flexiona los codos sin balancear el torso y controla la bajada.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Dumbbell-Curl.gif"
+  },
+  {
+    "name": "Extension de Triceps en Polea",
+    "type": "Fuerza",
+    "muscle": "Triceps",
+    "equipment": "Polea",
+    "difficulty": "Principiante",
+    "instructions": "Empuja la cuerda hacia abajo y separa ligeramente al final para contraer triceps.",
+    "gifUrl": "https://fitnessprogramer.com/wp-content/uploads/2021/02/Pushdown.gif"
+  },
+  {
+    "name": "Plancha",
+    "type": "Core",
+    "muscle": "Abdominales",
+    "equipment": "Peso corporal",
+    "difficulty": "Principiante",
+    "instructions": "Mantiene cuerpo recto, abdomen activo y respiracion controlada."
+  },
+  {
+    "name": "Zancadas",
+    "type": "Fuerza",
+    "muscle": "Gluteos",
+    "equipment": "Peso corporal/Mancuernas",
+    "difficulty": "Principiante",
+    "instructions": "Da un paso al frente, baja estable y vuelve empujando con la pierna delantera."
+  }
+]

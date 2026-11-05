@@ -5,10 +5,14 @@ import { useNavigation } from '@react-navigation/native';
 import { appEnv } from '../config/env';
 import { useThemePalette, useThemedStyles, type ThemePalette } from '../theme';
 
-import { LEGAL_VERSION } from '../constants/legal';
+import { LEGAL_SOURCES, LEGAL_VERSION } from '../constants/legal';
 export { LEGAL_VERSION } from '../constants/legal';
 
 const sections = [
+  ['Ley aplicable y alcance', 'Estos términos se rigen por la legislación de la República de Chile, sin limitar las normas imperativas y los derechos que correspondan al usuario en su lugar de residencia. La enumeración de leyes explica las materias reguladas; no constituye una certificación de cumplimiento ni libera a RankingUp de sus obligaciones. Las controversias pueden presentarse ante los organismos y tribunales competentes conforme a la ley, sin imponer renuncias a acciones ni a derechos irrenunciables.'],
+  ['Protección al consumidor · Ley N.º 19.496', 'Cuando exista una relación de consumo, se aplica la Ley N.º 19.496 y sus modificaciones, cuyo texto refundido fue fijado por el DFL N.º 3 de 2021. Comprende información veraz y oportuna sobre el servicio y los cobros, seguridad en su uso, contratación a distancia y reclamaciones. Sus derechos son irrenunciables anticipadamente. Las advertencias sobre ejercicio y nutrición no excluyen responsabilidad por defectos del servicio ni por incumplimientos legales.'],
+  ['Datos personales · Leyes N.º 19.628 y N.º 21.719', 'El tratamiento de datos se sujeta a la Ley N.º 19.628, sobre protección de la vida privada, incluyendo las reglas sobre autorización, finalidad, datos sensibles y derechos de sus titulares. Peso, medidas y registros pueden revelar información de salud. La Ley N.º 21.719 reforma este régimen y crea la Agencia de Protección de Datos Personales; su vigencia general está prevista para el 1 de diciembre de 2026. Desde esa fecha corresponde aplicar el texto reformado y sus reglas sobre derechos, obligaciones, fiscalización y transferencias internacionales que resulten aplicables. Esta referencia no anticipa la vigencia del nuevo régimen.'],
+  ['Aceptación electrónica y contenido · Leyes N.º 19.799 y N.º 17.336', 'La Ley N.º 19.799 regula documentos electrónicos, firma electrónica y sus efectos legales. Conservamos la versión y fecha de aceptación como registro electrónico; el botón de aceptación no se presenta como firma electrónica avanzada. La Ley N.º 17.336 protege los derechos de autor sobre software, textos, fotos y demostraciones. Debes contar con autorización para compartir contenido ajeno. RankingUp debe respetar las licencias y atribuciones de los materiales que utiliza; aceptar estos términos no transfiere la propiedad de tus contenidos.'],
   ['Uso y funciones elegidas', 'RankingUp ofrece herramientas de registro de ejercicios, alimentación y actividad social. Al comenzar eliges las funciones que quieres ver y revisas una guía y los avisos correspondientes. Puedes cambiar la selección y repetir el recorrido en Perfil → Mis funciones y guía. Desactivar una función no borra tus registros ni convierte las funciones activas en servicios médicos. Debes usar la app lícitamente y respetar a otras personas. Podemos moderar aportes y suspender usos abusivos conforme a la ley aplicable.'],
   ['Información que proporcionas', 'Eres responsable de entregar datos veraces, completos y actualizados, incluidos edad, peso, estatura, actividad, cantidades y alimentos registrados, y de corregir errores que detectes. No inventes ni omitas información relevante al usar una estimación. Los datos falsos, inexactos, incompletos o desactualizados pueden producir resultados inadecuados y aumentar el riesgo de daño. En la medida permitida por la ley, te corresponden las consecuencias atribuibles a esa información y a ignorar advertencias o indicaciones profesionales. Esto no traslada al usuario la responsabilidad por fallas de RankingUp ni limita derechos irrenunciables.'],
   ['Alcance de la información de salud', 'Los ejercicios, planes automáticos, metas de calorías, macronutrientes, hidratación y estimaciones de fuerza son orientativos. No constituyen diagnóstico, tratamiento, prescripción médica, rehabilitación ni una dieta clínica. La app no evalúa tu aptitud para ejercitarte, no supervisa la técnica en tiempo real ni conoce todas tus circunstancias de salud. No garantiza mejorías, pérdida de peso, rendimiento ni ausencia de lesiones o enfermedades.'],
@@ -58,6 +62,13 @@ export function LegalTermsContent({ onClose, closeLabel = 'Volver', onAccept }: 
         <Text style={styles.body}>{body}</Text>
       </View>)}
       <View style={styles.section}>
+        <Text style={styles.title}>Consultar las leyes en LeyChile · BCN</Text>
+        {LEGAL_SOURCES.map(source => <Pressable key={source.url} accessibilityRole="link" style={styles.contactButton}
+          onPress={() => { void Linking.openURL(source.url).catch(() => setError('No se pudo abrir LeyChile. Inténtalo con conexión a internet.')); }}>
+          <Text style={styles.contactText}>{source.label}</Text>
+        </Pressable>)}
+      </View>
+      <View style={styles.section}>
         <Text style={styles.title}>Responsable y contacto</Text>
         <Text style={styles.body}>{appEnv.legalEntityName || 'Identidad legal del responsable pendiente de configurar.'}</Text>
         <Text style={styles.body}>{appEnv.legalContactEmail || 'Correo de contacto pendiente de configurar.'}</Text>
@@ -71,11 +82,11 @@ export function LegalTermsContent({ onClose, closeLabel = 'Volver', onAccept }: 
           <View style={[styles.checkbox, checked && styles.checkboxChecked]}><Text style={styles.checkmark}>{checked ? '✓' : ''}</Text></View>
           <Text style={styles.checkText}>Acepto los Términos de uso y declaro haber leído la información de privacidad. Esto no autoriza usos opcionales de mis datos ni supone renunciar a mis derechos.</Text>
         </Pressable>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
         <Pressable accessibilityRole="button" style={[styles.acceptButton, (!checked || saving) && styles.disabled]} disabled={!checked || saving} onPress={() => void accept()}>
           {saving ? <ActivityIndicator color="#182018" /> : <Text style={styles.acceptText}>ACEPTAR Y CONTINUAR</Text>}
         </Pressable>
       </> : null}
+      {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     </ScrollView>
   </SafeAreaView>;
 }

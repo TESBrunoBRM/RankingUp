@@ -156,7 +156,7 @@ export interface SessionPreview {
 
 export interface WorkoutHistoryItem {
   id: string;
-  workout_id: string;
+  workout_id: string | null;
   date: string;
   name: string | null;
   duration_seconds: number | null;
@@ -368,9 +368,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   HomeTab: undefined;
   RoutineTab: undefined;
-  CreateTab: undefined;
   NutritionTab: undefined;
-  RankTab: undefined;
   ReportsTab: undefined;
 };
 
@@ -437,7 +435,7 @@ export interface WorkoutExercise {
 export interface WorkoutLog {
   id: string;
   user_id: string;
-  workout_id: string;
+  workout_id: string | null;
   date: string;
 }
 
@@ -497,6 +495,7 @@ export interface Exercise {
   equipment: string;
   difficulty: string;
   instructions: string;
+  steps?: string[];
   gifUrl?: string;
   thumbnailUrl?: string;
   attribution?: string;

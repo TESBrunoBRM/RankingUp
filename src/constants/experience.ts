@@ -28,7 +28,7 @@ export const FEATURE_GUIDES: Record<AppFeature, { title: string; steps: string[]
   community: { title: 'Participa a tu manera', steps: [
     'Encuentra el progreso de la comunidad en Inicio y busca personas desde tu perfil.',
     'Revisa la visibilidad de tu perfil antes de compartir. Publicar una sesión es opcional.',
-    'Si también activaste ejercicios, verás rangos y juegos. Una puntuación no mide tu salud: evita competir por encima de tus límites.',
+    'Si también activaste ejercicios, abre Mi rango desde Inicio y encuentra los juegos en el menú +. Una puntuación no mide tu salud: evita competir por encima de tus límites.',
   ] },
 };
 

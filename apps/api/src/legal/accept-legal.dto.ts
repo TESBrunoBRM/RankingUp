@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn } from 'class-validator';
 
-export const DOCUMENT_VERSION = '2026-11-04';
+export const DOCUMENT_VERSION = '2026-11-05';
 // Transitional compatibility for APK 1.4.0, which displays the preceding text.
 // Never record acceptance of newer text for an older client.
 export const LEGACY_DOCUMENT_VERSION = '2026-10-23';
-export const SUPPORTED_DOCUMENT_VERSIONS = [DOCUMENT_VERSION, LEGACY_DOCUMENT_VERSION];
+export const SUPPORTED_DOCUMENT_VERSIONS = [DOCUMENT_VERSION, '2026-11-04', LEGACY_DOCUMENT_VERSION];
 
 export class LegalVersionQuery {
   @IsIn(SUPPORTED_DOCUMENT_VERSIONS)

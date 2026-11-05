@@ -10,6 +10,7 @@ import { nutritionLogService } from '../services/nutritionLogService';
 import { useAuthStore } from '../store/authStore';
 import { AppStackParamList, FoodImageAnalysisResponse, FoodSearchResult, NutritionUnit } from '../types';
 import { getLocalDateString } from '../utils/date';
+import { getErrorMessage } from '../utils/errors';
 
 type SearchFoodNavigationProp = NativeStackNavigationProp<AppStackParamList, 'SearchFood'>;
 type SearchFoodRouteProp = RouteProp<AppStackParamList, 'SearchFood'>;
@@ -93,7 +94,7 @@ export default function SearchFoodScreen() {
 
   const totals = useMemo(() => {
     if (!selectedFood) return { multiplier: 0, calories: 0, protein: 0, carbs: 0, fat: 0 };
-    const amountNum = parseFloat(servings) || 0;
+    const amountNum = Number(servings.replace(',', '.')) || 0;
     const multiplier = getServingMultiplier(selectedFood, amountNum, activeUnit);
     const base = selectedFood.source === 'ai' ? {
       calories: Number(aiCalories.replace(',', '.')) || 0,
@@ -135,8 +136,8 @@ export default function SearchFoodScreen() {
       });
       Alert.alert('Listo', 'Alimento guardado correctamente');
       navigation.goBack();
-    } catch {
-      Alert.alert('Error', 'No se pudo guardar el alimento');
+    } catch (error) {
+      Alert.alert('No se pudo guardar el alimento', getErrorMessage(error, 'Revisa la cantidad y vuelve a intentarlo.'));
     } finally {
       setSaving(false);
     }
@@ -158,7 +159,7 @@ export default function SearchFoodScreen() {
   const renderDetailView = () => {
     if (!selectedFood) return null;
 
-    const amountNum = parseFloat(servings) || 0;
+    const amountNum = Number(servings.replace(',', '.')) || 0;
     const baseUnitLabel = selectedFood.serving.unit === 'porcion' ? 'porc.' : selectedFood.serving.unit;
 
     return (

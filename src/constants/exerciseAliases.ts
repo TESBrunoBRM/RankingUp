@@ -15,6 +15,8 @@ export const EXERCISE_CATALOG_ALIASES: Record<string, string> = {
   'pec deck': 'lever seated fly',
   'prensa de piernas': 'sled 45° leg press (side pov)',
   'remo en polea sentado': 'cable seated row',
+  'press inclinado en poleas': 'cable incline bench press',
+  'curl femoral en maquina': 'lever lying leg curl',
   'dominadas en parque': 'pull-up',
   'peso muerto rumano con mancuernas': 'dumbbell romanian deadlift',
   'remo con mancuernas de pie': 'dumbbell bent over row',

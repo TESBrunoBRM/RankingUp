@@ -41,7 +41,7 @@ export interface RecentExerciseSessionRow {
 
 export interface WorkoutSessionRow {
   id: string;
-  workout_id: string;
+  workout_id: string | null;
   user_id: string;
   date: string;
   name: string | null;

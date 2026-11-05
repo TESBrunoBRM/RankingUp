@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
-import { View, ActivityIndicator, AppState, Platform, StyleSheet, TouchableOpacity, Text, Pressable } from 'react-native';
+import { View, ActivityIndicator, AppState, Platform, Text, Pressable } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { syncWeightReminder } from '../services/weightReminder';
 import ReportsScreen from '../screens/ReportsScreen';
-import { useUIStore } from '../store/uiStore';
+import { MainTabBar } from '../components/MainTabBar';
 import { PlanningMenuModal } from '../components/PlanningMenuModal';
 import { useThemePalette } from '../theme';
 import { rankingUpApiClient } from '../services/rankingUpApiClient';
@@ -65,20 +64,6 @@ const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const AppStack = createNativeStackNavigator<AppStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-function CreateTabButton() {
-  const setPlanningMenuOpen = useUIStore(s => s.setPlanningMenuOpen);
-
-  return (
-    <TouchableOpacity
-      style={styles.createTabButton}
-      onPress={() => setPlanningMenuOpen(true)}
-      activeOpacity={0.8}
-    >
-      <Ionicons name="add" size={32} color="#000" />
-    </TouchableOpacity>
-  );
-}
-
 function AuthNavigator() {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
@@ -91,8 +76,7 @@ function AuthNavigator() {
 }
 
 function MainTabs() {
-  const theme = useThemePalette();
-  const { training, nutrition, community } = useEnabledFeatures();
+  const { training, nutrition } = useEnabledFeatures();
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   useEffect(() => {
     if (Platform.OS === 'web' || (!training && !nutrition)) return;
@@ -109,79 +93,26 @@ function MainTabs() {
     return () => { active = false; listener.remove(); };
   }, [navigation, training, nutrition]);
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: theme.background,
-          borderTopColor: theme.border,
-          height: 80,
-          paddingBottom: 25,
-          paddingTop: 10,
-        },
-        tabBarActiveTintColor: theme.accent,
-        tabBarInactiveTintColor: theme.muted,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '900',
-          letterSpacing: 1,
-        },
-        tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'home';
-          if (route.name === 'HomeTab') iconName = 'compass';
-          else if (route.name === 'RoutineTab') iconName = 'barbell';
-          else if (route.name === 'CreateTab') iconName = 'add-circle';
-          else if (route.name === 'NutritionTab') iconName = 'restaurant';
-          else if (route.name === 'RankTab') iconName = 'stats-chart';
-          else if (route.name === 'ReportsTab') iconName = 'analytics-outline';
-
-          return <Ionicons name={iconName} size={28} color={color} />;
-        },
-      })}
-    >
+    <Tab.Navigator tabBar={props => <MainTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: 'INICIO' }} />
       {training ? <Tab.Screen name="RoutineTab" component={WorkoutsScreen} options={{ tabBarLabel: 'RUTINAS' }} /> : null}
-      {training ? <Tab.Screen
-        name="CreateTab"
-        component={CreateWorkoutScreen}
-        options={{
-          tabBarLabel: '',
-          tabBarIcon: () => null,
-          tabBarButton: CreateTabButton
-        }}
-      /> : null}
       {nutrition ? <Tab.Screen name="NutritionTab" component={NutritionScreen} options={{ tabBarLabel: 'NUTRICIÓN' }} /> : null}
       {training || nutrition ? <Tab.Screen name="ReportsTab" component={ReportsScreen} options={{ tabBarLabel: 'INFORMES' }} /> : null}
-      {training && community ? <Tab.Screen name="RankTab" component={RankingScreen} options={{ tabBarLabel: 'RANGO' }} /> : null}
     </Tab.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  createTabButton: {
-    top: -20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#CCFF00',
-    shadowColor: '#CCFF00',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-});
-
 function MainNavigator() {
   const { training, nutrition, community } = useEnabledFeatures();
+  const theme = useThemePalette();
+  const backHeader = { headerShown: true, headerBackTitle: 'Volver', headerTintColor: theme.text, headerStyle: { backgroundColor: theme.background }, headerShadowVisible: false };
   return (
     <>
       <AppStack.Navigator key={`${training}:${nutrition}:${community}`} screenOptions={{ headerShown: false }}>
         <AppStack.Screen name="MainTabs" component={MainTabs} />
         <AppStack.Screen name="ExperienceSetup" component={ExperienceSetupScreen} />
         {training ? <AppStack.Group>
+        <AppStack.Screen name="CreateWorkout" component={CreateWorkoutScreen} options={{ ...backHeader, title: 'Crear rutina' }} />
         <AppStack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
         <AppStack.Screen name="AddExercises" component={AddExercisesScreen} />
         <AppStack.Screen name="LogWorkout" component={ActiveSessionScreen} />
@@ -214,6 +145,7 @@ function MainNavigator() {
         <AppStack.Screen name="ProfileComparison" component={ProfileComparisonScreen} />
         </AppStack.Group> : null}
         {training && community ? <AppStack.Group>
+        <AppStack.Screen name="Ranking" component={RankingScreen} options={{ ...backHeader, title: 'Rango' }} />
         <AppStack.Screen name="Minigames" component={MinigamesScreen} />
         <AppStack.Screen name="PushUpsGame" component={PushUpsGameScreen} />
         <AppStack.Screen name="DuelLobby" component={DuelLobbyScreen} />

@@ -79,6 +79,17 @@ describe('NutritionService', () => {
     expect(repositoryMock.insertFoodLog).toHaveBeenCalledWith(expect.objectContaining({ food_name: 'Guiso de lentejas', calories: 360 }));
   });
 
+  it.each([[100, 282.5], [50, 141.3]])('registers an approved hallulla at %s g using server-side decimal calories', async (amount, calories) => {
+    foodsServiceMock.getFood.mockResolvedValue({
+      food_id: 'community-hallulla', food_name: 'Hallulla', source: 'community',
+      serving: { amount: 100, unit: 'g', calories: 282.5, protein: 7.7, carbs: 52, fat: 4.4, isPer100: true },
+    });
+    repositoryMock.insertFoodLog.mockImplementation(input => Promise.resolve({ id: 'hallulla-log', ...input }));
+    const result = await service.createFoodLog('u1', { date: '2026-11-05', mealType: 'desayuno', foodId: 'community-hallulla', amount, unit: 'g' });
+    expect(result.log).toMatchObject({ user_id: 'u1', food_name: 'Hallulla', calories });
+    expect(foodsServiceMock.getFood).toHaveBeenCalledWith('community-hallulla', 'u1');
+  });
+
   it('does not allow nutrition overrides for shared catalog foods', async () => {
     foodsServiceMock.getFood.mockResolvedValue({ food_id: 'demo-apple', source: 'local' });
     await expect(service.createFoodLog('u1', { date: '2026-10-02', mealType: 'snack', foodId: 'demo-apple', amount: 100, unit: 'g',

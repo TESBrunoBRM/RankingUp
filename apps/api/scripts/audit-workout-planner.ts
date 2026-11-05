@@ -27,9 +27,10 @@ const equipmentLabels: Record<string, string[]> = {
   barra: ['barbell'], mancuernas: ['dumbbell'], dumbbell: ['dumbbell'], maquina: ['machine'],
   polea: ['cable'], 'maquina/polea': ['cable'], 'banda elastica': ['band'],
   'barra de dominadas': ['pullup'], 'poleas y banco inclinado': ['cable', 'bench'], 'barra y banco': ['barbell', 'bench'],
+  'mancuernas y banco': ['dumbbell', 'bench'], 'banco o soporte firme': ['bench'],
 };
 const alsoNeedsBench = new Set(['Press de Banca', 'Press Inclinado con Mancuernas', 'dumbbell fly', 'dumbbell bench press', 'donkey calf raise']);
-const checks: Record<string, number> = { catalog: 0, equipment: 0, coverage: 0, duplicate: 0, duration: 0, prescription: 0, order: 0, days: 0, unexpected: 0 };
+const checks: Record<string, number> = { catalog: 0, guide: 0, equipment: 0, coverage: 0, duplicate: 0, duration: 0, prescription: 0, order: 0, days: 0, unexpected: 0 };
 const groups = new Map<string, { attempted: number; generated: number; rejected: number; failed: number }>();
 const failures: Array<{ input: WorkoutPlanInput; errors: string[] }> = [];
 const rejections: Array<{ input: WorkoutPlanInput; reason: string }> = [];
@@ -54,6 +55,9 @@ for (const [equipment, available] of Object.entries(equipmentProfiles)) {
           if (estimated > duration + 1e-9) { checks.duration++; errors.push('Independent duration check'); }
           for (const exercise of day.exercises) {
             decisions++;
+            if (!FEATURED_EXERCISES.some(item => item.name === exercise.name && item.instructions.trim().length > 20)) {
+              checks.guide++; errors.push(`Missing offline guide: ${exercise.name}`);
+            }
             const label = catalog.get(exercise.name);
             if (!label) { checks.catalog++; errors.push(`Missing catalog: ${exercise.name}`); continue; }
             const requirements = equipmentLabels[normalizeLabel(label)];
